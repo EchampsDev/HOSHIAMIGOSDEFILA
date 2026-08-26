@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { constellationConnections } from '../data/constellationConnections'
 import { constellationPoints } from '../data/constellationPoints'
+import { readConstellationScene, type ConstellationScene } from '../data/constellationScene'
 import { useConstellationAnimation } from '../hooks/useConstellationAnimation'
 import { FourPointStar } from './FourPointStar'
 
@@ -24,6 +25,7 @@ export function ConstellationHero() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [hasEntered, setHasEntered] = useState(false)
   const [layoutVersion, setLayoutVersion] = useState(0)
+  const [scene, setScene] = useState<ConstellationScene>(readConstellationScene)
   const { progress, stage } = useConstellationAnimation(hasEntered)
 
   useEffect(() => {
@@ -36,6 +38,16 @@ export function ConstellationHero() {
     }, { threshold: .18 })
     observer.observe(host)
     return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    const syncScene = () => setScene(readConstellationScene())
+    window.addEventListener('storage', syncScene)
+    window.addEventListener('focus', syncScene)
+    return () => {
+      window.removeEventListener('storage', syncScene)
+      window.removeEventListener('focus', syncScene)
+    }
   }, [])
 
   useEffect(() => {
@@ -113,6 +125,9 @@ export function ConstellationHero() {
   }, [layoutVersion, progress])
 
   return <div ref={hostRef} className={`constellation-hero is-${stage.toLowerCase()}`} aria-hidden="true">
+    <div className="constellation-reference-layer" style={{ '--reference-x': `${scene.referenceX}%`, '--reference-y': `${scene.referenceY}%` } as CSSProperties}>
+      <img src="/images/constellation-reference.jpg" alt="" />
+    </div>
     <canvas ref={canvasRef} />
     <FourPointStar active={stage === 'REVEAL' || stage === 'RESTING'} />
   </div>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, ty
 import { Link } from 'react-router-dom'
 import { constellationConnections, type ConstellationConnection } from '../landing/data/constellationConnections'
 import { constellationPoints, type ConstellationPoint, type ConstellationPointGroup } from '../landing/data/constellationPoints'
+import { CONSTELLATION_SCENE_STORAGE_KEY, defaultConstellationScene, readConstellationScene, type ConstellationScene } from '../landing/data/constellationScene'
 
 const GROUPS: ConstellationPointGroup[] = ['hair', 'face', 'feature', 'body']
 const STORAGE_KEY = 'brattypolitan.constellation-editor.v1'
@@ -13,6 +14,7 @@ type SavedProgress = {
   savedAt: string
   points: ConstellationPoint[]
   connections: ConstellationConnection[]
+  scene?: ConstellationScene
 }
 
 type DetectedPoint = {
@@ -236,7 +238,7 @@ export function ConstellationEditorPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [connectionSourceId, setConnectionSourceId] = useState<string | null>(null)
   const [referenceImage, setReferenceImage] = useState<string | null>(null)
-  const [referenceOpacity, setReferenceOpacity] = useState(.42)
+  const [scene, setScene] = useState<ConstellationScene>(readConstellationScene)
   const [zoom, setZoom] = useState(1)
   const [savedProgress, setSavedProgress] = useState<SavedProgress | null>(readSavedProgress)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
@@ -259,8 +261,8 @@ export function ConstellationEditorPage() {
     return []
   }) : [], [connections, selectedId])
   const positions = useMemo(() => new Map(points.map((point) => [point.id, point])), [points])
-  const progressSnapshot = useMemo(() => JSON.stringify({ points, connections }), [points, connections])
-  const savedSnapshot = useMemo(() => savedProgress ? JSON.stringify({ points: savedProgress.points, connections: savedProgress.connections }) : null, [savedProgress])
+  const progressSnapshot = useMemo(() => JSON.stringify({ points, connections, scene }), [points, connections, scene])
+  const savedSnapshot = useMemo(() => savedProgress ? JSON.stringify({ points: savedProgress.points, connections: savedProgress.connections, scene: savedProgress.scene ?? defaultConstellationScene }) : null, [savedProgress])
   const hasUnsavedChanges = progressSnapshot !== savedSnapshot
   const detectionPlan = useMemo(() => buildDetectionPlan(points, connections, detectedPoints, detectionRadius, maximumAdditions), [points, connections, detectedPoints, detectionRadius, maximumAdditions])
   const previewMatches = useMemo(() => new Set(detectionPlan.matches.map((match) => match.detected)), [detectionPlan.matches])
@@ -277,6 +279,8 @@ export function ConstellationEditorPage() {
   const updatePoint = (id: string, patch: Partial<ConstellationPoint>) => {
     setPoints((current) => current.map((point) => point.id === id ? { ...point, ...patch } : point))
   }
+
+  const updateScene = (patch: Partial<ConstellationScene>) => setScene((current) => ({ ...current, ...patch }))
 
   const deleteSelectedPoint = useCallback(() => {
     if (!selectedId) return
@@ -483,9 +487,11 @@ export function ConstellationEditorPage() {
       savedAt: new Date().toISOString(),
       points: points.map((point) => ({ ...point })),
       connections: connections.map((connection) => ({ ...connection })),
+      scene,
     }
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(progress))
+      window.localStorage.setItem(CONSTELLATION_SCENE_STORAGE_KEY, JSON.stringify(scene))
       setSavedProgress(progress)
       setSaveMessage('Progreso guardado en este navegador.')
     } catch {
@@ -497,6 +503,8 @@ export function ConstellationEditorPage() {
     if (!savedProgress) return
     setPoints(savedProgress.points.map((point) => ({ ...point })))
     setConnections(savedProgress.connections.map((connection) => ({ ...connection })))
+    setScene(savedProgress.scene ?? defaultConstellationScene)
+    window.localStorage.setItem(CONSTELLATION_SCENE_STORAGE_KEY, JSON.stringify(savedProgress.scene ?? defaultConstellationScene))
     setSelectedId(null)
     setConnectionSourceId(null)
     setSaveMessage('Último progreso restaurado.')
@@ -533,10 +541,14 @@ export function ConstellationEditorPage() {
     <div className="editor-layout">
       <aside className="editor-panel">
         <section>
-          <h2>Referencia</h2>
+          <h2>Referencia del landing</h2>
+          <p className="editor-help">Esta imagen aparece detrás de la silueta al terminar la animación. Ajusta únicamente su ubicación.</p>
+          <label>Altura <output>{Math.round(scene.referenceY)}%</output><input type="range" min="20" max="80" step="1" value={scene.referenceY} onChange={(event) => updateScene({ referenceY: Number(event.target.value) })} /></label>
+          <label>Posición horizontal <output>{Math.round(scene.referenceX)}%</output><input type="range" min="20" max="80" step="1" value={scene.referenceX} onChange={(event) => updateScene({ referenceX: Number(event.target.value) })} /></label>
+          <div className="editor-detection-divider" />
+          <h3>Referencia para trazar</h3>
           <label className="editor-file-input">Cargar imagen<input type="file" accept="image/*" onChange={handleReferenceImage} /></label>
           {referenceImage && <button type="button" className="editor-text-button" onClick={() => { setReferenceImage(null); setDetectedPoints([]); setDetectionMessage(null) }}>Quitar referencia</button>}
-          <label>Opacidad <output>{Math.round(referenceOpacity * 100)}%</output><input type="range" min="0" max="1" step=".05" value={referenceOpacity} onChange={(event) => setReferenceOpacity(Number(event.target.value))} /></label>
           <div className="editor-detection-divider" />
           <h3>Detección asistida</h3>
           <label>Sensibilidad <output>{detectionSensitivity}%</output><input type="range" min="50" max="95" step="1" value={detectionSensitivity} onChange={(event) => setDetectionSensitivity(Number(event.target.value))} /></label>
@@ -611,7 +623,7 @@ export function ConstellationEditorPage() {
         </div>
         <div className="editor-stage-viewport" ref={viewportRef}>
           <div className="editor-stage" style={{ width: `${zoom * 100}%` }}>
-            {referenceImage && <img src={referenceImage} alt="Referencia para trazar la constelación" style={{ opacity: referenceOpacity }} />}
+            {referenceImage && <img src={referenceImage} alt="Referencia para trazar la constelación" />}
             <svg className={isPanning ? 'is-panning' : undefined} viewBox="0 0 1000 1389" preserveAspectRatio="none" onPointerDown={handleSurfacePointerDown} onPointerMove={handlePointerMove} onPointerUp={finishPointerGesture} onPointerCancel={cancelPointerGesture}>
               <g className={`editor-connections${selectedPoint ? ' has-active-group' : ''}`} pointerEvents="none">{connections.map((connection, index) => {
                 const from = positions.get(connection.from)
