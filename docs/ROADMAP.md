@@ -1,7 +1,7 @@
 # Roadmap modular
 
 - **M0 — Foundation:** arquitectura, identidad, rutas y documentación. ✅
-- **M1 — Landing states:** fases configurables y narrativa pre/live/revelación.
+- **M1 — Landing experience:** hero de constelación animada y narrativa de bienvenida. ✅
 - **M2 — Contributions:** shell de captura, validación y consentimiento por elemento.
 - **M3 — Firebase:** autenticación y persistencia con reglas mínimas.
 - **M4 — Moderation:** panel de revisión y cambios de estado.
