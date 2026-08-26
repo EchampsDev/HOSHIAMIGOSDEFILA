@@ -1,0 +1,2 @@
+import { Layout } from '../components/Layout'
+export function AdminPage() { return <Layout><section className="content-card"><p className="eyebrow">ÁREA ADMINISTRATIVA</p><h1>Panel en preparación</h1><p>Esta ruta queda reservada para la moderación y organización del archivo. La autenticación y los permisos se conectarán en un módulo posterior.</p><p className="muted">No hay datos ni acciones administrativas disponibles todavía.</p></section></Layout> }

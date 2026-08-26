@@ -1,0 +1,2 @@
+import { Layout } from '../components/Layout'
+export function ContributePage() { return <Layout><section className="content-card"><p className="eyebrow">PRÓXIMA ETAPA</p><h1>Dejar un recuerdo</h1><p>Este será el espacio para compartir hasta tres recuerdos y decidir, por cada uno, cómo podrá aparecer en la libreta digital.</p><div className="form-shell"><span>1</span><span>Identidad</span><span>2</span><span>Recuerdos</span><span>3</span><span>Permisos</span></div><p className="muted">La captura todavía no está habilitada.</p></section></Layout> }
