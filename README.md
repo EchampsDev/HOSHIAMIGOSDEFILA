@@ -1,4 +1,4 @@
-# HOSHIAMIGOS DE FILA ✦
+# BRATTYPOLITAN EXPERIENCE
 
 Experiencia web y archivo digital progresivo de una libreta colectiva creada por fans durante BRATTY · CDMX · 2026.
 

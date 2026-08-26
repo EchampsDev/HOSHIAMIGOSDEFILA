@@ -1,4 +1,44 @@
+import { useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { ConstellationHero } from '../features/landing/components/ConstellationHero'
+import { FourPointMark } from '../components/FourPointMark'
 import { Layout } from '../components/Layout'
-export function HomePage() { return <Layout><section className="hero"><p className="eyebrow">UN ARCHIVO COLECTIVO</p><h1>HOSHIAMIGOS<br/>DE FILA <i>✦</i></h1><ConstellationHero/><p className="lede">Un álbum construido por las personas<br/>que estuvieron aquí.</p><nav className="actions" aria-label="Explorar Hoshiamigos de Fila"><Link className="button primary" to="/about">Conocer el proyecto</Link><Link className="button secondary" to="/contribute">Dejar un recuerdo <small>próximamente</small></Link></nav></section><section className="reveal-note"><span>✦</span><p>La libreta digital se revelará próximamente.</p><strong>PRÓXIMAMENTE</strong></section></Layout> }
+import { ConstellationHero } from '../features/landing/components/ConstellationHero'
+import { ExperienceCountdown } from '../features/landing/components/ExperienceCountdown'
+import { OpeningStar } from '../features/landing/components/OpeningStar'
+import { StarfieldBackground } from '../features/landing/components/StarfieldBackground'
+import { useScrollReveal } from '../features/landing/hooks/useScrollReveal'
+
+export function HomePage() {
+  const landingRef = useRef<HTMLDivElement>(null)
+  useScrollReveal(landingRef)
+
+  return <Layout>
+    <StarfieldBackground />
+    <div className="landing-flow" ref={landingRef}>
+      <OpeningStar />
+
+      <section className="hero">
+        <div className="hero-copy reveal-title" data-scroll-reveal>
+          <p className="eyebrow">UN ARCHIVO COLECTIVO</p>
+          <h1>BRATTYPOLITAN<br />EXPERIENCE</h1>
+        </div>
+        <div className="reveal-constellation" data-scroll-reveal>
+          <ConstellationHero />
+        </div>
+        <p className="lede reveal-lede" data-scroll-reveal>Un álbum construido por las personas<br />que estuvieron aquí.</p>
+      </section>
+
+      <ExperienceCountdown />
+
+      <section className="reveal-note reveal-note-delay" data-scroll-reveal>
+        <FourPointMark className="note-four-point-mark" />
+        <p>La libreta digital se abrirá después del evento.</p>
+        <strong>ARCHIVO EN CONSOLIDACIÓN</strong>
+      </section>
+
+      <nav className="actions landing-actions reveal-actions" data-scroll-reveal aria-label="Explorar Brattypolitan Experience">
+        <Link className="button primary" to="/album">Ver estado de la libreta</Link>
+      </nav>
+    </div>
+  </Layout>
+}

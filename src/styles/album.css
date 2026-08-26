@@ -1,0 +1,92 @@
+.album-experience, .album-editor-page { min-height: 100svh; color: #211a15; background: radial-gradient(circle at 50% 15%, #35251c 0, #110e0c 42%, #060606 100%); font-family: 'Space Grotesk', system-ui, sans-serif; }
+.album-experience { padding: clamp(18px, 4vw, 42px); display: grid; align-content: space-between; gap: 28px; }
+.album-header, .album-editor-header { display: flex; align-items: start; justify-content: space-between; gap: 18px; color: #f5ebdc; font-family: 'DM Mono', monospace; font-size: .64rem; letter-spacing: .1em; }
+.album-header a, .album-editor-header a { color: inherit; text-decoration: none; }
+.album-header p, .album-editor-header p { margin: 0; color: rgba(245,235,220,.58); }
+.album-reader { display: grid; justify-items: center; gap: 22px; }
+.scrapbook-cover, .scrapbook-sheet, .scrapbook-loading { width: min(88vw, 520px); aspect-ratio: .72; border: 0; box-shadow: 18px 22px 38px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,242,209,.16); }
+.scrapbook-cover { position: relative; overflow: hidden; padding: 11% 9%; display: flex; flex-direction: column; justify-content: space-between; color: #eed9ba; background: linear-gradient(115deg, #3e2417, #87522e 48%, #4d2c1c); cursor: pointer; text-align: left; transform: rotate(-1.3deg); }
+.scrapbook-cover::before { content: ''; position: absolute; inset: 0; opacity: .28; background-image: repeating-linear-gradient(82deg, transparent 0 4px, rgba(255,255,255,.1) 5px, transparent 6px 12px); mix-blend-mode: soft-light; }
+.scrapbook-cover span, .scrapbook-cover strong, .scrapbook-cover small { position: relative; z-index: 1; }
+.scrapbook-cover span { font-family: 'DM Mono', monospace; font-size: .6rem; letter-spacing: .16em; }
+.scrapbook-cover strong { font-size: clamp(2rem, 8vw, 4.6rem); line-height: .8; letter-spacing: -.08em; }
+.scrapbook-cover small { align-self: end; font-family: 'DM Mono', monospace; font-size: .58rem; letter-spacing: .1em; }
+.back-cover { background: linear-gradient(115deg, #2e1b14, #5d3927); }
+.scrapbook-sheet { position: relative; overflow: hidden; perspective: 1100px; cursor: pointer; }
+.scrapbook-sheet.is-turning { animation: page-turn .38s cubic-bezier(.2,.74,.27,1); transform-origin: left center; }
+.scrapbook-sheet.is-turning.turn-previous { animation-direction: reverse; transform-origin: right center; }
+@keyframes page-turn { 0% { opacity: .2; transform: perspective(1100px) rotateY(-72deg); } 100% { opacity: 1; transform: perspective(1100px) rotateY(0); } }
+.album-paper { position: relative; width: 100%; height: 100%; overflow: hidden; color: #423528; background-color: #f1e4c7; box-shadow: inset 0 0 28px rgba(94,63,38,.15); }
+.spiral-binding { position: absolute; z-index: 12; left: -1.5%; top: 4%; width: 8%; height: 92%; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; pointer-events: none; }
+.spiral-binding i { width: 62%; aspect-ratio: 1.7; display: block; border: clamp(1px, .28vw, 2px) solid #7a7670; border-right: 0; border-radius: 9px 0 0 9px; background: linear-gradient(180deg, #e5e0d7, #898681); box-shadow: -1px 1px 1px rgba(0,0,0,.35), inset 1px 1px 1px rgba(255,255,255,.65); transform: translateX(-30%); }
+.spiral-binding.is-cover i { border-color: #171717; background: linear-gradient(180deg, #beb9af, #292827 52%, #85817a); box-shadow: -1px 1px 1px rgba(0,0,0,.7), inset 1px 1px 1px rgba(255,255,255,.45); }
+.album-paper.grid { background-image: linear-gradient(rgba(91,133,152,.16) 1px, transparent 1px), linear-gradient(90deg, rgba(91,133,152,.16) 1px, transparent 1px), radial-gradient(circle, rgba(131,94,54,.08), transparent 55%); background-size: 7.5% 5.4%, 7.5% 5.4%, 100% 100%; }
+.album-paper.lined { background-image: repeating-linear-gradient(to bottom, transparent 0 7.25%, rgba(85,129,148,.28) 7.45% 7.75%, transparent 7.9% 15%), linear-gradient(90deg, transparent 11%, rgba(198,91,86,.32) 11.2% 11.5%, transparent 11.7%); }
+.album-page-number { position: absolute; right: 7%; bottom: 4.5%; margin: 0; color: rgba(64,49,35,.55); font-family: 'DM Mono', monospace; font-size: .63rem; }
+.album-page-title { position: absolute; top: 6%; left: 8%; margin: 0; color: rgba(62,48,34,.55); font-family: 'DM Mono', monospace; font-size: .58rem; letter-spacing: .14em; }
+.album-element { position: absolute; min-width: 0; overflow: visible; padding: 5% 6%; display: grid; align-content: center; gap: 7px; border: 1px solid rgba(62,43,28,.23); background: rgba(255,250,235,.76); box-shadow: 3px 5px 10px rgba(64,43,27,.17); transform-origin: center; user-select: none; }
+.album-element-type { color: rgba(50,38,27,.52); font-family: 'DM Mono', monospace; font-size: clamp(.35rem, 1.4vw, .57rem); letter-spacing: .09em; }
+.album-element-content { white-space: pre-line; font-size: clamp(.58rem, 2.4vw, 1.1rem); line-height: 1.14; }
+.type-post_it { background: #f6d875; border: 0; }
+.type-placeholder { border-style: dashed; background: rgba(240,232,211,.54); }
+.type-sticker { color: #fff7e8; border: 0; background: #dd3148; border-radius: 50%; text-align: center; }
+.type-photo { min-height: 0; padding: 5% 6% 13%; color: #4d4033; background: #f8f0df; border: 6px solid #fffaf0; box-shadow: 5px 8px 15px rgba(64,43,27,.24); }
+.type-photo::after { content: ''; position: absolute; right: -1px; top: -1px; width: 24%; aspect-ratio: 1; border-left: 1px solid rgba(78,62,47,.22); border-bottom: 1px solid rgba(78,62,47,.22); background: linear-gradient(135deg, #d8ccb9 0 49%, #fffaf0 50%); box-shadow: -2px 3px 4px rgba(64,43,27,.12); }
+.album-photo-frame { position: absolute; inset: 13% 10% 28%; background: linear-gradient(135deg, #c7bba9, #6f6256 58%, #b8a893); box-shadow: inset 0 0 0 1px rgba(255,255,255,.32); }
+.type-photo .album-element-content { position: relative; z-index: 1; align-self: end; font-size: clamp(.44rem, 1.6vw, .68rem); }
+.type-text { padding: 1%; border: 0; background: transparent; box-shadow: none; color: #372b22; font-family: Georgia, serif; }
+.type-handwritten_note { border: 0; background: rgba(255,251,238,.52); box-shadow: none; color: #32261e; font-family: cursive; }
+.album-element-author { margin: 0; color: rgba(61,45,32,.52); font-family: 'DM Mono', monospace; font-size: clamp(.34rem, 1.2vw, .48rem); }
+.sheet-hint { position: absolute; left: 7%; bottom: 5%; color: rgba(62,48,34,.48); font-family: 'DM Mono', monospace; font-size: .54rem; letter-spacing: .08em; }
+.scrapbook-loading { display: grid; place-items: center; color: #f2e5d1; font-family: 'DM Mono', monospace; font-size: .66rem; }
+.album-controls { width: min(100%, 620px); display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; color: #f6ecdd; }
+.album-controls button { min-height: 36px; padding: 0 10px; color: inherit; border: 1px solid rgba(246,236,221,.35); background: rgba(22,14,10,.6); cursor: pointer; font-family: 'DM Mono', monospace; font-size: .58rem; letter-spacing: .04em; text-transform: uppercase; }
+.album-controls button:hover { border-color: #e8b95c; background: rgba(232,185,92,.13); }
+.album-controls button:disabled { opacity: .35; cursor: default; }
+.album-controls p { min-width: 72px; margin: 0; align-self: center; color: rgba(246,236,221,.64); font-family: 'DM Mono', monospace; font-size: .58rem; text-align: center; }
+.album-reader-note { margin: 0; color: rgba(245,235,220,.49); font-family: 'DM Mono', monospace; font-size: .58rem; letter-spacing: .05em; text-align: center; }
+.album-index-backdrop { position: fixed; z-index: 20; inset: 0; padding: 20px; display: grid; place-items: center; background: rgba(0,0,0,.68); backdrop-filter: blur(6px); }
+.album-index { width: min(100%, 580px); max-height: min(82svh, 690px); overflow: auto; padding: 22px; color: #2f2419; background: #f1e4c7; box-shadow: 0 22px 70px rgba(0,0,0,.5); }
+.album-index > div:first-child { display: flex; justify-content: space-between; align-items: center; }
+.album-index p { margin: 0; font-family: 'DM Mono', monospace; font-size: .62rem; letter-spacing: .12em; }
+.album-index h2 { margin: 20px 0; font-size: 2rem; letter-spacing: -.06em; }
+.album-index button { border: 1px solid rgba(60,45,30,.35); background: transparent; cursor: pointer; font-family: 'DM Mono', monospace; font-size: .61rem; }
+.album-index-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; }
+.album-index-grid button { aspect-ratio: 1; color: #3d2f22; }
+.album-index-grid button.is-current { color: #fff7e8; border-color: #d52d45; background: #d52d45; }
+
+.album-editor-page { min-height: 100svh; padding: clamp(16px, 3vw, 36px); color: #f7eddf; background: #090807; }
+.album-editor-header { max-width: 1480px; margin: auto auto 24px; }
+.album-editor-header h1 { margin: 5px 0 0; font-size: clamp(2rem, 4vw, 3.8rem); }
+.album-editor-layout { max-width: 1480px; margin: auto; display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: clamp(20px, 4vw, 54px); }
+.album-editor-panel { align-self: start; position: sticky; top: 16px; max-height: calc(100svh - 32px); overflow: auto; border: 1px solid rgba(255,255,255,.17); background: #11100e; }
+.album-editor-panel section { padding: 18px; display: grid; gap: 11px; border-bottom: 1px solid rgba(255,255,255,.12); }
+.album-editor-panel h2 { margin: 0; font-size: .78rem; }
+.album-editor-panel label { display: grid; gap: 6px; color: rgba(255,255,255,.68); font-size: .68rem; }
+.album-editor-panel input, .album-editor-panel select, .album-editor-panel textarea { width: 100%; padding: 8px; color: #fff7e8; border: 1px solid rgba(255,255,255,.25); background: #080807; font: inherit; }
+.album-editor-panel textarea { min-height: 70px; resize: vertical; }
+.editor-page-nav, .element-add-grid, .album-layout-fields { display: grid; gap: 7px; }
+.editor-page-nav { grid-template-columns: 34px 1fr 34px; }
+.element-add-grid { grid-template-columns: 1fr 1fr; }
+.album-layout-fields { grid-template-columns: 1fr 1fr; }
+.editor-page-nav button, .element-add-grid button, .album-delete-button { min-height: 34px; color: #fff7e8; border: 1px solid rgba(255,255,255,.25); background: transparent; cursor: pointer; font-family: 'DM Mono', monospace; font-size: .58rem; }
+.album-delete-button { color: #ff7f8e; border-color: rgba(241,47,70,.55); }
+.album-editor-help { margin: 0; color: rgba(255,255,255,.5); font-size: .66rem; line-height: 1.45; }
+.album-editor-author { margin: 0; color: #b9d4ff; font-family: 'DM Mono', monospace; font-size: .57rem; }
+.album-editor-workspace { min-width: 0; }
+.album-editor-status { width: min(100%, 620px); margin: 0 auto 10px; display: flex; flex-wrap: wrap; gap: 8px 15px; color: rgba(255,255,255,.55); font-family: 'DM Mono', monospace; font-size: .57rem; }
+.album-editor-stage { width: min(100%, 620px); aspect-ratio: .72; margin: auto; overflow: hidden; border: 1px solid rgba(255,255,255,.28); box-shadow: 0 24px 65px rgba(0,0,0,.45); touch-action: none; }
+.album-editor-stage .album-paper { cursor: default; }
+.album-editor-stage .album-element { cursor: grab; }
+.album-editor-stage .album-element.is-selected { outline: 2px solid #f02947; outline-offset: 2px; }
+.album-resize-handle { position: absolute; right: -7px; bottom: -7px; width: 14px; height: 14px; padding: 0; border: 1px solid #fff7e8; background: #f02947; cursor: nwse-resize; }
+.album-editor-workspace > .album-editor-help { width: min(100%, 620px); margin: 10px auto; font-family: 'DM Mono', monospace; font-size: .57rem; }
+.album-lock-page { min-height: calc(100svh - 120px); padding: 10vh 0; display: grid; align-content: center; justify-items: center; gap: 34px; text-align: center; }
+.album-lock-page > div:last-child { max-width: 520px; }
+.album-lock-page h1 { margin: 0 0 20px; font-size: clamp(2.2rem, 8vw, 4.7rem); }
+.album-lock-page p:not(.eyebrow) { margin: 0 0 27px; color: rgba(255,255,255,.68); font-size: 1rem; line-height: 1.55; }
+.album-lock-cover { width: min(62vw, 260px); aspect-ratio: .72; padding: 10%; display: flex; flex-direction: column; justify-content: space-between; color: #ebd9bd; background: linear-gradient(130deg, #3c2317, #84502d, #422619); box-shadow: 12px 16px 35px rgba(0,0,0,.45); text-align: left; transform: rotate(-3deg); }
+.album-lock-cover span { font-family: 'DM Mono', monospace; font-size: .47rem; letter-spacing: .1em; }
+.album-lock-cover b { font-size: clamp(1.5rem, 6vw, 2.6rem); line-height: .85; letter-spacing: -.06em; }
+.album-lock-cover i { align-self: end; color: #f41837; font-size: 1.7rem; font-style: normal; }
+@media (max-width: 760px) { .album-header { display: grid; gap: 7px; } .album-editor-layout { grid-template-columns: 1fr; } .album-editor-panel { position: static; max-height: none; } .album-editor-stage { width: 100%; } }

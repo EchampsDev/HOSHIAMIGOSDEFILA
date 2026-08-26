@@ -1,2 +1,4 @@
-import { Layout } from '../components/Layout'
-export function AlbumPage() { return <Layout><section className="content-card centered"><p className="eyebrow">ÁLBUM DIGITAL</p><h1>La libreta todavía está siendo construida.</h1><p>Cuando llegue el momento, aquí podrás abrir y explorar sus páginas.</p><div className="book-placeholder" aria-hidden="true"><span>✦</span></div></section></Layout> }
+import { AlbumExperiencePage } from '../features/album/AlbumExperiencePage'
+import { AlbumLockedPage } from '../features/album/AlbumLockedPage'
+import { publicAlbumAccess } from '../features/album/data/albumAccess'
+export function AlbumPage() { return publicAlbumAccess.isUnlocked ? <AlbumExperiencePage /> : <AlbumLockedPage /> }

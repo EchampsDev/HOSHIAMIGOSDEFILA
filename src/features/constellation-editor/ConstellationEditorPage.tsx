@@ -1,0 +1,633 @@
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type PointerEvent as ReactPointerEvent } from 'react'
+import { Link } from 'react-router-dom'
+import { constellationConnections, type ConstellationConnection } from '../landing/data/constellationConnections'
+import { constellationPoints, type ConstellationPoint, type ConstellationPointGroup } from '../landing/data/constellationPoints'
+
+const GROUPS: ConstellationPointGroup[] = ['hair', 'face', 'feature', 'body']
+const STORAGE_KEY = 'brattypolitan.constellation-editor.v1'
+const clamp = (value: number) => Math.min(Math.max(value, 0), 1)
+const roundCoordinate = (value: number) => Number(clamp(value).toFixed(4))
+
+type SavedProgress = {
+  version: 1
+  savedAt: string
+  points: ConstellationPoint[]
+  connections: ConstellationConnection[]
+}
+
+type DetectedPoint = {
+  x: number
+  y: number
+  size: number
+  score: number
+}
+
+type PanGesture = {
+  pointerId: number
+  startX: number
+  startY: number
+  scrollLeft: number
+  scrollTop: number
+  pointX: number
+  pointY: number
+  moved: boolean
+}
+
+type DetectionMatch = { pointId: string; detected: DetectedPoint }
+type DetectionPlan = { matches: DetectionMatch[]; additions: DetectedPoint[] }
+
+const stageDistance = (a: Pick<ConstellationPoint, 'x' | 'y'>, b: Pick<ConstellationPoint, 'x' | 'y'>) => Math.hypot((a.x - b.x) * .72, a.y - b.y)
+
+function pointToSegmentDistance(point: DetectedPoint, from: ConstellationPoint, to: ConstellationPoint) {
+  const px = point.x * .72
+  const py = point.y
+  const ax = from.x * .72
+  const ay = from.y
+  const bx = to.x * .72
+  const by = to.y
+  const dx = bx - ax
+  const dy = by - ay
+  const lengthSquared = dx * dx + dy * dy
+  if (!lengthSquared) return Math.hypot(px - ax, py - ay)
+  const projection = Math.min(Math.max(((px - ax) * dx + (py - ay) * dy) / lengthSquared, 0), 1)
+  return Math.hypot(px - (ax + projection * dx), py - (ay + projection * dy))
+}
+
+function buildDetectionPlan(points: ConstellationPoint[], connections: ConstellationConnection[], detected: DetectedPoint[], matchRadius: number, maxAdditions: number): DetectionPlan {
+  const positions = new Map(points.map((point) => [point.id, point]))
+  const geometryDistance = (candidate: DetectedPoint) => {
+    let closest = points.reduce((distance, point) => Math.min(distance, stageDistance(candidate, point)), Number.POSITIVE_INFINITY)
+    connections.forEach((connection) => {
+      const from = positions.get(connection.from)
+      const to = positions.get(connection.to)
+      if (from && to) closest = Math.min(closest, pointToSegmentDistance(candidate, from, to))
+    })
+    return closest
+  }
+  const eligible = detected.filter((candidate) => geometryDistance(candidate) <= matchRadius * 1.65)
+  const pairs = eligible.flatMap((candidate) => points.map((point) => ({ candidate, point, distance: stageDistance(candidate, point) })))
+    .filter((pair) => pair.distance <= matchRadius)
+    .sort((a, b) => a.distance - b.distance)
+  const usedPoints = new Set<string>()
+  const usedCandidates = new Set<DetectedPoint>()
+  const matches: DetectionMatch[] = []
+  pairs.forEach(({ candidate, point }) => {
+    if (usedPoints.has(point.id) || usedCandidates.has(candidate)) return
+    usedPoints.add(point.id)
+    usedCandidates.add(candidate)
+    matches.push({ pointId: point.id, detected: candidate })
+  })
+  const additions = eligible
+    .filter((candidate) => !usedCandidates.has(candidate) && geometryDistance(candidate) <= matchRadius)
+    .filter((candidate) => matches.every((match) => stageDistance(candidate, match.detected) > .009))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, maxAdditions)
+  return { matches, additions }
+}
+
+async function detectReferencePoints(source: string, sensitivity: number): Promise<DetectedPoint[]> {
+  const image = new Image()
+  image.src = source
+  await image.decode()
+  const scale = Math.min(1, 900 / Math.max(image.naturalWidth, image.naturalHeight))
+  const width = Math.max(1, Math.round(image.naturalWidth * scale))
+  const height = Math.max(1, Math.round(image.naturalHeight * scale))
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const context = canvas.getContext('2d', { willReadFrequently: true })
+  if (!context) return []
+  context.drawImage(image, 0, 0, width, height)
+  const pixels = context.getImageData(0, 0, width, height).data
+  const minimumBrightness = 95 - sensitivity * .6
+  const minimumSaturation = Math.max(.06, (100 - sensitivity) / 300)
+  const mask = new Uint8Array(width * height)
+  for (let index = 0; index < mask.length; index += 1) {
+    const offset = index * 4
+    const red = pixels[offset]
+    const green = pixels[offset + 1]
+    const blue = pixels[offset + 2]
+    const maximum = Math.max(red, green, blue)
+    const minimum = Math.min(red, green, blue)
+    const delta = maximum - minimum
+    const saturation = maximum ? delta / maximum : 0
+    let hue = 0
+    if (delta) {
+      if (maximum === red) hue = 60 * (((green - blue) / delta) % 6)
+      else if (maximum === green) hue = 60 * ((blue - red) / delta + 2)
+      else hue = 60 * ((red - green) / delta + 4)
+      if (hue < 0) hue += 360
+    }
+    const isBlueCyan = hue >= 165 && hue <= 240 && blue + 20 >= green && green >= red + 3 && blue >= red + 8
+    if (pixels[offset + 3] > 180 && maximum >= minimumBrightness && saturation >= minimumSaturation && isBlueCyan) mask[index] = 1
+  }
+  const queue = new Int32Array(width * height)
+  const detected: DetectedPoint[] = []
+  const maxBlob = Math.max(10, Math.min(width, height) * .035)
+  for (let start = 0; start < mask.length; start += 1) {
+    if (mask[start] !== 1) continue
+    let head = 0
+    let tail = 0
+    queue[tail++] = start
+    mask[start] = 2
+    let area = 0
+    let weightedX = 0
+    let weightedY = 0
+    let weightTotal = 0
+    let minX = width
+    let maxX = 0
+    let minY = height
+    let maxY = 0
+    let peak = 0
+    while (head < tail) {
+      const index = queue[head++]
+      const x = index % width
+      const y = Math.floor(index / width)
+      const offset = index * 4
+      const red = pixels[offset]
+      const green = pixels[offset + 1]
+      const blue = pixels[offset + 2]
+      const colorStrength = (blue - red) + (green - red) * .35
+      const weight = Math.max(1, colorStrength)
+      area += 1
+      weightedX += x * weight
+      weightedY += y * weight
+      weightTotal += weight
+      peak = Math.max(peak, Math.max(red, green, blue) + colorStrength)
+      minX = Math.min(minX, x)
+      maxX = Math.max(maxX, x)
+      minY = Math.min(minY, y)
+      maxY = Math.max(maxY, y)
+      for (let offsetY = -1; offsetY <= 1; offsetY += 1) for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
+        if (!offsetX && !offsetY) continue
+        const nextX = x + offsetX
+        const nextY = y + offsetY
+        if (nextX < 0 || nextX >= width || nextY < 0 || nextY >= height) continue
+        const next = nextY * width + nextX
+        if (mask[next] === 1) { mask[next] = 2; queue[tail++] = next }
+      }
+    }
+    const blobWidth = maxX - minX + 1
+    const blobHeight = maxY - minY + 1
+    if (area < 2 || area > 260 || blobWidth > maxBlob || blobHeight > maxBlob || !weightTotal) continue
+    const imageX = (weightedX / weightTotal + .5) / width
+    const imageY = (weightedY / weightTotal + .5) / height
+    const imageAspect = width / height
+    const stageAspect = 1000 / 1389
+    const x = imageAspect > stageAspect ? imageX : (1 - imageAspect / stageAspect) / 2 + imageX * (imageAspect / stageAspect)
+    const y = imageAspect > stageAspect ? (1 - stageAspect / imageAspect) / 2 + imageY * (stageAspect / imageAspect) : imageY
+    detected.push({ x: roundCoordinate(x), y: roundCoordinate(y), size: Math.min(3.6, Math.max(1.2, 1 + Math.sqrt(area) / 4)), score: peak + Math.sqrt(area) * 4 })
+  }
+  return detected.sort((a, b) => b.score - a.score)
+}
+
+function readSavedProgress(): SavedProgress | null {
+  try {
+    const value = window.localStorage.getItem(STORAGE_KEY)
+    if (!value) return null
+    const parsed = JSON.parse(value) as Partial<SavedProgress>
+    if (parsed.version !== 1 || !Array.isArray(parsed.points) || !Array.isArray(parsed.connections) || typeof parsed.savedAt !== 'string') return null
+    return parsed as SavedProgress
+  } catch {
+    return null
+  }
+}
+
+function createPointId(points: ConstellationPoint[]) {
+  let index = points.length + 1
+  while (points.some((point) => point.id === `point-${index}`)) index += 1
+  return `point-${index}`
+}
+
+function pointFile(points: ConstellationPoint[]) {
+  const rows = points.map((point) => {
+    const optional = [
+      point.brightness === undefined ? '' : `, brightness: ${point.brightness}`,
+      point.delay === undefined ? '' : `, delay: ${point.delay}`,
+    ].join('')
+    return `  { id: ${JSON.stringify(point.id)}, x: ${point.x}, y: ${point.y}, size: ${point.size}${optional}, group: ${JSON.stringify(point.group)} },`
+  })
+  return `export type ConstellationPointGroup = 'hair' | 'face' | 'feature' | 'body'\n\nexport type ConstellationPoint = {\n  id: string\n  x: number\n  y: number\n  size: number\n  brightness?: number\n  delay?: number\n  group: ConstellationPointGroup\n}\n\n// Coordenadas normalizadas exportadas desde /constellation-editor.\nexport const constellationPoints: ConstellationPoint[] = [\n${rows.join('\n')}\n]\n`
+}
+
+function connectionFile(connections: ConstellationConnection[]) {
+  const rows = connections.map((connection) => {
+    const optional = [
+      connection.opacity === undefined ? '' : `, opacity: ${connection.opacity}`,
+      connection.delay === undefined ? '' : `, delay: ${connection.delay}`,
+    ].join('')
+    return `  { from: ${JSON.stringify(connection.from)}, to: ${JSON.stringify(connection.to)}${optional} },`
+  })
+  return `export type ConstellationConnection = {\n  from: string\n  to: string\n  opacity?: number\n  delay?: number\n}\n\n// Conexiones exportadas desde /constellation-editor.\nexport const constellationConnections: ConstellationConnection[] = [\n${rows.join('\n')}\n]\n`
+}
+
+function downloadTypeScript(filename: string, content: string) {
+  const url = URL.createObjectURL(new Blob([content], { type: 'text/typescript;charset=utf-8' }))
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = filename
+  anchor.click()
+  window.setTimeout(() => URL.revokeObjectURL(url), 0)
+}
+
+export function ConstellationEditorPage() {
+  const [points, setPoints] = useState<ConstellationPoint[]>(() => constellationPoints.map((point) => ({ ...point })))
+  const [connections, setConnections] = useState<ConstellationConnection[]>(() => constellationConnections.map((connection) => ({ ...connection })))
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [connectionSourceId, setConnectionSourceId] = useState<string | null>(null)
+  const [referenceImage, setReferenceImage] = useState<string | null>(null)
+  const [referenceOpacity, setReferenceOpacity] = useState(.42)
+  const [zoom, setZoom] = useState(1)
+  const [savedProgress, setSavedProgress] = useState<SavedProgress | null>(readSavedProgress)
+  const [saveMessage, setSaveMessage] = useState<string | null>(null)
+  const [detectionSensitivity, setDetectionSensitivity] = useState(72)
+  const [detectionRadius, setDetectionRadius] = useState(.055)
+  const [maximumAdditions, setMaximumAdditions] = useState(24)
+  const [detectedPoints, setDetectedPoints] = useState<DetectedPoint[]>([])
+  const [isDetecting, setIsDetecting] = useState(false)
+  const [detectionMessage, setDetectionMessage] = useState<string | null>(null)
+  const [detectionUndo, setDetectionUndo] = useState<{ points: ConstellationPoint[]; connections: ConstellationConnection[] } | null>(null)
+  const [isPanning, setIsPanning] = useState(false)
+  const draggingId = useRef<string | null>(null)
+  const panGesture = useRef<PanGesture | null>(null)
+  const viewportRef = useRef<HTMLDivElement | null>(null)
+
+  const selectedPoint = points.find((point) => point.id === selectedId) ?? null
+  const selectedConnections = useMemo(() => selectedId ? connections.flatMap((connection) => {
+    if (connection.from === selectedId) return [{ neighborId: connection.to }]
+    if (connection.to === selectedId) return [{ neighborId: connection.from }]
+    return []
+  }) : [], [connections, selectedId])
+  const positions = useMemo(() => new Map(points.map((point) => [point.id, point])), [points])
+  const progressSnapshot = useMemo(() => JSON.stringify({ points, connections }), [points, connections])
+  const savedSnapshot = useMemo(() => savedProgress ? JSON.stringify({ points: savedProgress.points, connections: savedProgress.connections }) : null, [savedProgress])
+  const hasUnsavedChanges = progressSnapshot !== savedSnapshot
+  const detectionPlan = useMemo(() => buildDetectionPlan(points, connections, detectedPoints, detectionRadius, maximumAdditions), [points, connections, detectedPoints, detectionRadius, maximumAdditions])
+  const previewMatches = useMemo(() => new Set(detectionPlan.matches.map((match) => match.detected)), [detectionPlan.matches])
+  const previewAdditions = useMemo(() => new Set(detectionPlan.additions), [detectionPlan.additions])
+
+  const normalizedPosition = (event: ReactPointerEvent<SVGSVGElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect()
+    return {
+      x: roundCoordinate((event.clientX - bounds.left) / bounds.width),
+      y: roundCoordinate((event.clientY - bounds.top) / bounds.height),
+    }
+  }
+
+  const updatePoint = (id: string, patch: Partial<ConstellationPoint>) => {
+    setPoints((current) => current.map((point) => point.id === id ? { ...point, ...patch } : point))
+  }
+
+  const deleteSelectedPoint = useCallback(() => {
+    if (!selectedId) return
+    setPoints((current) => current.filter((point) => point.id !== selectedId))
+    setConnections((current) => current.filter((connection) => connection.from !== selectedId && connection.to !== selectedId))
+    setConnectionSourceId((current) => current === selectedId ? null : current)
+    setSelectedId(null)
+  }, [selectedId])
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Delete' && event.key !== 'Backspace') return
+      const target = event.target as HTMLElement | null
+      if (target?.matches('input, select, textarea')) return
+      event.preventDefault()
+      deleteSelectedPoint()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [deleteSelectedPoint])
+
+  const addConnection = (from: string, to: string) => {
+    if (from === to) return
+    const alreadyExists = connections.some((connection) =>
+      (connection.from === from && connection.to === to) || (connection.from === to && connection.to === from),
+    )
+    if (!alreadyExists) setConnections((current) => [...current, { from, to, opacity: .28, delay: 0 }])
+  }
+
+  const addPointAt = (position: { x: number; y: number }) => {
+    const point: ConstellationPoint = {
+      id: createPointId(points),
+      ...position,
+      size: 1.8,
+      brightness: .9,
+      delay: 0,
+      group: 'feature',
+    }
+    setPoints((current) => [...current, point])
+    setSelectedId(point.id)
+    setConnectionSourceId(null)
+  }
+
+  const handleSurfacePointerDown = (event: ReactPointerEvent<SVGSVGElement>) => {
+    if (event.target !== event.currentTarget) return
+    event.preventDefault()
+    const viewport = viewportRef.current
+    const position = normalizedPosition(event)
+    panGesture.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      scrollLeft: viewport?.scrollLeft ?? 0,
+      scrollTop: viewport?.scrollTop ?? 0,
+      pointX: position.x,
+      pointY: position.y,
+      moved: false,
+    }
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
+
+  const handlePointPointerDown = (event: ReactPointerEvent<SVGCircleElement>, id: string) => {
+    event.preventDefault()
+    event.stopPropagation()
+    if (connectionSourceId && connectionSourceId !== id) {
+      addConnection(connectionSourceId, id)
+      setConnectionSourceId(null)
+      setSelectedId(id)
+      return
+    }
+    draggingId.current = id
+    setSelectedId(id)
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
+
+  const handlePointerMove = (event: ReactPointerEvent<SVGSVGElement>) => {
+    if (draggingId.current) {
+      updatePoint(draggingId.current, normalizedPosition(event))
+      return
+    }
+    const gesture = panGesture.current
+    const viewport = viewportRef.current
+    if (!gesture || gesture.pointerId !== event.pointerId || !viewport) return
+    const movementX = event.clientX - gesture.startX
+    const movementY = event.clientY - gesture.startY
+    if (!gesture.moved && Math.hypot(movementX, movementY) >= 5) {
+      gesture.moved = true
+      setIsPanning(true)
+    }
+    if (!gesture.moved) return
+    event.preventDefault()
+    viewport.scrollLeft = gesture.scrollLeft - movementX
+    viewport.scrollTop = gesture.scrollTop - movementY
+  }
+
+  const finishPointerGesture = (event: ReactPointerEvent<SVGSVGElement>) => {
+    if (draggingId.current) {
+      draggingId.current = null
+      return
+    }
+    const gesture = panGesture.current
+    if (!gesture || gesture.pointerId !== event.pointerId) return
+    if (!gesture.moved) addPointAt({ x: gesture.pointX, y: gesture.pointY })
+    panGesture.current = null
+    setIsPanning(false)
+  }
+
+  const cancelPointerGesture = () => {
+    draggingId.current = null
+    panGesture.current = null
+    setIsPanning(false)
+  }
+
+  const handleReferenceImage = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.addEventListener('load', () => {
+      setReferenceImage(typeof reader.result === 'string' ? reader.result : null)
+      setDetectedPoints([])
+      setDetectionMessage(null)
+    }, { once: true })
+    reader.readAsDataURL(file)
+  }
+
+  const analyzeReference = async () => {
+    if (!referenceImage) return
+    setIsDetecting(true)
+    setDetectionMessage(null)
+    try {
+      const candidates = await detectReferencePoints(referenceImage, detectionSensitivity)
+      setDetectedPoints(candidates)
+      setDetectionMessage(candidates.length ? `${candidates.length} puntos azules o cian detectados; revisa la previsualización.` : 'No se detectaron puntos azules o cian con esta sensibilidad.')
+    } catch {
+      setDetectionMessage('No fue posible analizar esta imagen.')
+    } finally {
+      setIsDetecting(false)
+    }
+  }
+
+  const applyDetection = () => {
+    if (!detectionPlan.matches.length && !detectionPlan.additions.length) return
+    setDetectionUndo({
+      points: points.map((point) => ({ ...point })),
+      connections: connections.map((connection) => ({ ...connection })),
+    })
+    const matchPositions = new Map(detectionPlan.matches.map((match) => [match.pointId, match.detected]))
+    const nextPoints = points.map((point) => {
+      const detected = matchPositions.get(point.id)
+      return detected ? { ...point, x: detected.x, y: detected.y } : { ...point }
+    })
+    const nextConnections = connections.map((connection) => ({ ...connection }))
+    detectionPlan.additions.forEach((detected) => {
+      const nearest = nextPoints.reduce<ConstellationPoint | null>((closest, point) => !closest || stageDistance(detected, point) < stageDistance(detected, closest) ? point : closest, null)
+      const newPoint: ConstellationPoint = {
+        id: createPointId(nextPoints),
+        x: detected.x,
+        y: detected.y,
+        size: Number(detected.size.toFixed(1)),
+        brightness: .9,
+        delay: 0,
+        group: nearest?.group ?? 'feature',
+      }
+      const currentPositions = new Map(nextPoints.map((point) => [point.id, point]))
+      let nearestConnectionIndex = -1
+      let nearestConnectionDistance = Number.POSITIVE_INFINITY
+      nextConnections.forEach((connection, index) => {
+        const from = currentPositions.get(connection.from)
+        const to = currentPositions.get(connection.to)
+        if (!from || !to) return
+        const distance = pointToSegmentDistance(detected, from, to)
+        if (distance < nearestConnectionDistance) { nearestConnectionDistance = distance; nearestConnectionIndex = index }
+      })
+      nextPoints.push(newPoint)
+      if (nearestConnectionIndex >= 0 && nearestConnectionDistance <= detectionRadius) {
+        const connection = nextConnections[nearestConnectionIndex]
+        nextConnections.splice(nearestConnectionIndex, 1,
+          { ...connection, to: newPoint.id },
+          { ...connection, from: newPoint.id },
+        )
+      } else if (nearest) {
+        nextConnections.push({ from: nearest.id, to: newPoint.id, opacity: .28, delay: 0 })
+      }
+    })
+    setPoints(nextPoints)
+    setConnections(nextConnections)
+    setDetectedPoints([])
+    setSelectedId(null)
+    setConnectionSourceId(null)
+    setDetectionMessage(`Aplicado: ${detectionPlan.matches.length} puntos ajustados y ${detectionPlan.additions.length} añadidos.`)
+  }
+
+  const undoDetection = () => {
+    if (!detectionUndo) return
+    setPoints(detectionUndo.points.map((point) => ({ ...point })))
+    setConnections(detectionUndo.connections.map((connection) => ({ ...connection })))
+    setDetectionUndo(null)
+    setDetectionMessage('Último ajuste automático deshecho.')
+  }
+
+  const saveProgress = () => {
+    const progress: SavedProgress = {
+      version: 1,
+      savedAt: new Date().toISOString(),
+      points: points.map((point) => ({ ...point })),
+      connections: connections.map((connection) => ({ ...connection })),
+    }
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(progress))
+      setSavedProgress(progress)
+      setSaveMessage('Progreso guardado en este navegador.')
+    } catch {
+      setSaveMessage('No fue posible guardar el progreso en este navegador.')
+    }
+  }
+
+  const restoreProgress = () => {
+    if (!savedProgress) return
+    setPoints(savedProgress.points.map((point) => ({ ...point })))
+    setConnections(savedProgress.connections.map((connection) => ({ ...connection })))
+    setSelectedId(null)
+    setConnectionSourceId(null)
+    setSaveMessage('Último progreso restaurado.')
+  }
+
+  const clearSavedProgress = () => {
+    if (!window.confirm('¿Eliminar el progreso guardado de este navegador?')) return
+    window.localStorage.removeItem(STORAGE_KEY)
+    setSavedProgress(null)
+    setSaveMessage('Progreso guardado eliminado. El lienzo actual no cambió.')
+  }
+
+  const updateZoom = (nextZoom: number) => {
+    const viewport = viewportRef.current
+    const previousZoom = zoom
+    const centerX = viewport ? viewport.scrollLeft + viewport.clientWidth / 2 : 0
+    const centerY = viewport ? viewport.scrollTop + viewport.clientHeight / 2 : 0
+    const normalizedZoom = Math.min(Math.max(nextZoom, 1), 4)
+    setZoom(normalizedZoom)
+    window.requestAnimationFrame(() => {
+      if (!viewport) return
+      const ratio = normalizedZoom / previousZoom
+      viewport.scrollLeft = centerX * ratio - viewport.clientWidth / 2
+      viewport.scrollTop = centerY * ratio - viewport.clientHeight / 2
+    })
+  }
+
+  return <main className="constellation-editor-page">
+    <header className="editor-header">
+      <div><p>HERRAMIENTA INTERNA · DESARROLLO</p><h1>Constellation Editor</h1></div>
+      <Link to="/">Volver al landing</Link>
+    </header>
+
+    <div className="editor-layout">
+      <aside className="editor-panel">
+        <section>
+          <h2>Referencia</h2>
+          <label className="editor-file-input">Cargar imagen<input type="file" accept="image/*" onChange={handleReferenceImage} /></label>
+          {referenceImage && <button type="button" className="editor-text-button" onClick={() => { setReferenceImage(null); setDetectedPoints([]); setDetectionMessage(null) }}>Quitar referencia</button>}
+          <label>Opacidad <output>{Math.round(referenceOpacity * 100)}%</output><input type="range" min="0" max="1" step=".05" value={referenceOpacity} onChange={(event) => setReferenceOpacity(Number(event.target.value))} /></label>
+          <div className="editor-detection-divider" />
+          <h3>Detección asistida</h3>
+          <label>Sensibilidad <output>{detectionSensitivity}%</output><input type="range" min="50" max="95" step="1" value={detectionSensitivity} onChange={(event) => setDetectionSensitivity(Number(event.target.value))} /></label>
+          <label>Radio de ajuste <output>{Math.round(detectionRadius * 100)}%</output><input type="range" min=".02" max=".1" step=".005" value={detectionRadius} onChange={(event) => setDetectionRadius(Number(event.target.value))} /></label>
+          <label>Máximo de puntos nuevos <output>{maximumAdditions}</output><input type="range" min="0" max="60" step="1" value={maximumAdditions} onChange={(event) => setMaximumAdditions(Number(event.target.value))} /></label>
+          <p className="editor-help">Sólo analiza puntos azules o cian; ignora blancos, rojos, verdes y otros colores.</p>
+          <button type="button" className="editor-detect-button" onClick={analyzeReference} disabled={!referenceImage || isDetecting}>{isDetecting ? 'Analizando imagen…' : 'Detectar puntos azul/cian'}</button>
+          {detectedPoints.length > 0 && <div className="editor-detection-result">
+            <span><i className="is-match" />{detectionPlan.matches.length} para ajustar</span>
+            <span><i className="is-new" />{detectionPlan.additions.length} para añadir</span>
+            <button type="button" className="editor-apply-detection" onClick={applyDetection} disabled={!detectionPlan.matches.length && !detectionPlan.additions.length}>Aplicar previsualización</button>
+            <button type="button" className="editor-text-button" onClick={() => { setDetectedPoints([]); setDetectionMessage(null) }}>Cancelar previsualización</button>
+          </div>}
+          {detectionUndo && <button type="button" className="editor-button" onClick={undoDetection}>Deshacer último ajuste automático</button>}
+          {detectionMessage && <p className="editor-detection-message" role="status">{detectionMessage}</p>}
+        </section>
+
+        <section>
+          <h2>Punto seleccionado</h2>
+          {selectedPoint ? <>
+            <code>{selectedPoint.id}</code>
+            <div className="editor-coordinate-row"><span>x {selectedPoint.x.toFixed(4)}</span><span>y {selectedPoint.y.toFixed(4)}</span></div>
+            <label>Tamaño <output>{selectedPoint.size.toFixed(1)}</output><input type="range" min=".6" max="5" step=".1" value={selectedPoint.size} onChange={(event) => updatePoint(selectedPoint.id, { size: Number(event.target.value) })} /></label>
+            <label>Grupo<select value={selectedPoint.group} onChange={(event) => updatePoint(selectedPoint.id, { group: event.target.value as ConstellationPointGroup })}>{GROUPS.map((group) => <option key={group} value={group}>{group}</option>)}</select></label>
+            <button type="button" className={connectionSourceId === selectedPoint.id ? 'editor-button is-active' : 'editor-button'} onClick={() => setConnectionSourceId((current) => current === selectedPoint.id ? null : selectedPoint.id)}>{connectionSourceId === selectedPoint.id ? 'Selecciona el destino…' : 'Conectar con otro punto'}</button>
+            {selectedConnections.length ? <div className="editor-disconnect-list">
+              <p>Conectado con</p>
+              {selectedConnections.map(({ neighborId }) => <button type="button" key={neighborId} aria-label={`Desconectar de ${neighborId}`} onClick={() => setConnections((current) => current.filter((connection) => !((connection.from === selectedPoint.id && connection.to === neighborId) || (connection.to === selectedPoint.id && connection.from === neighborId))))}>× <span>{neighborId}</span></button>)}
+              {selectedConnections.length > 1 && <button type="button" className="disconnect-all" onClick={() => setConnections((current) => current.filter((connection) => connection.from !== selectedPoint.id && connection.to !== selectedPoint.id))}>Desconectar de todos ({selectedConnections.length})</button>}
+            </div> : <p className="editor-help">Este punto no tiene conexiones.</p>}
+            <button type="button" className="editor-danger-button" onClick={deleteSelectedPoint}>Eliminar punto</button>
+          </> : <p className="editor-help">Selecciona un punto para editarlo. Haz clic sobre un espacio vacío para crear uno nuevo.</p>}
+        </section>
+
+        <section>
+          <h2>Conexiones <span>{connections.length}</span></h2>
+          <div className="editor-connection-list">{connections.map((connection, index) => <div key={`${connection.from}-${connection.to}-${index}`}><button type="button" onClick={() => { setSelectedId(connection.from); setConnectionSourceId(connection.from) }}>{connection.from} → {connection.to}</button><button type="button" aria-label={`Eliminar conexión ${connection.from} a ${connection.to}`} onClick={() => setConnections((current) => current.filter((_, connectionIndex) => connectionIndex !== index))}>×</button></div>)}</div>
+        </section>
+
+        <section>
+          <h2>Progreso</h2>
+          <div className={`editor-save-state${hasUnsavedChanges ? ' is-dirty' : ''}`}><span aria-hidden="true" />{hasUnsavedChanges ? 'Cambios sin guardar' : 'Todo guardado'}</div>
+          <button type="button" className="editor-save-button" onClick={saveProgress}>Guardar progreso</button>
+          {savedProgress && <>
+            <p className="editor-saved-at">Último guardado: {new Date(savedProgress.savedAt).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}</p>
+            <button type="button" className="editor-button" onClick={restoreProgress} disabled={!hasUnsavedChanges}>Restaurar último guardado</button>
+            <button type="button" className="editor-text-button" onClick={clearSavedProgress}>Eliminar progreso guardado</button>
+          </>}
+          {saveMessage && <p className="editor-save-message" role="status">{saveMessage}</p>}
+        </section>
+
+        <section>
+          <h2>Exportar</h2>
+          <p className="editor-help">Guarda tu progreso antes de descargar los archivos finales.</p>
+          <button type="button" className="editor-export-button" onClick={() => downloadTypeScript('constellationPoints.ts', pointFile(points))}>Descargar constellationPoints.ts</button>
+          <button type="button" className="editor-export-button" onClick={() => downloadTypeScript('constellationConnections.ts', connectionFile(connections))}>Descargar constellationConnections.ts</button>
+        </section>
+      </aside>
+
+      <section className="editor-workspace">
+        <div className="editor-toolbar">
+          <div className="editor-status"><span>{points.length} puntos</span><span>{connections.length} conexiones</span><span>Coordenadas 0–1</span></div>
+          <div className="editor-group-legend" aria-label="Colores de conexiones por grupo">
+            <span className="group-hair">Cabello</span><span className="group-face">Rostro</span><span className="group-feature">Facciones</span><span className="group-body">Cuerpo</span><span className="group-mixed">Mixta</span>
+          </div>
+          <div className="editor-zoom-controls" aria-label="Controles de zoom">
+            <button type="button" onClick={() => updateZoom(zoom - .25)} disabled={zoom === 1} aria-label="Alejar">−</button>
+            <label>Zoom <input type="range" min="1" max="4" step=".25" value={zoom} onChange={(event) => updateZoom(Number(event.target.value))} /><output>{Math.round(zoom * 100)}%</output></label>
+            <button type="button" onClick={() => updateZoom(zoom + .25)} disabled={zoom === 4} aria-label="Acercar">+</button>
+            <button type="button" className="editor-zoom-reset" onClick={() => updateZoom(1)} disabled={zoom === 1}>100%</button>
+          </div>
+        </div>
+        <div className="editor-stage-viewport" ref={viewportRef}>
+          <div className="editor-stage" style={{ width: `${zoom * 100}%` }}>
+            {referenceImage && <img src={referenceImage} alt="Referencia para trazar la constelación" style={{ opacity: referenceOpacity }} />}
+            <svg className={isPanning ? 'is-panning' : undefined} viewBox="0 0 1000 1389" preserveAspectRatio="none" onPointerDown={handleSurfacePointerDown} onPointerMove={handlePointerMove} onPointerUp={finishPointerGesture} onPointerCancel={cancelPointerGesture}>
+              <g className={`editor-connections${selectedPoint ? ' has-active-group' : ''}`} pointerEvents="none">{connections.map((connection, index) => {
+                const from = positions.get(connection.from)
+                const to = positions.get(connection.to)
+                if (!from || !to) return null
+                const group = from.group === to.group ? from.group : 'mixed'
+                const isActive = selectedPoint && group === selectedPoint.group
+                return <line key={`${connection.from}-${connection.to}-${index}`} className={`group-${group}${isActive ? ' is-active-group' : ''}`} x1={from.x * 1000} y1={from.y * 1389} x2={to.x * 1000} y2={to.y * 1389} />
+              })}</g>
+              <g className="editor-detected-points" pointerEvents="none">{detectedPoints.map((detected, index) => previewMatches.has(detected) || previewAdditions.has(detected) ? <circle key={index} cx={detected.x * 1000} cy={detected.y * 1389} r={previewAdditions.has(detected) ? 11 : 8} className={previewAdditions.has(detected) ? 'is-new' : 'is-match'} /> : null)}</g>
+              <g className="editor-points">{points.map((point) => <circle key={point.id} cx={point.x * 1000} cy={point.y * 1389} r={Math.max(point.size * 3.2, 5)} className={`${selectedId === point.id ? 'is-selected ' : ''}group-${point.group}`} onPointerDown={(event) => handlePointPointerDown(event, point.id)} onClick={(event) => event.stopPropagation()} />)}</g>
+            </svg>
+          </div>
+        </div>
+        <p className="editor-stage-help">Clic breve y soltar: crear punto · Mantener y arrastrar el fondo: desplazarse · Arrastrar un punto: moverlo · Supr/Backspace: eliminar · “Conectar”: elegir destino</p>
+      </section>
+    </div>
+  </main>
+}

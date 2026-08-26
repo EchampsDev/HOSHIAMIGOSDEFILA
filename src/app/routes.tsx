@@ -5,4 +5,7 @@ import { AboutPage } from '../pages/AboutPage'
 import { ContributePage } from '../pages/ContributePage'
 import { HomePage } from '../pages/HomePage'
 import { NotFoundPage } from '../pages/NotFoundPage'
-export function AppRoutes() { return <Routes><Route path="/" element={<HomePage />} /><Route path="/about" element={<AboutPage />} /><Route path="/contribute" element={<ContributePage />} /><Route path="/album" element={<AlbumPage />} /><Route path="/admin" element={<AdminPage />} /><Route path="*" element={<NotFoundPage />} /></Routes> }
+import { ConstellationEditorPage } from '../features/constellation-editor/ConstellationEditorPage'
+import { AlbumEditorPage } from '../features/album/editor/AlbumEditorPage'
+import { ExperienceHubPage } from '../pages/ExperienceHubPage'
+export function AppRoutes() { return <Routes><Route path="/" element={<HomePage />} /><Route path="/explorar" element={<ExperienceHubPage />} /><Route path="/admin/experiencias" element={import.meta.env.DEV ? <ExperienceHubPage admin /> : <NotFoundPage />} /><Route path="/about" element={<AboutPage />} /><Route path="/contribute" element={<ContributePage />} /><Route path="/album" element={<AlbumPage />} /><Route path="/admin" element={<AdminPage />} /><Route path="/constellation-editor" element={import.meta.env.DEV ? <ConstellationEditorPage /> : <NotFoundPage />} /><Route path="/dev/album-editor" element={import.meta.env.DEV ? <AlbumEditorPage /> : <NotFoundPage />} /><Route path="*" element={<NotFoundPage />} /></Routes> }

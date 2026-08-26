@@ -6,6 +6,7 @@
 - **M3 — Firebase:** autenticación y persistencia con reglas mínimas.
 - **M4 — Moderation:** panel de revisión y cambios de estado.
 - **M5 — Album:** páginas y vista de lectura.
+- **M5.1 — Libreta digital:** lector de 100 hojas, editor interno, persistencia local y contrato de repositorio. ✅
 - **M6 — Placeholders:** representación de contenido físico privado.
 - **M7 — Reveal:** cuenta regresiva e introducción opcional.
 - **M8 — Layout engine:** colocación inicial por plantillas.
