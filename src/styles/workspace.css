@@ -1,0 +1,11 @@
+.workspace-page { min-height: 100vh; padding: clamp(28px, 6vw, 88px); color: #f8efe3; background: radial-gradient(circle at 80% 0%, #24334e 0, #0b101d 42%, #080a10 100%); font-family: 'DM Mono', monospace; }
+.workspace-page header { max-width: 760px; margin-bottom: 40px; }
+.workspace-page header p { margin: 0 0 10px; color: #b2c9ff; font-size: .7rem; letter-spacing: .17em; }
+.workspace-page h1 { margin: 0 0 12px; font: 500 clamp(2.5rem, 8vw, 5.5rem)/.94 'DM Serif Display', serif; }
+.workspace-page header span, .workspace-page p, .workspace-page li { color: rgba(248,239,227,.73); line-height: 1.7; }
+.workspace-links { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; max-width: 1100px; }
+.workspace-links a { min-height: 150px; padding: 23px; display: grid; gap: 10px; align-content: start; text-decoration: none; color: inherit; background: rgba(255,255,255,.06); border: 1px solid rgba(197,220,255,.24); border-radius: 16px; transition: transform .2s, background .2s; }
+.workspace-links a:hover { transform: translateY(-3px); background: rgba(137,180,255,.16); }
+.workspace-links strong { font: 500 1.28rem 'DM Serif Display', serif; }.workspace-links span { color: rgba(248,239,227,.68); font-size: .76rem; line-height: 1.5; }
+.workspace-setup { max-width: 760px; margin-top: 40px; padding: 24px; background: rgba(2,5,12,.42); border-left: 2px solid #8eb6ff; }.workspace-setup h2 { margin: 0; font: 500 1.7rem 'DM Serif Display', serif; }.workspace-setup code { color: #d0e1ff; }.workspace-note { font-size: .75rem; }.workspace-back { display: inline-block; margin-top: 34px; color: #e5edf9; }
+@media (max-width: 760px) { .workspace-links { grid-template-columns: 1fr; } }

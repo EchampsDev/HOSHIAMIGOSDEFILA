@@ -4,6 +4,7 @@ import { constellationPoints } from '../data/constellationPoints'
 import { readConstellationScene, type ConstellationScene } from '../data/constellationScene'
 import { useConstellationAnimation } from '../hooks/useConstellationAnimation'
 import { FourPointStar } from './FourPointStar'
+import { constellationRepository } from '../../constellation-editor/repositories/ConstellationRepository'
 
 const clamp = (value: number) => Math.min(Math.max(value, 0), 1)
 const easeInOutCubic = (value: number) => value < .5 ? 4 * value ** 3 : 1 - (-2 * value + 2) ** 3 / 2
@@ -26,6 +27,9 @@ export function ConstellationHero() {
   const [hasEntered, setHasEntered] = useState(false)
   const [layoutVersion, setLayoutVersion] = useState(0)
   const [scene, setScene] = useState<ConstellationScene>(readConstellationScene)
+  const [points, setPoints] = useState(constellationPoints)
+  const [connections, setConnections] = useState(constellationConnections)
+  const [referenceImageUrl, setReferenceImageUrl] = useState<string | undefined>()
   const { progress, stage } = useConstellationAnimation(hasEntered)
 
   useEffect(() => {
@@ -38,6 +42,17 @@ export function ConstellationHero() {
     }, { threshold: .18 })
     observer.observe(host)
     return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (!constellationRepository.usesFirebase) return
+    return constellationRepository.subscribe((progress) => {
+      if (!progress) return
+      setPoints(progress.points)
+      setConnections(progress.connections)
+      setScene(progress.scene)
+      setReferenceImageUrl(progress.referenceImageUrl)
+    }, () => undefined)
   }, [])
 
   useEffect(() => {
@@ -79,7 +94,7 @@ export function ConstellationHero() {
     const offsetY = (height - sceneHeight) / 2
     const positions = new Map<string, { x: number; y: number; alpha: number }>()
 
-    constellationPoints.forEach((point) => {
+    points.forEach((point) => {
       const start = seededPosition(point.id)
       const movement = pointProgress(progress, point.delay)
       positions.set(point.id, {
@@ -90,7 +105,7 @@ export function ConstellationHero() {
     })
 
     context.lineCap = 'round'
-    constellationConnections.forEach((connection) => {
+    connections.forEach((connection) => {
       const from = positions.get(connection.from)
       const to = positions.get(connection.to)
       if (!from || !to) return
@@ -103,7 +118,7 @@ export function ConstellationHero() {
       context.stroke()
     })
 
-    constellationPoints.forEach((point) => {
+    points.forEach((point) => {
       const position = positions.get(point.id)
       if (!position) return
       const radius = point.size * ratio
@@ -122,12 +137,10 @@ export function ConstellationHero() {
       context.arc(position.x, position.y, Math.max(radius * .58, .9), 0, Math.PI * 2)
       context.fill()
     })
-  }, [layoutVersion, progress])
+  }, [connections, layoutVersion, points, progress])
 
   return <div ref={hostRef} className={`constellation-hero is-${stage.toLowerCase()}`} aria-hidden="true">
-    <div className="constellation-reference-layer" style={{ '--reference-x': `${scene.referenceX}%`, '--reference-y': `${scene.referenceY}%` } as CSSProperties}>
-      <img src="/images/constellation-reference.jpg" alt="" />
-    </div>
+    {referenceImageUrl && <div className="constellation-reference-layer" style={{ '--reference-x': `${scene.referenceX}%`, '--reference-y': `${scene.referenceY}%` } as CSSProperties}><img src={referenceImageUrl} alt="" /></div>}
     <canvas ref={canvasRef} />
     <FourPointStar active={stage === 'REVEAL' || stage === 'RESTING'} />
   </div>

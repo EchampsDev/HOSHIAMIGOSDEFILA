@@ -2,7 +2,12 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // M1 does not upload assets. Future contribution uploads must be validated by a server-side flow.
+    function signedIn() { return request.auth != null; }
+    function isAdmin() { return signedIn() && firestore.exists(/databases/(default)/documents/admins/$(request.auth.uid)); }
+    match /constellation/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && request.resource.size < 10 * 1024 * 1024 && request.resource.contentType.matches('image/.*');
+    }
     match /{allPaths=**} {
       allow read, write: if false;
     }

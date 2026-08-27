@@ -3,19 +3,16 @@ import { Link } from 'react-router-dom'
 import { constellationConnections, type ConstellationConnection } from '../landing/data/constellationConnections'
 import { constellationPoints, type ConstellationPoint, type ConstellationPointGroup } from '../landing/data/constellationPoints'
 import { CONSTELLATION_SCENE_STORAGE_KEY, defaultConstellationScene, readConstellationScene, type ConstellationScene } from '../landing/data/constellationScene'
+import { constellationRepository, type ConstellationProgress } from './repositories/ConstellationRepository'
+import { constellationReferenceRepository } from './repositories/ConstellationReferenceRepository'
+import { useAdminSession } from '../access/useAdminSession'
 
 const GROUPS: ConstellationPointGroup[] = ['hair', 'face', 'feature', 'body']
 const STORAGE_KEY = 'brattypolitan.constellation-editor.v1'
 const clamp = (value: number) => Math.min(Math.max(value, 0), 1)
 const roundCoordinate = (value: number) => Number(clamp(value).toFixed(4))
 
-type SavedProgress = {
-  version: 1
-  savedAt: string
-  points: ConstellationPoint[]
-  connections: ConstellationConnection[]
-  scene?: ConstellationScene
-}
+type SavedProgress = ConstellationProgress
 
 type DetectedPoint = {
   x: number
@@ -232,12 +229,66 @@ function downloadTypeScript(filename: string, content: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
+function coordinateFile(points: ConstellationPoint[], connections: ConstellationConnection[], scene: ConstellationScene) {
+  const ids = new Map(points.map((point, index) => [point.id, String(index + 1).padStart(4, '0')]))
+  const rows = points.map((point, index) => `${String(index + 1).padStart(4, '0')} | ${point.x.toFixed(6)} | ${point.y.toFixed(6)} | ${Math.round((point.brightness ?? .9) * 255)}`)
+  const links = connections.flatMap((connection) => {
+    const from = ids.get(connection.from); const to = ids.get(connection.to)
+    return from && to ? [`${from} | ${to} | ${connection.opacity ?? .28} | ${connection.delay ?? 0}`] : []
+  })
+  return `COORDENADAS DE LA SILUETA - HOSHIAMIGOS DE FILA\nFORMATO: ID | X_norm | Y_norm | brillo_0_255\n\nPUNTOS\n${rows.join('\n')}\n\nCONEXIONES\nFORMATO: desde | hasta | opacidad | retraso\n${links.join('\n')}\n\nESCENA\nreferenceX=${scene.referenceX}\nreferenceY=${scene.referenceY}\n`
+}
+
+type ImportedCoordinates = { points: ConstellationPoint[]; connections: ConstellationConnection[]; scene?: ConstellationScene }
+
+function parseCoordinateFile(source: string): ImportedCoordinates {
+  const points: ConstellationPoint[] = []
+  const connections: ConstellationConnection[] = []
+  const importedIds = new Map<string, string>()
+  let inConnections = false
+  let referenceX: number | undefined
+  let referenceY: number | undefined
+  source.split(/\r?\n/).forEach((line) => {
+    if (/^\s*CONEXIONES\s*$/i.test(line)) { inConnections = true; return }
+    const sceneMatch = line.match(/^\s*reference([XY])\s*=\s*([\d.]+)\s*$/i)
+    if (sceneMatch) {
+      if (sceneMatch[1].toUpperCase() === 'X') referenceX = Number(sceneMatch[2])
+      else referenceY = Number(sceneMatch[2])
+      return
+    }
+    if (inConnections) {
+      const match = line.match(/^\s*([^|\s]+)\s*\|\s*([^|\s]+)\s*\|\s*([\d.]+)(?:\s*\|\s*([\d.]+))?\s*$/)
+      if (match) connections.push({ from: match[1], to: match[2], opacity: Number(match[3]), delay: Number(match[4] ?? 0) })
+      return
+    }
+    const raster = line.match(/^\s*(\d+)\s*\|\s*\d+(?:\.\d+)?\s*\|\s*\d+(?:\.\d+)?\s*\|\s*([01](?:\.\d+)?)\s*\|\s*([01](?:\.\d+)?)\s*\|\s*(\d{1,3})\s*$/)
+    const portable = line.match(/^\s*(\d+)\s*\|\s*([01](?:\.\d+)?)\s*\|\s*([01](?:\.\d+)?)\s*\|\s*(\d{1,3})\s*$/)
+    const match = raster ?? portable
+    if (!match) return
+    const x = Number(match[2]); const y = Number(match[3]); const brightness = Number(match[4])
+    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(brightness)) return
+    const id = `import-${match[1]}`
+    importedIds.set(match[1], id)
+    points.push({ id, x: roundCoordinate(x), y: roundCoordinate(y), size: Number((1 + brightness / 255 * 2.2).toFixed(1)), brightness: Number((brightness / 255).toFixed(2)), delay: 0, group: 'feature' })
+  })
+  if (!points.length) throw new Error('El archivo no contiene filas de coordenadas válidas.')
+  const validConnections = connections.flatMap((connection) => {
+    const from = importedIds.get(connection.from); const to = importedIds.get(connection.to)
+    return from && to ? [{ ...connection, from, to }] : []
+  })
+  const scene = Number.isFinite(referenceX) && Number.isFinite(referenceY) ? { referenceX: referenceX!, referenceY: referenceY! } : undefined
+  return { points, connections: validConnections, scene }
+}
+
 export function ConstellationEditorPage() {
+  const session = useAdminSession()
   const [points, setPoints] = useState<ConstellationPoint[]>(() => constellationPoints.map((point) => ({ ...point })))
   const [connections, setConnections] = useState<ConstellationConnection[]>(() => constellationConnections.map((connection) => ({ ...connection })))
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [connectionSourceId, setConnectionSourceId] = useState<string | null>(null)
   const [referenceImage, setReferenceImage] = useState<string | null>(null)
+  const [referenceFile, setReferenceFile] = useState<File | null>(null)
+  const [referenceImageUrl, setReferenceImageUrl] = useState<string | undefined>()
   const [scene, setScene] = useState<ConstellationScene>(readConstellationScene)
   const [zoom, setZoom] = useState(1)
   const [savedProgress, setSavedProgress] = useState<SavedProgress | null>(readSavedProgress)
@@ -250,9 +301,22 @@ export function ConstellationEditorPage() {
   const [detectionMessage, setDetectionMessage] = useState<string | null>(null)
   const [detectionUndo, setDetectionUndo] = useState<{ points: ConstellationPoint[]; connections: ConstellationConnection[] } | null>(null)
   const [isPanning, setIsPanning] = useState(false)
+  const [importMessage, setImportMessage] = useState<string | null>(null)
   const draggingId = useRef<string | null>(null)
   const panGesture = useRef<PanGesture | null>(null)
   const viewportRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (!constellationRepository.usesFirebase) return
+    return constellationRepository.subscribe((progress) => {
+      if (!progress) return
+      setPoints(progress.points.map((point) => ({ ...point })))
+      setConnections(progress.connections.map((connection) => ({ ...connection })))
+      setScene(progress.scene ?? defaultConstellationScene)
+      setReferenceImageUrl(progress.referenceImageUrl)
+      setSavedProgress(progress)
+    }, () => setSaveMessage('No fue posible leer la silueta guardada en Firebase.'))
+  }, [])
 
   const selectedPoint = points.find((point) => point.id === selectedId) ?? null
   const selectedConnections = useMemo(() => selectedId ? connections.flatMap((connection) => {
@@ -481,21 +545,26 @@ export function ConstellationEditorPage() {
     setDetectionMessage('Último ajuste automático deshecho.')
   }
 
-  const saveProgress = () => {
+  const saveProgress = async () => {
     const progress: SavedProgress = {
       version: 1,
       savedAt: new Date().toISOString(),
       points: points.map((point) => ({ ...point })),
       connections: connections.map((connection) => ({ ...connection })),
       scene,
+      referenceImageUrl,
     }
     try {
+      if (referenceFile && constellationReferenceRepository.usesFirebase) progress.referenceImageUrl = await constellationReferenceRepository.upload(referenceFile)
+      if (constellationRepository.usesFirebase) await constellationRepository.save(progress)
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(progress))
       window.localStorage.setItem(CONSTELLATION_SCENE_STORAGE_KEY, JSON.stringify(scene))
       setSavedProgress(progress)
-      setSaveMessage('Progreso guardado en este navegador.')
+      setReferenceImageUrl(progress.referenceImageUrl)
+      setReferenceFile(null)
+      setSaveMessage(constellationRepository.usesFirebase ? 'Silueta guardada en Firebase.' : 'Progreso guardado en este navegador.')
     } catch {
-      setSaveMessage('No fue posible guardar el progreso en este navegador.')
+      setSaveMessage(constellationRepository.usesFirebase ? 'No se pudo guardar. Inicia sesión con la cuenta administradora y revisa sus permisos.' : 'No fue posible guardar el progreso en este navegador.')
     }
   }
 
@@ -532,23 +601,40 @@ export function ConstellationEditorPage() {
     })
   }
 
+  const importCoordinates = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    setReferenceFile(file)
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        const imported = parseCoordinateFile(String(reader.result ?? ''))
+        if (!window.confirm(`Se reemplazarán ${points.length.toLocaleString('es-MX')} puntos por ${imported.points.length.toLocaleString('es-MX')} puntos del archivo. ¿Continuar?`)) return
+        setPoints(imported.points); setConnections(imported.connections); setScene(imported.scene ?? scene); setSelectedId(null); setConnectionSourceId(null)
+        setImportMessage(`${imported.points.length.toLocaleString('es-MX')} puntos importados${imported.connections.length ? ` y ${imported.connections.length.toLocaleString('es-MX')} conexiones reconstruidas` : '. El archivo no incluye conexiones'}.`)
+      } catch (error) { setImportMessage(error instanceof Error ? error.message : 'No fue posible leer el archivo.') }
+    }
+    reader.readAsText(file)
+    event.target.value = ''
+  }
+
   return <main className="constellation-editor-page">
     <header className="editor-header">
       <div><p>HERRAMIENTA INTERNA · DESARROLLO</p><h1>Constellation Editor</h1></div>
-      <Link to="/">Volver al landing</Link>
+      <div>{constellationRepository.usesFirebase && (session.user ? <button type="button" onClick={() => void session.signOut()}>Cerrar sesión</button> : <button type="button" onClick={() => void session.signIn()}>Iniciar sesión con Google</button>)}<Link to="/">Volver al landing</Link></div>
     </header>
 
     <div className="editor-layout">
       <aside className="editor-panel">
         <section>
           <h2>Referencia del landing</h2>
-          <p className="editor-help">Esta imagen aparece detrás de la silueta al terminar la animación. Ajusta únicamente su ubicación.</p>
+          <p className="editor-help">Añade una imagen como referencia visual del landing. Se publicará al guardar con la cuenta administradora.</p>
           <label>Altura <output>{Math.round(scene.referenceY)}%</output><input type="range" min="20" max="80" step="1" value={scene.referenceY} onChange={(event) => updateScene({ referenceY: Number(event.target.value) })} /></label>
           <label>Posición horizontal <output>{Math.round(scene.referenceX)}%</output><input type="range" min="20" max="80" step="1" value={scene.referenceX} onChange={(event) => updateScene({ referenceX: Number(event.target.value) })} /></label>
           <div className="editor-detection-divider" />
           <h3>Referencia para trazar</h3>
           <label className="editor-file-input">Cargar imagen<input type="file" accept="image/*" onChange={handleReferenceImage} /></label>
-          {referenceImage && <button type="button" className="editor-text-button" onClick={() => { setReferenceImage(null); setDetectedPoints([]); setDetectionMessage(null) }}>Quitar referencia</button>}
+          {referenceImage && <button type="button" className="editor-text-button" onClick={() => { setReferenceImage(null); setReferenceFile(null); setDetectedPoints([]); setDetectionMessage(null) }}>Quitar referencia</button>}
           <div className="editor-detection-divider" />
           <h3>Detección asistida</h3>
           <label>Sensibilidad <output>{detectionSensitivity}%</output><input type="range" min="50" max="95" step="1" value={detectionSensitivity} onChange={(event) => setDetectionSensitivity(Number(event.target.value))} /></label>
@@ -591,13 +677,22 @@ export function ConstellationEditorPage() {
         <section>
           <h2>Progreso</h2>
           <div className={`editor-save-state${hasUnsavedChanges ? ' is-dirty' : ''}`}><span aria-hidden="true" />{hasUnsavedChanges ? 'Cambios sin guardar' : 'Todo guardado'}</div>
-          <button type="button" className="editor-save-button" onClick={saveProgress}>Guardar progreso</button>
+          {constellationRepository.usesFirebase && <p className="editor-help">{session.user ? `Sesión: ${session.user.email ?? session.user.uid}` : 'Inicia sesión con la cuenta administradora para publicar la silueta.'}{session.error ? ` ${session.error}` : ''}</p>}
+          <button type="button" className="editor-save-button" onClick={() => void saveProgress()}>Guardar progreso</button>
           {savedProgress && <>
             <p className="editor-saved-at">Último guardado: {new Date(savedProgress.savedAt).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}</p>
             <button type="button" className="editor-button" onClick={restoreProgress} disabled={!hasUnsavedChanges}>Restaurar último guardado</button>
             <button type="button" className="editor-text-button" onClick={clearSavedProgress}>Eliminar progreso guardado</button>
           </>}
           {saveMessage && <p className="editor-save-message" role="status">{saveMessage}</p>}
+        </section>
+
+        <section>
+          <h2>Coordenadas</h2>
+          <p className="editor-help">Importa el formato `ID | X_px | Y_px | X_norm | Y_norm | brillo_0_255`.</p>
+          <label className="editor-file-input">Importar .txt<input type="file" accept=".txt,text/plain" onChange={importCoordinates} /></label>
+          {importMessage && <p className="editor-save-message" role="status">{importMessage}</p>}
+          <button type="button" className="editor-export-button" onClick={() => downloadTypeScript('silueta-coordenadas.txt', coordinateFile(points, connections, scene))}>Exportar .txt</button>
         </section>
 
         <section>
