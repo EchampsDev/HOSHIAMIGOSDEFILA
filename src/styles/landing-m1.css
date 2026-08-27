@@ -249,6 +249,27 @@
   margin: 34px auto 10px;
 }
 
+.development-shortcuts {
+  width: min(100%, 720px);
+  margin: 56px auto 8px;
+  padding: 16px 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 16px;
+  border-top: 1px solid rgba(244, 24, 55, .32);
+  border-bottom: 1px solid rgba(244, 24, 55, .18);
+  font-family: 'DM Mono', monospace;
+  font-size: .62rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.development-shortcuts p { margin: 0 5px 0 0; color: #f41837; }
+.development-shortcuts a { color: rgba(255, 255, 255, .78); text-decoration: none; border-bottom: 1px solid transparent; }
+.development-shortcuts a:hover { color: #fff; border-color: #f41837; }
+
 @keyframes ambient-twinkle {
   from { opacity: .18; }
   to { opacity: .72; }

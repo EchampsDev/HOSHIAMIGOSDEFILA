@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { FourPointMark } from '../components/FourPointMark'
+import { hasDevelopmentAccess } from '../features/access/developmentAccess'
 import { Layout } from '../components/Layout'
 import { ConstellationHero } from '../features/landing/components/ConstellationHero'
 import { ExperienceCountdown } from '../features/landing/components/ExperienceCountdown'
@@ -39,6 +40,13 @@ export function HomePage() {
       <nav className="actions landing-actions reveal-actions" data-scroll-reveal aria-label="Explorar Brattypolitan Experience">
         <Link className="button primary" to="/album">Ver estado de la libreta</Link>
       </nav>
+
+      {hasDevelopmentAccess() && <nav className="development-shortcuts reveal-actions" data-scroll-reveal aria-label="Accesos de desarrollo">
+        <p>DESARROLLO LOCAL</p>
+        <Link to="/admin/experiencias">Centro admin</Link>
+        <Link to="/constellation-editor">Editor constelación</Link>
+        <Link to="/dev/album-editor">Editor libreta</Link>
+      </nav>}
     </div>
   </Layout>
 }
