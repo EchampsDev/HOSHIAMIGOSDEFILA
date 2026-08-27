@@ -1,0 +1,46 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isAdmin() {
+      return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // Admin roles are bootstrapped from the Firebase console or Admin SDK only.
+    match /admins/{userId} {
+      allow read, write: if false;
+    }
+
+    match /siteConfig/{document} {
+      allow get: if true;
+      allow list: if false;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /pages/{pageId} {
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /elements/{elementId} {
+      allow get, list: if resource.data.moderationStatus == 'APPROVED'
+        && resource.data.consent.contentVisibility == 'PUBLIC';
+      allow create: if signedIn()
+        && request.resource.data.moderationStatus == 'PENDING'
+        && request.resource.data.participantId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // Reserved for the future comments feature. Public visitors can only read approved comments.
+    match /comments/{commentId} {
+      allow get, list: if resource.data.moderationStatus == 'APPROVED';
+      allow create: if signedIn()
+        && request.resource.data.moderationStatus == 'PENDING'
+        && request.resource.data.authorId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    match /{document=**} { allow read, write: if isAdmin(); }
+  }
+}

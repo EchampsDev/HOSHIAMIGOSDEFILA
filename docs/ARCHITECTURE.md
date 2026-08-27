@@ -6,6 +6,8 @@ La interfaz no debe importar Firestore directamente. Los repositorios futuros vi
 
 Firebase se inicializa únicamente cuando existen las variables públicas requeridas. M0 no lee ni escribe datos.
 
+La configuración de despliegue vive en `firebase.json`. Las reglas de Firestore y Storage son archivos versionados y se despliegan explícitamente; no deben editarse solo desde la consola.
+
 M1 añade `src/features/landing` y separa cuatro responsabilidades: estrellas ambientales, puntos normalizados, conexiones y ciclo de animación. La constelación se dibuja en Canvas 2D con `requestAnimationFrame`; la densidad de píxeles se limita a 2x y el bucle termina al alcanzar el estado `RESTING`.
 
 La geometría vive exclusivamente en `constellationPoints.ts` y `constellationConnections.ts`. Ambos datasets pueden sustituirse sin cambiar el motor ni la presentación. La estrella roja es una capa DOM independiente y `prefers-reduced-motion` entrega directamente la composición final.
