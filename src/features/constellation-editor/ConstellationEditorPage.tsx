@@ -236,7 +236,7 @@ function coordinateFile(points: ConstellationPoint[], connections: Constellation
     const from = ids.get(connection.from); const to = ids.get(connection.to)
     return from && to ? [`${from} | ${to} | ${connection.opacity ?? .28} | ${connection.delay ?? 0}`] : []
   })
-  return `COORDENADAS DE LA SILUETA - HOSHIAMIGOS DE FILA\nFORMATO: ID | X_norm | Y_norm | brillo_0_255\n\nPUNTOS\n${rows.join('\n')}\n\nCONEXIONES\nFORMATO: desde | hasta | opacidad | retraso\n${links.join('\n')}\n\nESCENA\nreferenceX=${scene.referenceX}\nreferenceY=${scene.referenceY}\n`
+  return `COORDENADAS DE LA SILUETA - HOSHIAMIGOS DE FILA\nFORMATO: ID | X_norm | Y_norm | brillo_0_255\n\nPUNTOS\n${rows.join('\n')}\n\nCONEXIONES\nFORMATO: desde | hasta | opacidad | retraso\n${links.join('\n')}\n\nESCENA\nreferenceX=${scene.referenceX}\nreferenceY=${scene.referenceY}\nstarX=${scene.starX}\nstarY=${scene.starY}\nstarScale=${scene.starScale}\nstarIntensity=${scene.starIntensity}\n`
 }
 
 type ImportedCoordinates = { points: ConstellationPoint[]; connections: ConstellationConnection[]; scene?: ConstellationScene }
@@ -246,14 +246,12 @@ function parseCoordinateFile(source: string): ImportedCoordinates {
   const connections: ConstellationConnection[] = []
   const importedIds = new Map<string, string>()
   let inConnections = false
-  let referenceX: number | undefined
-  let referenceY: number | undefined
+  const sceneValues: Partial<ConstellationScene> = {}
   source.split(/\r?\n/).forEach((line) => {
     if (/^\s*CONEXIONES\s*$/i.test(line)) { inConnections = true; return }
-    const sceneMatch = line.match(/^\s*reference([XY])\s*=\s*([\d.]+)\s*$/i)
+    const sceneMatch = line.match(/^\s*(reference[XY]|starX|starY|starScale|starIntensity)\s*=\s*([\d.]+)\s*$/i)
     if (sceneMatch) {
-      if (sceneMatch[1].toUpperCase() === 'X') referenceX = Number(sceneMatch[2])
-      else referenceY = Number(sceneMatch[2])
+      sceneValues[sceneMatch[1] as keyof ConstellationScene] = Number(sceneMatch[2])
       return
     }
     if (inConnections) {
@@ -276,7 +274,7 @@ function parseCoordinateFile(source: string): ImportedCoordinates {
     const from = importedIds.get(connection.from); const to = importedIds.get(connection.to)
     return from && to ? [{ ...connection, from, to }] : []
   })
-  const scene = Number.isFinite(referenceX) && Number.isFinite(referenceY) ? { referenceX: referenceX!, referenceY: referenceY! } : undefined
+  const scene = Object.keys(sceneValues).length ? { ...defaultConstellationScene, ...sceneValues } : undefined
   return { points, connections: validConnections, scene }
 }
 
@@ -312,7 +310,7 @@ export function ConstellationEditorPage() {
       if (!progress) return
       setPoints(progress.points.map((point) => ({ ...point })))
       setConnections(progress.connections.map((connection) => ({ ...connection })))
-      setScene(progress.scene ?? defaultConstellationScene)
+      setScene({ ...defaultConstellationScene, ...progress.scene })
       setReferenceImageUrl(progress.referenceImageUrl)
       setSavedProgress(progress)
     }, () => setSaveMessage('No fue posible leer la silueta guardada en Firebase.'))
@@ -572,8 +570,9 @@ export function ConstellationEditorPage() {
     if (!savedProgress) return
     setPoints(savedProgress.points.map((point) => ({ ...point })))
     setConnections(savedProgress.connections.map((connection) => ({ ...connection })))
-    setScene(savedProgress.scene ?? defaultConstellationScene)
-    window.localStorage.setItem(CONSTELLATION_SCENE_STORAGE_KEY, JSON.stringify(savedProgress.scene ?? defaultConstellationScene))
+    const restoredScene = { ...defaultConstellationScene, ...savedProgress.scene }
+    setScene(restoredScene)
+    window.localStorage.setItem(CONSTELLATION_SCENE_STORAGE_KEY, JSON.stringify(restoredScene))
     setSelectedId(null)
     setConnectionSourceId(null)
     setSaveMessage('Último progreso restaurado.')
@@ -631,6 +630,12 @@ export function ConstellationEditorPage() {
           <p className="editor-help">Añade una imagen como referencia visual del landing. Se publicará al guardar con la cuenta administradora.</p>
           <label>Altura <output>{Math.round(scene.referenceY)}%</output><input type="range" min="20" max="80" step="1" value={scene.referenceY} onChange={(event) => updateScene({ referenceY: Number(event.target.value) })} /></label>
           <label>Posición horizontal <output>{Math.round(scene.referenceX)}%</output><input type="range" min="20" max="80" step="1" value={scene.referenceX} onChange={(event) => updateScene({ referenceX: Number(event.target.value) })} /></label>
+          <div className="editor-detection-divider" />
+          <h3>Estrella roja</h3>
+          <label>Altura <output>{Math.round(scene.starY)}%</output><input type="range" min="5" max="85" step="1" value={scene.starY} onChange={(event) => updateScene({ starY: Number(event.target.value) })} /></label>
+          <label>Posición horizontal <output>{Math.round(scene.starX)}%</output><input type="range" min="5" max="95" step="1" value={scene.starX} onChange={(event) => updateScene({ starX: Number(event.target.value) })} /></label>
+          <label>Escala <output>{scene.starScale.toFixed(1)}×</output><input type="range" min=".4" max="2.4" step=".1" value={scene.starScale} onChange={(event) => updateScene({ starScale: Number(event.target.value) })} /></label>
+          <label>Intensidad <output>{Math.round(scene.starIntensity * 100)}%</output><input type="range" min=".3" max="2" step=".1" value={scene.starIntensity} onChange={(event) => updateScene({ starIntensity: Number(event.target.value) })} /></label>
           <div className="editor-detection-divider" />
           <h3>Referencia para trazar</h3>
           <label className="editor-file-input">Cargar imagen<input type="file" accept="image/*" onChange={handleReferenceImage} /></label>

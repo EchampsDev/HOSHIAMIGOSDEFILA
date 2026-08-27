@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { constellationConnections } from '../data/constellationConnections'
 import { constellationPoints } from '../data/constellationPoints'
-import { readConstellationScene, type ConstellationScene } from '../data/constellationScene'
+import { defaultConstellationScene, readConstellationScene, type ConstellationScene } from '../data/constellationScene'
 import { useConstellationAnimation } from '../hooks/useConstellationAnimation'
 import { FourPointStar } from './FourPointStar'
 import { constellationRepository } from '../../constellation-editor/repositories/ConstellationRepository'
@@ -50,7 +50,7 @@ export function ConstellationHero() {
       if (!progress) return
       setPoints(progress.points)
       setConnections(progress.connections)
-      setScene(progress.scene)
+      setScene({ ...defaultConstellationScene, ...progress.scene })
       setReferenceImageUrl(progress.referenceImageUrl)
     }, () => undefined)
   }, [])
@@ -142,6 +142,6 @@ export function ConstellationHero() {
   return <div ref={hostRef} className={`constellation-hero is-${stage.toLowerCase()}`} aria-hidden="true">
     {referenceImageUrl && <div className="constellation-reference-layer" style={{ '--reference-x': `${scene.referenceX}%`, '--reference-y': `${scene.referenceY}%` } as CSSProperties}><img src={referenceImageUrl} alt="" /></div>}
     <canvas ref={canvasRef} />
-    <FourPointStar active={stage === 'REVEAL' || stage === 'RESTING'} />
+    <FourPointStar active={stage === 'REVEAL' || stage === 'RESTING'} scene={scene} />
   </div>
 }

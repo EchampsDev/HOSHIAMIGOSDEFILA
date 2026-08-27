@@ -162,7 +162,7 @@
   position: absolute;
   inset: -12px;
   border-radius: 50%;
-  background: rgba(244, 24, 55, .22);
+  background: rgba(244, 24, 55, calc(.22 * var(--star-intensity, 1)));
   filter: blur(12px);
 }
 
@@ -172,7 +172,7 @@
   background: #f41837;
   -webkit-mask: var(--four-point-mask) center / 100% 100% no-repeat;
   mask: var(--four-point-mask) center / 100% 100% no-repeat;
-  filter: drop-shadow(0 0 5px rgba(244, 24, 55, .88));
+  filter: brightness(var(--star-intensity, 1)) drop-shadow(0 0 calc(5px * var(--star-intensity, 1)) rgba(244, 24, 55, .88));
 }
 
 .four-point-star.is-active {
