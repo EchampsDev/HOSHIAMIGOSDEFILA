@@ -10,14 +10,14 @@ export function useConstellationAnimation(active = true) {
     if (reducedMotion || !active) return
 
     let frame = 0
-    const duration = 3200
-    const idleDuration = 180
+    const duration = 5200
+    const idleDuration = 260
     const startedAt = performance.now()
     const tick = (now: number) => {
       const elapsed = now - startedAt
       const next = Math.min(Math.max((elapsed - idleDuration) / duration, 0), 1)
       setProgress(next)
-      setStage(elapsed < idleDuration ? 'IDLE' : next < .76 ? 'FORMING' : next < 1 ? 'REVEAL' : 'RESTING')
+      setStage(elapsed < idleDuration ? 'IDLE' : next < .93 ? 'FORMING' : next < 1 ? 'REVEAL' : 'RESTING')
       if (next < 1) frame = requestAnimationFrame(tick)
     }
     frame = requestAnimationFrame(tick)

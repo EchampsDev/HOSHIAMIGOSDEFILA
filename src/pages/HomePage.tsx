@@ -8,9 +8,11 @@ import { ExperienceCountdown } from '../features/landing/components/ExperienceCo
 import { OpeningStar } from '../features/landing/components/OpeningStar'
 import { StarfieldBackground } from '../features/landing/components/StarfieldBackground'
 import { useScrollReveal } from '../features/landing/hooks/useScrollReveal'
+import { usePublicAlbumAccess } from '../features/album/hooks/usePublicAlbumAccess'
 
 export function HomePage() {
   const landingRef = useRef<HTMLDivElement>(null)
+  const albumAccess = usePublicAlbumAccess()
   useScrollReveal(landingRef)
 
   return <Layout>
@@ -41,7 +43,7 @@ export function HomePage() {
       <nav className="actions landing-actions reveal-actions" data-scroll-reveal aria-label="Explorar Brattypolitan Experience">
         <a className="button whatsapp-action" href="https://wa.me/525659229006?text=Hola%2C%20quiero%20dejar%20algo%20en%20la%20libreta%20virtual%20de%20Brattypolitan%20Experience." target="_blank" rel="noreferrer">Dejar algo vía WhatsApp</a>
         <Link className="button web-action" to="/contribute">Dejar algo aquí</Link>
-        <Link className="button subtle-action" to="/album">Ver estado de la libreta</Link>
+        {albumAccess.isUnlocked && <Link className="button subtle-action" to="/album">Ver libreta</Link>}
       </nav>
 
       <p className="landing-continue" data-scroll-reveal><span>✦</span> Sigue explorando · el archivo se construye entre todas las personas</p>
@@ -51,6 +53,7 @@ export function HomePage() {
         <Link to="/admin/experiencias">Centro admin</Link>
         <Link to="/constellation-editor">Editor constelación</Link>
         <Link to="/dev/album-editor">Editor libreta</Link>
+        <Link to="/dev/album-access">Acceso libreta</Link>
       </nav>}
     </div>
   </Layout>

@@ -117,6 +117,7 @@
 .editor-detect-button:disabled,
 .editor-apply-detection:disabled { opacity: .38; cursor: default; }
 .editor-danger-button { color: #ff7588; border-color: rgba(244,24,55,.35); }
+.editor-danger-button:hover:not(:disabled) { color: #fff !important; border-color: #ff4360 !important; background: #d91c3e !important; box-shadow: 0 0 16px rgba(244,24,55,.34) !important; }
 .editor-text-button { min-height: 0; padding: 0; border: 0; color: rgba(255,255,255,.55); text-decoration: underline; }
 .editor-export-button { width: 100%; }
 .editor-save-button { width: 100%; border-color: #f41837; background: #f41837; font-weight: 700; text-align: center; }
@@ -157,7 +158,7 @@
 .editor-group-legend .group-feature { color: #ff5d75; }
 .editor-group-legend .group-body { color: #70eca3; }
 .editor-group-legend .group-mixed { color: #9d94b1; }
-.editor-zoom-controls { display: grid; grid-template-columns: 30px minmax(150px, 1fr) 30px 48px; gap: 6px; align-items: center; }
+.editor-zoom-controls { display: grid; grid-template-columns: 30px minmax(150px, 1fr) 30px 48px auto; gap: 6px; align-items: center; }
 .editor-zoom-controls label { display: grid; grid-template-columns: auto minmax(80px, 1fr) 42px; align-items: center; gap: 8px; color: rgba(255,255,255,.62); font-family: 'DM Mono', monospace; font-size: .61rem; }
 .editor-zoom-controls input { width: 100%; accent-color: #f41837; }
 .editor-zoom-controls output { text-align: right; }
@@ -165,6 +166,8 @@
 .editor-zoom-controls button:hover:not(:disabled) { border-color: #f41837; }
 .editor-zoom-controls button:disabled { opacity: .35; cursor: default; }
 .editor-zoom-controls .editor-zoom-reset { font-size: .58rem; }
+.editor-zoom-controls .editor-move-all-button { padding: 0 10px; font-size: .58rem; white-space: nowrap; }
+.editor-zoom-controls .editor-move-all-button.is-active { color: #101010; border-color: #f5dd50; background: #f5dd50; box-shadow: 0 0 16px rgba(245,221,80,.28); }
 .editor-stage-viewport {
   position: relative;
   width: min(100%, 620px);
@@ -191,6 +194,7 @@
 .editor-stage img { position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
 .editor-stage svg { position: absolute; z-index: 1; inset: 0; width: 100%; height: 100%; cursor: grab; }
 .editor-stage svg.is-panning { cursor: grabbing; }
+.editor-stage svg.is-moving-all { cursor: move; }
 .editor-connections line { stroke-width: 1.35; stroke-opacity: .7; vector-effect: non-scaling-stroke; transition: stroke .18s ease, stroke-opacity .18s ease, stroke-width .18s ease, filter .18s ease; }
 .editor-connections .group-hair { color: #fff; stroke: #fff; }
 .editor-connections .group-face { color: #72b7ff; stroke: #72b7ff; }

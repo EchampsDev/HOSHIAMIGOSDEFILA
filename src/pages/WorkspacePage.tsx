@@ -10,6 +10,7 @@ export function WorkspacePage() {
       <a href={publicSite} target="_blank" rel="noreferrer"><strong>Sitio público</strong><span>Abre la versión publicada en Firebase Hosting.</span></a>
       <a href={`${localBase}/constellation-editor`}><strong>Editor de silueta</strong><span>Importa, edita y exporta las coordenadas de la constelación.</span></a>
       <a href={`${localBase}/dev/album-editor`}><strong>Editor de libreta</strong><span>Diseña las páginas y sus recuerdos.</span></a>
+      <a href={`${localBase}/dev/setlist`}><strong>Catálogo de setlist</strong><span>Sube portadas y prepara los tracks que las personas podrán seleccionar.</span></a>
     </section>
     <section className="workspace-setup">
       <h2>Preparar otra computadora</h2>

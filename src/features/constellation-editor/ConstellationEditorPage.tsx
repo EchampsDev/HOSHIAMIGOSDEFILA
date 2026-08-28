@@ -32,6 +32,12 @@ type PanGesture = {
   moved: boolean
 }
 
+type GroupMoveGesture = {
+  pointerId: number
+  start: { x: number; y: number }
+  points: ConstellationPoint[]
+}
+
 type DetectionMatch = { pointId: string; detected: DetectedPoint }
 type DetectionPlan = { matches: DetectionMatch[]; additions: DetectedPoint[] }
 
@@ -231,12 +237,12 @@ function downloadTypeScript(filename: string, content: string) {
 
 function coordinateFile(points: ConstellationPoint[], connections: ConstellationConnection[], scene: ConstellationScene) {
   const ids = new Map(points.map((point, index) => [point.id, String(index + 1).padStart(4, '0')]))
-  const rows = points.map((point, index) => `${String(index + 1).padStart(4, '0')} | ${point.x.toFixed(6)} | ${point.y.toFixed(6)} | ${Math.round((point.brightness ?? .9) * 255)}`)
+  const rows = points.map((point, index) => `${String(index + 1).padStart(4, '0')} | ${point.x.toFixed(6)} | ${point.y.toFixed(6)} | ${Math.round((point.brightness ?? .9) * 255)} | ${point.group} | ${point.size}`)
   const links = connections.flatMap((connection) => {
     const from = ids.get(connection.from); const to = ids.get(connection.to)
     return from && to ? [`${from} | ${to} | ${connection.opacity ?? .28} | ${connection.delay ?? 0}`] : []
   })
-  return `COORDENADAS DE LA SILUETA - HOSHIAMIGOS DE FILA\nFORMATO: ID | X_norm | Y_norm | brillo_0_255\n\nPUNTOS\n${rows.join('\n')}\n\nCONEXIONES\nFORMATO: desde | hasta | opacidad | retraso\n${links.join('\n')}\n\nESCENA\nreferenceX=${scene.referenceX}\nreferenceY=${scene.referenceY}\nstarX=${scene.starX}\nstarY=${scene.starY}\nstarScale=${scene.starScale}\nstarIntensity=${scene.starIntensity}\n`
+  return `COORDENADAS DE LA SILUETA - BRATTYPOLITAN EXPERIENCE\nFORMATO: ID | X_norm | Y_norm | brillo_0_255 | grupo | tamano\nGRUPOS: hair/cabello, face/rostro, feature/facciones, body/cuerpo\n\nPUNTOS\n${rows.join('\n')}\n\nCONEXIONES\nFORMATO: desde | hasta | opacidad | retraso\n${links.join('\n')}\n\nESCENA\nreferenceX=${scene.referenceX}\nreferenceY=${scene.referenceY}\nstarX=${scene.starX}\nstarY=${scene.starY}\nstarScale=${scene.starScale}\nstarIntensity=${scene.starIntensity}\n`
 }
 
 type ImportedCoordinates = { points: ConstellationPoint[]; connections: ConstellationConnection[]; scene?: ConstellationScene }
@@ -259,15 +265,21 @@ function parseCoordinateFile(source: string): ImportedCoordinates {
       if (match) connections.push({ from: match[1], to: match[2], opacity: Number(match[3]), delay: Number(match[4] ?? 0) })
       return
     }
-    const raster = line.match(/^\s*(\d+)\s*\|\s*\d+(?:\.\d+)?\s*\|\s*\d+(?:\.\d+)?\s*\|\s*([01](?:\.\d+)?)\s*\|\s*([01](?:\.\d+)?)\s*\|\s*(\d{1,3})\s*$/)
-    const portable = line.match(/^\s*(\d+)\s*\|\s*([01](?:\.\d+)?)\s*\|\s*([01](?:\.\d+)?)\s*\|\s*(\d{1,3})\s*$/)
+    const raster = line.match(/^\s*(\d+)\s*\|\s*\d+(?:\.\d+)?\s*\|\s*\d+(?:\.\d+)?\s*\|\s*([01](?:\.\d+)?)\s*\|\s*([01](?:\.\d+)?)\s*\|\s*(\d{1,3})(?:\s*\|\s*(hair|face|feature|body|cabello|rostro|facciones|cuerpo))?(?:\s*\|\s*([0-9](?:\.\d+)?))?\s*$/i)
+    const portable = line.match(/^\s*(\d+)\s*\|\s*([01](?:\.\d+)?)\s*\|\s*([01](?:\.\d+)?)\s*\|\s*(\d{1,3})(?:\s*\|\s*(hair|face|feature|body|cabello|rostro|facciones|cuerpo))?(?:\s*\|\s*([0-9](?:\.\d+)?))?\s*$/i)
     const match = raster ?? portable
     if (!match) return
     const x = Number(match[2]); const y = Number(match[3]); const brightness = Number(match[4])
     if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(brightness)) return
     const id = `import-${match[1]}`
     importedIds.set(match[1], id)
-    points.push({ id, x: roundCoordinate(x), y: roundCoordinate(y), size: Number((1 + brightness / 255 * 2.2).toFixed(1)), brightness: Number((brightness / 255).toFixed(2)), delay: 0, group: 'feature' })
+    const importedGroup = match[5]?.toLowerCase()
+    const group: ConstellationPointGroup = importedGroup === 'hair' || importedGroup === 'cabello' ? 'hair'
+      : importedGroup === 'face' || importedGroup === 'rostro' ? 'face'
+        : importedGroup === 'body' || importedGroup === 'cuerpo' ? 'body' : 'feature'
+    const specifiedSize = Number(match[6])
+    const size = Number.isFinite(specifiedSize) ? Math.min(Math.max(specifiedSize, .7), 4.2) : Number((1 + brightness / 255 * 2.2).toFixed(1))
+    points.push({ id, x: roundCoordinate(x), y: roundCoordinate(y), size, brightness: Number((brightness / 255).toFixed(2)), delay: 0, group })
   })
   if (!points.length) throw new Error('El archivo no contiene filas de coordenadas válidas.')
   const validConnections = connections.flatMap((connection) => {
@@ -334,6 +346,7 @@ export function ConstellationEditorPage() {
   const [detectionMessage, setDetectionMessage] = useState<string | null>(null)
   const [detectionUndo, setDetectionUndo] = useState<{ points: ConstellationPoint[]; connections: ConstellationConnection[] } | null>(null)
   const [isPanning, setIsPanning] = useState(false)
+  const [isMovingAll, setIsMovingAll] = useState(false)
   const [importMessage, setImportMessage] = useState<string | null>(null)
   const [simplifyTarget, setSimplifyTarget] = useState(320)
   const [autoConnectionsEnabled, setAutoConnectionsEnabled] = useState(false)
@@ -341,6 +354,7 @@ export function ConstellationEditorPage() {
   const [autoConnectionNeighbors, setAutoConnectionNeighbors] = useState(2)
   const draggingId = useRef<string | null>(null)
   const panGesture = useRef<PanGesture | null>(null)
+  const groupMoveGesture = useRef<GroupMoveGesture | null>(null)
   const viewportRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -432,8 +446,14 @@ export function ConstellationEditorPage() {
   const handleSurfacePointerDown = (event: ReactPointerEvent<SVGSVGElement>) => {
     if (event.target !== event.currentTarget) return
     event.preventDefault()
-    const viewport = viewportRef.current
     const position = normalizedPosition(event)
+    if (isMovingAll) {
+      groupMoveGesture.current = { pointerId: event.pointerId, start: position, points: points.map((point) => ({ ...point })) }
+      setSelectedId(null)
+      event.currentTarget.setPointerCapture(event.pointerId)
+      return
+    }
+    const viewport = viewportRef.current
     panGesture.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -466,6 +486,21 @@ export function ConstellationEditorPage() {
       updatePoint(draggingId.current, normalizedPosition(event))
       return
     }
+    const groupGesture = groupMoveGesture.current
+    if (groupGesture?.pointerId === event.pointerId) {
+      const position = normalizedPosition(event)
+      const requestedX = position.x - groupGesture.start.x
+      const requestedY = position.y - groupGesture.start.y
+      const minX = Math.min(...groupGesture.points.map((point) => point.x)
+      )
+      const maxX = Math.max(...groupGesture.points.map((point) => point.x))
+      const minY = Math.min(...groupGesture.points.map((point) => point.y))
+      const maxY = Math.max(...groupGesture.points.map((point) => point.y))
+      const deltaX = Math.min(Math.max(requestedX, -minX), 1 - maxX)
+      const deltaY = Math.min(Math.max(requestedY, -minY), 1 - maxY)
+      setPoints(groupGesture.points.map((point) => ({ ...point, x: roundCoordinate(point.x + deltaX), y: roundCoordinate(point.y + deltaY) })))
+      return
+    }
     const gesture = panGesture.current
     const viewport = viewportRef.current
     if (!gesture || gesture.pointerId !== event.pointerId || !viewport) return
@@ -486,6 +521,10 @@ export function ConstellationEditorPage() {
       draggingId.current = null
       return
     }
+    if (groupMoveGesture.current?.pointerId === event.pointerId) {
+      groupMoveGesture.current = null
+      return
+    }
     const gesture = panGesture.current
     if (!gesture || gesture.pointerId !== event.pointerId) return
     if (!gesture.moved) addPointAt({ x: gesture.pointX, y: gesture.pointY })
@@ -496,6 +535,7 @@ export function ConstellationEditorPage() {
   const cancelPointerGesture = () => {
     draggingId.current = null
     panGesture.current = null
+    groupMoveGesture.current = null
     setIsPanning(false)
   }
 
@@ -754,7 +794,7 @@ export function ConstellationEditorPage() {
 
         <section>
           <h2>Coordenadas</h2>
-          <p className="editor-help">Importa el formato `ID | X_px | Y_px | X_norm | Y_norm | brillo_0_255`.</p>
+          <p className="editor-help">Importa `ID | X_norm | Y_norm | brillo_0_255 | grupo | tamaño`. Los grupos admiten cabello, rostro, facciones y cuerpo.</p>
           <label className="editor-file-input">Importar .txt<input type="file" accept=".txt,text/plain" onChange={importCoordinates} /></label>
           {importMessage && <p className="editor-save-message" role="status">{importMessage}</p>}
           <div className="editor-detection-divider" />
@@ -790,12 +830,13 @@ export function ConstellationEditorPage() {
             <label>Zoom <input type="range" min="1" max="4" step=".25" value={zoom} onChange={(event) => updateZoom(Number(event.target.value))} /><output>{Math.round(zoom * 100)}%</output></label>
             <button type="button" onClick={() => updateZoom(zoom + .25)} disabled={zoom === 4} aria-label="Acercar">+</button>
             <button type="button" className="editor-zoom-reset" onClick={() => updateZoom(1)} disabled={zoom === 1}>100%</button>
+            <button type="button" className={`editor-move-all-button${isMovingAll ? ' is-active' : ''}`} onClick={() => setIsMovingAll((current) => !current)} aria-pressed={isMovingAll}>{isMovingAll ? 'Terminar mover' : 'Mover silueta'}</button>
           </div>
         </div>
         <div className="editor-stage-viewport" ref={viewportRef}>
           <div className="editor-stage" style={{ width: `${zoom * 100}%` }}>
             {referenceImage && <img src={referenceImage} alt="Referencia para trazar la constelación" />}
-            <svg className={isPanning ? 'is-panning' : undefined} viewBox="0 0 1000 1389" preserveAspectRatio="none" onPointerDown={handleSurfacePointerDown} onPointerMove={handlePointerMove} onPointerUp={finishPointerGesture} onPointerCancel={cancelPointerGesture}>
+            <svg className={`${isPanning ? 'is-panning ' : ''}${isMovingAll ? 'is-moving-all' : ''}`} viewBox="0 0 1000 1389" preserveAspectRatio="none" onPointerDown={handleSurfacePointerDown} onPointerMove={handlePointerMove} onPointerUp={finishPointerGesture} onPointerCancel={cancelPointerGesture}>
               <g className={`editor-connections${selectedPoint ? ' has-active-group' : ''}`} pointerEvents="none">{connections.map((connection, index) => {
                 const from = positions.get(connection.from)
                 const to = positions.get(connection.to)
@@ -804,12 +845,12 @@ export function ConstellationEditorPage() {
                 const isActive = selectedPoint && group === selectedPoint.group
                 return <line key={`${connection.from}-${connection.to}-${index}`} className={`group-${group}${isActive ? ' is-active-group' : ''}`} x1={from.x * 1000} y1={from.y * 1389} x2={to.x * 1000} y2={to.y * 1389} />
               })}</g>
-              <g className="editor-detected-points" pointerEvents="none">{detectedPoints.map((detected, index) => previewMatches.has(detected) || previewAdditions.has(detected) ? <circle key={index} cx={detected.x * 1000} cy={detected.y * 1389} r={previewAdditions.has(detected) ? 11 : 8} className={previewAdditions.has(detected) ? 'is-new' : 'is-match'} /> : null)}</g>
-              <g className="editor-points">{points.map((point) => <circle key={point.id} cx={point.x * 1000} cy={point.y * 1389} r={Math.max(point.size * 3.2, 5)} className={`${selectedId === point.id ? 'is-selected ' : ''}group-${point.group}`} onPointerDown={(event) => handlePointPointerDown(event, point.id)} onClick={(event) => event.stopPropagation()} />)}</g>
+              <g className="editor-detected-points" pointerEvents="none">{detectedPoints.map((detected, index) => previewMatches.has(detected) || previewAdditions.has(detected) ? <circle key={index} cx={detected.x * 1000} cy={detected.y * 1389} r={(previewAdditions.has(detected) ? 11 : 8) / zoom} className={previewAdditions.has(detected) ? 'is-new' : 'is-match'} /> : null)}</g>
+              <g className="editor-points">{points.map((point) => <circle key={point.id} cx={point.x * 1000} cy={point.y * 1389} r={Math.max(point.size * 3.2, 5) / zoom} className={`${selectedId === point.id ? 'is-selected ' : ''}group-${point.group}`} onPointerDown={(event) => handlePointPointerDown(event, point.id)} onClick={(event) => event.stopPropagation()} />)}</g>
             </svg>
           </div>
         </div>
-        <p className="editor-stage-help">Clic breve y soltar: crear punto · Mantener y arrastrar el fondo: desplazarse · Arrastrar un punto: moverlo · Supr/Backspace: eliminar · “Conectar”: elegir destino</p>
+        <p className="editor-stage-help">Clic breve y soltar: crear punto · Mantener y arrastrar el fondo: desplazarse · Activa “Mover silueta” y arrastra un área libre para trasladar todos los puntos juntos.</p>
       </section>
     </div>
   </main>
