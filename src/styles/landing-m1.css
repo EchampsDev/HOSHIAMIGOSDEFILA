@@ -246,8 +246,51 @@
 }
 
 .landing-actions {
+  width: min(100%, 610px);
   margin: 34px auto 10px;
+  grid-template-columns: 1fr;
 }
+
+.landing-actions .button {
+  min-height: 56px;
+  text-decoration: none;
+  transition: transform .25s ease, box-shadow .25s ease, background .25s ease;
+}
+
+.landing-actions .button:hover { transform: translateY(-3px); }
+.whatsapp-action { color: #06121c !important; background: #ffe34d !important; box-shadow: 0 8px 28px rgba(255, 227, 77, .21); }
+.web-action { color: #f4fbff !important; border: 1px solid #29baff !important; background: rgba(0, 115, 255, .74) !important; box-shadow: 0 8px 28px rgba(0, 130, 255, .26); }
+.subtle-action { min-height: 42px !important; color: rgba(255,255,255,.78) !important; border-color: rgba(65, 196, 255, .42) !important; background: transparent !important; }
+
+.landing-scroll-cue {
+  width: fit-content;
+  margin: 10px auto 0;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  color: #ffe34d;
+  font: .56rem 'DM Mono', monospace;
+  letter-spacing: .14em;
+  text-decoration: none;
+}
+
+.landing-scroll-cue i {
+  width: 1px;
+  height: 30px;
+  display: block;
+  background: linear-gradient(#29baff, transparent);
+  animation: scroll-cue 1.7s ease-in-out infinite;
+}
+
+.landing-continue {
+  width: min(100%, 620px);
+  margin: 52px auto 10px;
+  color: rgba(155, 224, 255, .82);
+  font: .6rem 'DM Mono', monospace;
+  letter-spacing: .08em;
+  text-align: center;
+}
+.landing-continue span { color: #ffe34d; }
 
 .development-shortcuts {
   width: min(100%, 720px);
@@ -288,6 +331,8 @@
   50% { transform: scale(1.09); filter: brightness(1.12); }
 }
 
+@keyframes scroll-cue { 50% { transform: translateY(8px); opacity: .25; } }
+
 @media (prefers-reduced-motion: reduce) {
   .ambient-star,
   .constellation-hero.is-resting canvas,
@@ -312,4 +357,7 @@
     margin-top: -24px;
     margin-bottom: -34px;
   }
+
+  .landing-actions { grid-template-columns: 1fr 1fr; }
+  .landing-actions .subtle-action { grid-column: 1 / -1; width: 48%; justify-self: center; }
 }

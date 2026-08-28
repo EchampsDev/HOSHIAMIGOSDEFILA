@@ -278,6 +278,41 @@ function parseCoordinateFile(source: string): ImportedCoordinates {
   return { points, connections: validConnections, scene }
 }
 
+function thinPoints(points: ConstellationPoint[], target: number) {
+  if (points.length <= target) return points.map((point) => ({ ...point }))
+  let best = points
+  let low = 0
+  let high = .12
+  for (let pass = 0; pass < 14; pass += 1) {
+    const minimumDistance = (low + high) / 2
+    const kept: ConstellationPoint[] = []
+    points.forEach((point) => {
+      if (kept.every((candidate) => stageDistance(point, candidate) >= minimumDistance)) kept.push(point)
+    })
+    if (Math.abs(kept.length - target) < Math.abs(best.length - target)) best = kept
+    if (kept.length > target) low = minimumDistance
+    else high = minimumDistance
+  }
+  return best.map((point) => ({ ...point }))
+}
+
+function buildAutomaticConnections(points: ConstellationPoint[], maximumDistance: number, maximumNeighbors: number) {
+  const links = new Map<string, ConstellationConnection>()
+  points.forEach((from) => {
+    const neighbors = points
+      .filter((to) => to.id !== from.id)
+      .map((to) => ({ to, distance: stageDistance(from, to) }))
+      .filter((candidate) => candidate.distance <= maximumDistance)
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, maximumNeighbors)
+    neighbors.forEach(({ to }) => {
+      const [first, second] = [from.id, to.id].sort()
+      links.set(`${first}:${second}`, { from: first, to: second, opacity: .34, delay: 0 })
+    })
+  })
+  return [...links.values()]
+}
+
 export function ConstellationEditorPage() {
   const session = useAdminSession()
   const [points, setPoints] = useState<ConstellationPoint[]>(() => constellationPoints.map((point) => ({ ...point })))
@@ -300,6 +335,10 @@ export function ConstellationEditorPage() {
   const [detectionUndo, setDetectionUndo] = useState<{ points: ConstellationPoint[]; connections: ConstellationConnection[] } | null>(null)
   const [isPanning, setIsPanning] = useState(false)
   const [importMessage, setImportMessage] = useState<string | null>(null)
+  const [simplifyTarget, setSimplifyTarget] = useState(320)
+  const [autoConnectionsEnabled, setAutoConnectionsEnabled] = useState(false)
+  const [autoConnectionDistance, setAutoConnectionDistance] = useState(.035)
+  const [autoConnectionNeighbors, setAutoConnectionNeighbors] = useState(2)
   const draggingId = useRef<string | null>(null)
   const panGesture = useRef<PanGesture | null>(null)
   const viewportRef = useRef<HTMLDivElement | null>(null)
@@ -382,6 +421,10 @@ export function ConstellationEditorPage() {
       group: 'feature',
     }
     setPoints((current) => [...current, point])
+    if (autoConnectionsEnabled) {
+      const nearest = points.reduce<ConstellationPoint | null>((closest, candidate) => !closest || stageDistance(point, candidate) < stageDistance(point, closest) ? candidate : closest, null)
+      if (nearest && stageDistance(point, nearest) <= autoConnectionDistance) addConnection(point.id, nearest.id)
+    }
     setSelectedId(point.id)
     setConnectionSourceId(null)
   }
@@ -603,18 +646,35 @@ export function ConstellationEditorPage() {
   const importCoordinates = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
-    setReferenceFile(file)
     const reader = new FileReader()
     reader.onload = () => {
       try {
         const imported = parseCoordinateFile(String(reader.result ?? ''))
         if (!window.confirm(`Se reemplazarán ${points.length.toLocaleString('es-MX')} puntos por ${imported.points.length.toLocaleString('es-MX')} puntos del archivo. ¿Continuar?`)) return
-        setPoints(imported.points); setConnections(imported.connections); setScene(imported.scene ?? scene); setSelectedId(null); setConnectionSourceId(null)
-        setImportMessage(`${imported.points.length.toLocaleString('es-MX')} puntos importados${imported.connections.length ? ` y ${imported.connections.length.toLocaleString('es-MX')} conexiones reconstruidas` : '. El archivo no incluye conexiones'}.`)
+        const importedConnections = imported.connections.length || !autoConnectionsEnabled ? imported.connections : buildAutomaticConnections(imported.points, autoConnectionDistance, autoConnectionNeighbors)
+        setPoints(imported.points); setConnections(importedConnections); setScene(imported.scene ?? scene); setSelectedId(null); setConnectionSourceId(null)
+        setImportMessage(`${imported.points.length.toLocaleString('es-MX')} puntos importados${importedConnections.length ? ` y ${importedConnections.length.toLocaleString('es-MX')} conexiones creadas` : '. El archivo no incluye conexiones'}.`)
       } catch (error) { setImportMessage(error instanceof Error ? error.message : 'No fue posible leer el archivo.') }
     }
     reader.readAsText(file)
     event.target.value = ''
+  }
+
+  const simplifyImportedPoints = () => {
+    const nextPoints = thinPoints(points, simplifyTarget)
+    const allowedIds = new Set(nextPoints.map((point) => point.id))
+    const remainingConnections = connections.filter((connection) => allowedIds.has(connection.from) && allowedIds.has(connection.to))
+    setPoints(nextPoints)
+    setConnections(autoConnectionsEnabled ? buildAutomaticConnections(nextPoints, autoConnectionDistance, autoConnectionNeighbors) : remainingConnections)
+    setSelectedId(null)
+    setConnectionSourceId(null)
+    setImportMessage(`Silueta simplificada: ${points.length.toLocaleString('es-MX')} → ${nextPoints.length.toLocaleString('es-MX')} puntos.`)
+  }
+
+  const generateAutomaticConnections = () => {
+    const nextConnections = buildAutomaticConnections(points, autoConnectionDistance, autoConnectionNeighbors)
+    setConnections(nextConnections)
+    setImportMessage(`${nextConnections.length.toLocaleString('es-MX')} conexiones automáticas creadas.`)
   }
 
   return <main className="constellation-editor-page">
@@ -697,6 +757,17 @@ export function ConstellationEditorPage() {
           <p className="editor-help">Importa el formato `ID | X_px | Y_px | X_norm | Y_norm | brillo_0_255`.</p>
           <label className="editor-file-input">Importar .txt<input type="file" accept=".txt,text/plain" onChange={importCoordinates} /></label>
           {importMessage && <p className="editor-save-message" role="status">{importMessage}</p>}
+          <div className="editor-detection-divider" />
+          <h3>Simplificar silueta</h3>
+          <p className="editor-help">Elimina puntos demasiado cercanos para conservar sólo la estructura de la constelación.</p>
+          <label>Máximo aproximado <output>{simplifyTarget}</output><input type="range" min="100" max="650" step="10" value={simplifyTarget} onChange={(event) => setSimplifyTarget(Number(event.target.value))} /></label>
+          <button type="button" className="editor-button" onClick={simplifyImportedPoints} disabled={points.length <= simplifyTarget}>Reducir a {simplifyTarget} puntos</button>
+          <div className="editor-detection-divider" />
+          <h3>Conexiones automáticas</h3>
+          <label className="editor-checkbox"><input type="checkbox" checked={autoConnectionsEnabled} onChange={(event) => setAutoConnectionsEnabled(event.target.checked)} /> Activar al importar y al crear puntos</label>
+          <label>Distancia máxima <output>{Math.round(autoConnectionDistance * 100)}%</output><input type="range" min=".01" max=".09" step=".005" value={autoConnectionDistance} onChange={(event) => setAutoConnectionDistance(Number(event.target.value))} /></label>
+          <label>Vecinos por punto <output>{autoConnectionNeighbors}</output><input type="range" min="1" max="3" step="1" value={autoConnectionNeighbors} onChange={(event) => setAutoConnectionNeighbors(Number(event.target.value))} /></label>
+          <button type="button" className="editor-button" onClick={generateAutomaticConnections} disabled={points.length < 2}>Generar conexiones ahora</button>
           <button type="button" className="editor-export-button" onClick={() => downloadTypeScript('silueta-coordenadas.txt', coordinateFile(points, connections, scene))}>Exportar .txt</button>
         </section>
 

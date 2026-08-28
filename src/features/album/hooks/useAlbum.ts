@@ -5,8 +5,8 @@ import { FirestoreAlbumRepository } from '../repositories/FirestoreAlbumReposito
 import type { AlbumRepository } from '../repositories/AlbumRepository'
 import { isFirebaseConfigured } from '../../../infrastructure/firebase/client'
 
-export function useAlbum() {
-  const repository = useMemo<AlbumRepository>(() => isFirebaseConfigured ? new FirestoreAlbumRepository() : new LocalAlbumRepository(), [])
+export function useAlbum(localOnly = false) {
+  const repository = useMemo<AlbumRepository>(() => !localOnly && isFirebaseConfigured ? new FirestoreAlbumRepository() : new LocalAlbumRepository(), [localOnly])
   const [album, setAlbum] = useState<AlbumDocument | null>(null)
   const [syncError, setSyncError] = useState<string | null>(null)
   const [bookState, setBookState] = useState<BookState>('CLOSED')
@@ -40,5 +40,5 @@ export function useAlbum() {
     savePage({ ...currentPage, elements, updatedAt: new Date().toISOString() })
   }, [currentPage, savePage])
   const deleteElement = useCallback((elementId: string) => { if (currentPage) savePage({ ...currentPage, elements: currentPage.elements.filter((element) => element.id !== elementId), updatedAt: new Date().toISOString() }) }, [currentPage, savePage])
-  return { album, currentPage, bookState, pageNumber, isPresenting, isPaused, syncError, usesFirebase: isFirebaseConfigured, open, next, previous, goTo, setPaper, addElement, updateElement, deleteElement, startPresentation: () => { if (bookState !== 'PAGE') open(); setIsPresenting(true); setIsPaused(false) }, pausePresentation: () => setIsPaused(true), resumePresentation: () => setIsPaused(false), stopPresentation: () => { setIsPresenting(false); setIsPaused(false) } }
+  return { album, currentPage, bookState, pageNumber, isPresenting, isPaused, syncError, usesFirebase: !localOnly && isFirebaseConfigured, open, next, previous, goTo, setPaper, addElement, updateElement, deleteElement, startPresentation: () => { if (bookState !== 'PAGE') open(); setIsPresenting(true); setIsPaused(false) }, pausePresentation: () => setIsPaused(true), resumePresentation: () => setIsPaused(false), stopPresentation: () => { setIsPresenting(false); setIsPaused(false) } }
 }

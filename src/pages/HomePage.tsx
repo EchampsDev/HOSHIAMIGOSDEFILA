@@ -27,19 +27,24 @@ export function HomePage() {
           <ConstellationHero />
         </div>
         <p className="lede reveal-lede" data-scroll-reveal>Un álbum construido por las personas<br />que estuvieron aquí.</p>
+        <a className="landing-scroll-cue" href="#participa" aria-label="Bajar a la sección para participar"><span>DESLIZA PARA DESCUBRIR</span><i aria-hidden="true" /></a>
       </section>
 
       <ExperienceCountdown />
 
-      <section className="reveal-note reveal-note-delay" data-scroll-reveal>
+      <section className="reveal-note reveal-note-delay" data-scroll-reveal id="participa">
         <FourPointMark className="note-four-point-mark" />
-        <p>La libreta digital se abrirá después del evento.</p>
-        <strong>ARCHIVO EN CONSOLIDACIÓN</strong>
+        <p>Deja una parte de tu historia en la libreta virtual.</p>
+        <strong>ARCHIVO COLECTIVO · MODERADO POR EL EQUIPO</strong>
       </section>
 
       <nav className="actions landing-actions reveal-actions" data-scroll-reveal aria-label="Explorar Brattypolitan Experience">
-        <Link className="button primary" to="/album">Ver estado de la libreta</Link>
+        <a className="button whatsapp-action" href="https://wa.me/525659229006?text=Hola%2C%20quiero%20dejar%20algo%20en%20la%20libreta%20virtual%20de%20Brattypolitan%20Experience." target="_blank" rel="noreferrer">Dejar algo vía WhatsApp</a>
+        <Link className="button web-action" to="/contribute">Dejar algo aquí</Link>
+        <Link className="button subtle-action" to="/album">Ver estado de la libreta</Link>
       </nav>
+
+      <p className="landing-continue" data-scroll-reveal><span>✦</span> Sigue explorando · el archivo se construye entre todas las personas</p>
 
       {hasDevelopmentAccess() && <nav className="development-shortcuts reveal-actions" data-scroll-reveal aria-label="Accesos de desarrollo">
         <p>DESARROLLO LOCAL</p>
