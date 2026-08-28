@@ -51,6 +51,7 @@ a:focus-visible,
 
 .site-shell > :not(.starfield) { position: relative; z-index: 1; }
 .topbar { display: flex; justify-content: space-between; align-items: center; }
+.topbar-actions { display: flex; align-items: center; gap: 16px; }.topbar-google { padding: 0; color: rgba(255,255,255,.92); border: 0; border-bottom: 1px solid rgba(245,220,80,.75); background: transparent; cursor: pointer; font: .59rem 'DM Mono', monospace; letter-spacing: .06em; text-transform: uppercase; }
 .brand, .quiet-link { color: inherit; text-decoration: none; }
 .brand { font-size: .8rem; font-weight: 700; letter-spacing: .15em; }
 .footer-four-point-mark { margin-left: .4em; font-size: .88em; }

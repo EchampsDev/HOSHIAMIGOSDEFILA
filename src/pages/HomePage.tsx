@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { FourPointMark } from '../components/FourPointMark'
-import { hasDevelopmentAccess } from '../features/access/developmentAccess'
+import { useGoogleSession } from '../features/access/useGoogleSession'
 import { Layout } from '../components/Layout'
 import { ConstellationHero } from '../features/landing/components/ConstellationHero'
 import { ExperienceCountdown } from '../features/landing/components/ExperienceCountdown'
@@ -13,6 +13,7 @@ import { usePublicAlbumAccess } from '../features/album/hooks/usePublicAlbumAcce
 export function HomePage() {
   const landingRef = useRef<HTMLDivElement>(null)
   const albumAccess = usePublicAlbumAccess()
+  const session = useGoogleSession()
   useScrollReveal(landingRef)
 
   return <Layout>
@@ -48,7 +49,7 @@ export function HomePage() {
 
       <p className="landing-continue" data-scroll-reveal><span>✦</span> Sigue explorando · el archivo se construye entre todas las personas</p>
 
-      {hasDevelopmentAccess() && <nav className="development-shortcuts reveal-actions" data-scroll-reveal aria-label="Accesos de desarrollo">
+      {session.isAdmin && <nav className="development-shortcuts reveal-actions" data-scroll-reveal aria-label="Accesos de desarrollo">
         <p>DESARROLLO LOCAL</p>
         <Link to="/admin/experiencias">Centro admin</Link>
         <Link to="/constellation-editor">Editor constelación</Link>

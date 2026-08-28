@@ -11,3 +11,16 @@
 .setlist-preview-actions .setlist-send { color: #111; border-color: #f5dc50; background: #f5dc50; }
 .setlist-back { margin-top: 10px; color: #f5dc50; border: 0; background: transparent; cursor: pointer; font: .64rem 'DM Mono',monospace; }
 @media(max-width:560px) { .setlist-preview-card ol { grid-template-columns:repeat(2,1fr); }.setlist-preview-actions { justify-content:stretch; }.setlist-preview-actions button { flex:1 1 100%; } }
+
+.site-shell:has(.contribution) { position: relative; isolation: isolate; min-height: 100svh; }
+.site-shell:has(.contribution)::before { content: ''; position: fixed; z-index: 0; inset: 0; background: url('/images/bratty-contribute-background.png') center 18% / cover no-repeat; opacity: .48; }
+.site-shell:has(.contribution)::after { content: ''; position: fixed; z-index: 0; inset: 0; background: radial-gradient(ellipse at 50% 32%, rgba(0,0,0,.38) 0%, rgba(0,0,0,.76) 51%, #000 100%), linear-gradient(90deg, rgba(0,0,0,.82), rgba(0,0,0,.4) 50%, rgba(0,0,0,.82)); }
+.site-shell:has(.contribution) > * { position: relative; z-index: 1; }
+.site-shell:has(.contribution) .content-card { text-shadow: 0 2px 16px rgba(0,0,0,.9); }
+
+/* La selección se abre como una sección de la experiencia para poder llegar a ella con scroll. */
+.site-shell:has(.contribution) .setlist-modal { position: relative; z-index: 2; inset: auto; display: block; padding: 0 40px 72px; background: transparent; backdrop-filter: none; }
+.site-shell:has(.contribution) .setlist-modal > section { margin: 0 auto; background: rgba(8,8,8,.94); }
+.site-shell:has(.contribution) .setlist-modal > div { width: min(920px,100%); max-height: min(88svh,850px); overflow: auto; margin: 0 auto; padding: 28px; color: #fff; border: 1px solid rgba(245,220,80,.58); background: rgba(8,8,8,.94); box-shadow: 0 28px 100px #000; }
+.memory-page-picker { display: grid; gap: 7px; padding: 17px; border: 1px solid rgba(245,220,80,.52); background: rgba(0,0,0,.5); }.memory-page-picker p { margin: 0; color: #f5dc50; font-weight: 700; }.memory-page-picker small { color: rgba(255,255,255,.6); }.memory-page-picker > div { display: grid; grid-template-columns: 42px minmax(100px,180px) 42px; gap: 8px; align-items: end; }.memory-page-picker button { width: 42px; height: 42px; justify-self: stretch !important; padding: 0 !important; color: #f5dc50 !important; border: 1px solid rgba(245,220,80,.6) !important; background: #14213e !important; font-size: 1.2rem; }.memory-page-picker button:disabled { opacity: .35; cursor: default; }.memory-page-picker label { font: .68rem 'DM Mono',monospace; }.memory-page-picker input { text-align: center; font-size: 1rem !important; }
+@media(max-width:560px) { .site-shell:has(.contribution) .setlist-modal { padding: 0 16px 44px; } }

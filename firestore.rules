@@ -9,7 +9,25 @@ service cloud.firestore {
 
     // Admin roles are bootstrapped from the Firebase console or Admin SDK only.
     match /admins/{userId} {
-      allow read, write: if false;
+      // Each signed-in account may only verify its own role; role documents remain immutable from the client.
+      allow get: if signedIn() && request.auth.uid == userId;
+      allow list, create, update, delete: if false;
+    }
+
+    // Registro mínimo de participación: nombre visible y marcas de inicio de sesión.
+    // Cada cuenta sólo puede acceder a su propio documento; no hay lectura masiva.
+    match /participantSessions/{userId} {
+      allow get: if signedIn() && request.auth.uid == userId;
+      allow list: if false;
+      allow create: if signedIn() && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['displayName', 'lastSignInAt'])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() <= 100;
+      allow update: if signedIn() && request.auth.uid == userId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'lastSignInAt'])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() <= 100;
+      allow delete: if false;
     }
 
     match /siteConfig/{document} {

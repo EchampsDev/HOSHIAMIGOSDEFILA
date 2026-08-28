@@ -2,7 +2,7 @@
 
 La app pública no recibe permisos administrativos. Las reglas de Firestore solo muestran elementos y comentarios `APPROVED`; las contribuciones y comentarios nuevos nacen en `PENDING` y requieren autenticación.
 
-Un administrador se identifica con un documento `admins/{uid}` creado desde un entorno confiable (Firebase Console o Admin SDK). Los clientes web no pueden crear ni leer esta colección, por lo que no pueden otorgarse privilegios por sí mismos.
+Un administrador se identifica con un documento `admins/{uid}` creado desde un entorno confiable (Firebase Console o Admin SDK). Un cliente autenticado sólo puede leer el documento cuyo ID coincide con su propio UID; no puede listar, crear, editar ni eliminar roles. Así la interfaz puede comprobar su propio acceso sin exponer la lista de administradores ni permitir que alguien se otorgue privilegios.
 
 Storage permanece cerrado salvo la referencia de la constelación. Esa ruta permite lectura pública y únicamente escritura de administradores autenticados; además limita la carga a imágenes de 10 MB. Las contribuciones públicas no tienen permiso de carga.
 

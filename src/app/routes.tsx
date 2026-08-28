@@ -1,15 +1,18 @@
+import { type ReactNode } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import { AlbumPage } from '../pages/AlbumPage'
 import { AdminPage } from '../pages/AdminPage'
 import { AboutPage } from '../pages/AboutPage'
-import { SetlistPreviewContributePage } from '../pages/SetlistPreviewContributePage'
+import { SimplePageSetlistContributePage } from '../pages/SimplePageSetlistContributePage'
 import { HomePage } from '../pages/HomePage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { ConstellationEditorPage } from '../features/constellation-editor/ConstellationEditorPage'
 import { AlbumAccessSettingsPage } from '../features/album/editor/AlbumAccessSettingsPage'
 import { hasDevelopmentAccess } from '../features/access/developmentAccess'
+import { useGoogleSession } from '../features/access/useGoogleSession'
 import { AlbumEditorPage } from '../features/album/editor/AlbumEditorPage'
 import { SetlistManagerPage } from '../features/album/editor/SetlistManagerPage'
 import { ExperienceHubPage } from '../pages/ExperienceHubPage'
 import { WorkspacePage } from '../pages/WorkspacePage'
-export function AppRoutes() { const canDevelop = hasDevelopmentAccess(); return <Routes><Route path="/" element={<HomePage />} /><Route path="/workspace" element={<WorkspacePage />} /><Route path="/explorar" element={<ExperienceHubPage />} /><Route path="/admin/experiencias" element={canDevelop ? <ExperienceHubPage admin /> : <NotFoundPage />} /><Route path="/about" element={<AboutPage />} /><Route path="/contribute" element={<SetlistPreviewContributePage />} /><Route path="/album" element={<AlbumPage />} /><Route path="/admin" element={<AdminPage />} /><Route path="/constellation-editor" element={canDevelop ? <ConstellationEditorPage /> : <NotFoundPage />} /><Route path="/dev/album-editor" element={canDevelop ? <AlbumEditorPage /> : <NotFoundPage />} /><Route path="/dev/setlist" element={canDevelop ? <SetlistManagerPage /> : <NotFoundPage />} /><Route path="/dev/album-access" element={canDevelop ? <AlbumAccessSettingsPage /> : <NotFoundPage />} /><Route path="*" element={<NotFoundPage />} /></Routes> }
+function DevelopmentRoute({ children }: { children: ReactNode }) { const session = useGoogleSession(); if (hasDevelopmentAccess() || session.isAdmin) return <>{children}</>; if (session.isLoading) return <main className="site-shell"><p className="route-loading">Comprobando acceso…</p></main>; return <NotFoundPage /> }
+export function AppRoutes() { return <Routes><Route path="/" element={<HomePage />} /><Route path="/workspace" element={<WorkspacePage />} /><Route path="/explorar" element={<ExperienceHubPage />} /><Route path="/admin/experiencias" element={<DevelopmentRoute><ExperienceHubPage admin /></DevelopmentRoute>} /><Route path="/about" element={<AboutPage />} /><Route path="/contribute" element={<SimplePageSetlistContributePage />} /><Route path="/album" element={<AlbumPage />} /><Route path="/admin" element={<AdminPage />} /><Route path="/constellation-editor" element={<DevelopmentRoute><ConstellationEditorPage /></DevelopmentRoute>} /><Route path="/dev/album-editor" element={<DevelopmentRoute><AlbumEditorPage /></DevelopmentRoute>} /><Route path="/dev/setlist" element={<DevelopmentRoute><SetlistManagerPage /></DevelopmentRoute>} /><Route path="/dev/album-access" element={<DevelopmentRoute><AlbumAccessSettingsPage /></DevelopmentRoute>} /><Route path="*" element={<NotFoundPage />} /></Routes> }
