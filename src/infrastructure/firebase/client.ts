@@ -12,7 +12,10 @@ const config = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 }
 
-export const isFirebaseConfigured = Object.values(config).every(Boolean)
+// Auth and Firestore can initialize with the core web configuration. `appId` is
+// useful for other Firebase products, but GitHub deployments should not fall
+// back to the static constellation merely because that optional value is absent.
+export const isFirebaseConfigured = Boolean(config.apiKey && config.authDomain && config.projectId)
 const app: FirebaseApp | null = isFirebaseConfigured ? (getApps().length ? getApp() : initializeApp(config)) : null
 
 export const firebaseAuth: Auth | null = app ? getAuth(app) : null
