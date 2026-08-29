@@ -3,8 +3,8 @@
 .setlist-preview-card header strong { color: #fff; font: 700 1.65rem sans-serif; }
 .setlist-preview-card header small { color: #75a8ff; }
 .setlist-preview-card ol { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; margin: 0; padding: 1px; list-style: none; background: rgba(245,220,80,.22); }
-.setlist-preview-card li { display: grid; grid-template-columns: 44px 1fr; gap: 9px; align-items: center; min-height: 58px; padding: 7px; color: #fff; background: #14213e; font-size: .7rem; }
-.setlist-preview-card li img,.setlist-preview-card li span { width: 44px; height: 44px; object-fit: cover; }
+.setlist-preview-card li { display: grid; grid-template-columns: 44px minmax(0,1fr); gap: 9px; align-items: center; min-height: 58px; padding: 7px; color: #fff; background: #14213e; font-size: .7rem; overflow: hidden; }
+.setlist-preview-card li img,.setlist-preview-card li span { display: block; width: 44px; height: 44px; max-width: 44px; max-height: 44px; aspect-ratio: 1; object-fit: cover; object-position: center; overflow: hidden; }
 .setlist-preview-card li span { display: grid; place-items: center; color: #111; background: #f5dc50; font: .67rem 'DM Mono',monospace; }
 .setlist-preview-actions { flex-wrap: wrap; }
 .setlist-preview-actions button { color: #fff; border: 1px solid rgba(117,168,255,.6); background: #14213e; }
