@@ -1,5 +1,48 @@
-import type { PropsWithChildren } from 'react'
+import { type PropsWithChildren, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FourPointMark } from './FourPointMark'
 import { useGoogleSession } from '../features/access/useGoogleSession'
-export function Layout({ children }: PropsWithChildren) { const session = useGoogleSession(); return <main className="site-shell"><header className="topbar"><Link to="/" className="brand">BRATTYPOLITAN EXPERIENCE</Link><nav className="topbar-actions" aria-label="Navegación"><Link to="/explorar" className="quiet-link">Explorar</Link>{session.isConfigured && (session.user ? <button type="button" className="topbar-google" onClick={() => void session.signOut()}>Salir · {session.user.displayName?.split(' ')[0] ?? 'Google'}</button> : <button type="button" className="topbar-google" onClick={() => void session.signIn()}>Accede con tu cuenta de Google</button>)}</nav></header>{children}<footer data-scroll-reveal>BRATTY · CDMX · 2026 <FourPointMark className="footer-four-point-mark" /></footer></main> }
+
+const publicAreas = [
+  { to: '/album', eyebrow: 'LECTURA', title: 'Libreta digital', copy: 'Consulta el archivo colectivo y sus recuerdos.' },
+  { to: '/about', eyebrow: 'CONTEXTO', title: 'El proyecto', copy: 'Conoce la intención y el origen de la experiencia.' },
+  { to: '/contribute', eyebrow: 'PARTICIPACIÓN', title: 'Dejar un recuerdo', copy: 'Escríbele o deja algo bonito a Bratty.' },
+]
+
+export function Layout({ children }: PropsWithChildren) {
+  const session = useGoogleSession()
+  const [isExploreOpen, setIsExploreOpen] = useState(false)
+
+  useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setIsExploreOpen(false) }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [])
+
+  return <main className="site-shell">
+    <header className="topbar">
+      <Link to="/" className="brand">BRATTYPOLITAN EXPERIENCE</Link>
+      <nav className="topbar-actions" aria-label="Navegación">
+        <button type="button" className="quiet-link explore-toggle" onClick={() => setIsExploreOpen(true)} aria-expanded={isExploreOpen} aria-controls="explore-sidebar">Explorar</button>
+        {session.isConfigured && (session.user ? <button type="button" className="topbar-google" onClick={() => void session.signOut()}>Salir · {session.user.displayName?.split(' ')[0] ?? 'Google'}</button> : <button type="button" className="topbar-google" onClick={() => void session.signIn()}>Accede con tu cuenta de Google</button>)}
+      </nav>
+    </header>
+    {children}
+    <footer data-scroll-reveal>BRATTY · CDMX · 2026 <FourPointMark className="footer-four-point-mark" /></footer>
+
+    <div className={`explore-drawer-layer ${isExploreOpen ? 'is-open' : ''}`} aria-hidden={!isExploreOpen}>
+      <button type="button" className="explore-drawer-backdrop" tabIndex={isExploreOpen ? 0 : -1} aria-label="Cerrar explorador" onClick={() => setIsExploreOpen(false)} />
+      <aside id="explore-sidebar" className="explore-drawer" aria-label="Explorar experiencias públicas" aria-modal="true" role="dialog">
+        <header>
+          <div><p>BRATTYPOLITAN EXPERIENCE</p><h2>EXPLORAR</h2></div>
+          <button type="button" onClick={() => setIsExploreOpen(false)} aria-label="Cerrar explorador">×</button>
+        </header>
+        <p className="explore-drawer-intro">Un archivo colectivo para recorrer, leer y dejar recuerdos.</p>
+        <p className="explore-drawer-label">EXPERIENCIAS PÚBLICAS</p>
+        <nav>{publicAreas.map((area) => <Link to={area.to} key={area.to} onClick={() => setIsExploreOpen(false)}>
+          <small>{area.eyebrow}</small><strong>{area.title}</strong><span>{area.copy}</span><b>ENTRAR →</b>
+        </Link>)}</nav>
+      </aside>
+    </div>
+  </main>
+}
