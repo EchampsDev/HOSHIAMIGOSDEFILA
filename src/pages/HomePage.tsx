@@ -54,6 +54,7 @@ export function HomePage() {
         <Link to="/admin/experiencias">Centro admin</Link>
         <Link to="/constellation-editor">Editor constelación</Link>
         <Link to="/dev/album-editor">Editor libreta</Link>
+        <Link to="/dev/setlist">Setlist manager</Link>
         <Link to="/dev/album-access">Acceso libreta</Link>
       </nav>}
     </div>
