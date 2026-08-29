@@ -137,8 +137,7 @@ span.cover-page-edge { position: absolute !important; z-index: 0 !important; top
 .album-editor-stage .album-element { cursor: grab; }
 .album-editor-stage .album-element.is-selected { outline: 2px solid #f02947; outline-offset: 2px; }
 .album-resize-handle { position: absolute; right: -7px; bottom: -7px; width: 14px; height: 14px; padding: 0; border: 1px solid #fff7e8; background: #f02947; cursor: nwse-resize; }
-.album-rotate-handle { position: absolute; right: -8px; top: -8px; width: 15px; height: 15px; padding: 0; border: 2px solid #fff7e8; border-radius: 50%; background: #075dde; box-shadow: 0 0 0 2px rgba(7,93,222,.25); cursor: grab; }
-.album-rotate-handle::after { content: ''; position: absolute; left: 50%; top: 100%; width: 1px; height: 8px; background: #075dde; transform: translateX(-50%); }
+.album-rotate-handle { position: absolute; right: -7px; top: -7px; width: 14px; height: 14px; padding: 0; border: 1px solid #fff7e8; border-radius: 0; background: #075dde; box-shadow: none; cursor: grab; }
 .album-editor-workspace > .album-editor-help { width: min(100%, 620px); margin: 10px auto; font-family: 'DM Mono', monospace; font-size: .57rem; }
 .album-lock-page { min-height: calc(100svh - 120px); padding: 10vh 0; display: grid; align-content: center; justify-items: center; gap: 34px; text-align: center; }
 .album-lock-page > div:last-child { max-width: 520px; }
