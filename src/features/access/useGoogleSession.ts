@@ -27,7 +27,10 @@ export function useGoogleSession() {
         else await setDoc(roleReference, { ...identity, role: 'USER', createdAt: serverTimestamp() })
         // El registro propio de la experiencia contiene sólo el nombre visible y marcas de sesión.
         await setDoc(doc(firestore, 'participantSessions', currentUser.uid), { displayName: currentUser.displayName ?? 'Participante', lastSignInAt: serverTimestamp() }, { merge: true })
-      } catch { /* Las reglas pueden restringir este registro sin impedir el acceso al sitio. */ }
+      } catch (cause) {
+        const code = typeof cause === 'object' && cause && 'code' in cause ? String(cause.code) : 'unknown'
+        setError(`Tu cuenta inició sesión, pero no pudo registrarse para los permisos (${code}). Revisa las reglas de Firestore publicadas.`)
+      }
     })
   }, [])
 

@@ -1,8 +1,8 @@
 import { useEffect, useState, type ChangeEvent } from 'react'
 import '../styles/setlist-preview.css'
 import { Layout } from '../components/Layout'
-import { readLocalParticipationSettings, writeLocalParticipationSettings } from '../features/album/data/localParticipation'
 import { useGoogleSession } from '../features/access/useGoogleSession'
+import { useParticipationAccess } from '../features/album/hooks/useParticipationAccess'
 import { readSetlistTracks, type SetlistTrack } from '../features/album/data/localSetlistCatalog'
 import { resolveSetlistCoverUrl, setlistCatalogRepository } from '../features/album/repositories/SetlistCatalogRepository'
 import { LocalAlbumRepository } from '../features/album/repositories/LocalAlbumRepository'
@@ -30,14 +30,15 @@ const placeElement = (element: AlbumElement, existing: AlbumElement[]) => { cons
 const localContributionStore: ContributionStore = { async save(input) { const repository = new LocalAlbumRepository(); const album = await repository.getAlbum(); const page = album.pages[input.pageNumber - 1]; if (!page) throw new Error('La página seleccionada no existe.'); const element = createElement(page.id, input.type, page.elements.length + 1, input.author); element.content = input.content || element.content; element.styleVariant = input.styleVariant ?? element.styleVariant; element.setlist = input.setlist; element.media = input.media ? { originalWidth: 0, originalHeight: 0, mimeType: input.media.mime, fileSize: input.media.size, downloadUrl: input.media.data } : undefined; if (input.type === 'PHOTO') { element.content = input.media?.data; element.layout = { ...element.layout, width: .42, height: .3 } } if (input.type === 'SETLIST') element.layout = { ...element.layout, width: .76, height: Math.min(.48, .18 + Math.ceil((input.setlist?.length ?? 1) / 2) * .11) }; element.layout = placeElement(element, page.elements); await repository.savePage({ ...page, elements: [...page.elements, element], updatedAt: new Date().toISOString() }) } }
 
 export function SimplePageSetlistContributePage() {
-  const [isOpen, setIsOpen] = useState(() => readLocalParticipationSettings().isOpen)
   const [type, setType] = useState<ContributionType>('SETLIST')
   const [postItColor, setPostItColor] = useState('yellow')
   const [name, setName] = useState(''); const [age, setAge] = useState(''); const [page, setPage] = useState(1); const [content, setContent] = useState(''); const [photo, setPhoto] = useState<PhotoDraft | null>(null)
   const [tracks, setTracks] = useState<SetlistTrack[]>(readSetlistTracks); const [selectedIds, setSelectedIds] = useState<string[]>([]); const [expanded, setExpanded] = useState(false); const [preview, setPreview] = useState(false); const [message, setMessage] = useState<string | null>(null)
   const session = useGoogleSession()
+  const participation = useParticipationAccess()
+  const isOpen = participation.isOpen
 
-  useEffect(() => { const access = () => setIsOpen(readLocalParticipationSettings().isOpen); const catalog = () => setTracks(readSetlistTracks()); const unsubscribe = setlistCatalogRepository.subscribe((remoteTracks) => { if (remoteTracks.length) setTracks(remoteTracks) }, () => undefined); window.addEventListener('brattypolitan-participation-change', access); window.addEventListener('brattypolitan-setlist-change', catalog); return () => { unsubscribe?.(); window.removeEventListener('brattypolitan-participation-change', access); window.removeEventListener('brattypolitan-setlist-change', catalog) } }, [])
+  useEffect(() => { const catalog = () => setTracks(readSetlistTracks()); const unsubscribe = setlistCatalogRepository.subscribe((remoteTracks) => { if (remoteTracks.length) setTracks(remoteTracks) }, () => undefined); window.addEventListener('brattypolitan-setlist-change', catalog); return () => { unsubscribe?.(); window.removeEventListener('brattypolitan-setlist-change', catalog) } }, [])
   useEffect(() => { if (session.user?.displayName) setName((current) => current || session.user!.displayName!) }, [session.user?.displayName])
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'auto' }) }, [])
   useEffect(() => {
@@ -52,7 +53,10 @@ export function SimplePageSetlistContributePage() {
 
   const author = (): AuthorIdentity => ({ participantId: session.user?.uid ?? idForParticipant(), displayName: name.trim() || session.user?.displayName || undefined, age: age ? Number(age) : undefined })
   const selectedTracks = tracks.filter((track) => selectedIds.includes(track.id))
-  const toggleCollectiveArchive = () => { const next = !isOpen; setIsOpen(next); writeLocalParticipationSettings({ isOpen: next }) }
+  const toggleCollectiveArchive = async () => {
+    try { await participation.setOpen(!participation.isOpen) }
+    catch { setMessage('No fue posible actualizar la apertura para todos los dispositivos.') }
+  }
   const openSetlist = () => { if (!setlistCatalogRepository.usesFirebase) setTracks(readSetlistTracks()); setPreview(false); setExpanded(true); window.requestAnimationFrame(() => document.querySelector('.setlist-modal')?.scrollIntoView({ behavior: 'smooth', block: 'start' })) }
   const toggleTrack = (id: string) => setSelectedIds((current) => current.includes(id) ? current.filter((item) => item !== id) : current.length >= MAX_TRACKS ? current : [...current, id])
   const choosePhoto = (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; if (!file) return; if (!file.type.startsWith('image/') || file.size > MAX_IMAGE_BYTES) { setMessage('Selecciona una imagen de máximo 5 MB.'); return } const reader = new FileReader(); reader.onload = () => setPhoto({ data: String(reader.result), size: file.size, mime: file.type }); reader.readAsDataURL(file); event.target.value = '' }

@@ -9,6 +9,7 @@ Storage permanece cerrado salvo la referencia de la constelación. Esa ruta perm
 ## Edición y sincronización en tiempo real
 
 - `siteConfig/constellation` guarda la silueta publicada: puntos, conexiones y posición de la referencia. El landing la observa en tiempo real.
+- `siteConfig/participationAccess` guarda si la captura de recuerdos está abierta. Sólo administración puede modificarlo; la página `/contribute` lo observa en tiempo real para que el mismo estado llegue a todos los dispositivos.
 - `pages/{pageId}` guarda cada hoja de la libreta. La libreta observa la colección en tiempo real y conserva sus 100 hojas aunque aún no se hayan creado documentos para todas.
 - Firebase Hosting sirve la aplicación; Firestore guarda y distribuye estos cambios.
 - La imagen de referencia se guarda en Storage bajo `constellation/`. El editor la carga y Firestore publica su URL junto con la silueta.
@@ -26,3 +27,5 @@ El editor de silueta importa los archivos de puntos con el formato de seis colum
 ## Despliegue
 
 El flujo `.github/workflows/firebase-hosting-merge.yml` publica Firebase Hosting después de cada cambio en `main`. Requiere el secreto de GitHub `FIREBASE_SERVICE_ACCOUNT_BRATTYPOLITAN_EXPERIENCE`; el JSON de esa cuenta no se guarda ni se versiona en este repositorio.
+
+El despliegue de Hosting no publica automáticamente `firestore.rules`. Cada vez que cambien las reglas, publícalas desde un entorno autenticado con `firebase deploy --only firestore:rules --project brattypolitan-experience` antes de probar altas de usuarios o permisos.
