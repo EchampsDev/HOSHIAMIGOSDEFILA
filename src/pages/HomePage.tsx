@@ -49,7 +49,7 @@ export function HomePage() {
 
       <p className="landing-continue" data-scroll-reveal><span>✦</span> Sigue explorando · el archivo se construye entre todas las personas</p>
 
-      {session.isAdmin && <nav className="development-shortcuts reveal-actions" data-scroll-reveal aria-label="Accesos de desarrollo">
+      {session.isAdmin && <nav className="development-shortcuts" aria-label="Accesos de desarrollo">
         <p>DESARROLLO LOCAL</p>
         <Link to="/admin/experiencias">Centro admin</Link>
         <Link to="/constellation-editor">Editor constelación</Link>
