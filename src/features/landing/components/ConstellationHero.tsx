@@ -146,13 +146,13 @@ export function ConstellationHero() {
     points.forEach((point) => {
       const position = positions.get(point.id)
       if (!position) return
-      const radius = point.size * ratio
-      const glow = radius * 1.55
+      const radius = Math.max(point.size * ratio * .56, .48)
+      const glow = radius * 1.1
       const twinkle = .79 + Math.sin(twinkleTime / (430 + seededValue(point.id, 347) * 560) + seededValue(point.id, 373) * Math.PI * 2) * .17
       const gradient = context.createRadialGradient(position.x, position.y, 0, position.x, position.y, glow)
-      gradient.addColorStop(0, `rgba(215,249,255,${position.alpha * (point.brightness ?? .98) * twinkle * .84})`)
-      gradient.addColorStop(.26, `rgba(54,204,255,${position.alpha * .48 * twinkle * .76})`)
-      gradient.addColorStop(.62, `rgba(24,147,255,${position.alpha * .08 * twinkle})`)
+      gradient.addColorStop(0, `rgba(215,249,255,${position.alpha * (point.brightness ?? .98) * twinkle * .64})`)
+      gradient.addColorStop(.34, `rgba(54,204,255,${position.alpha * .24 * twinkle})`)
+      gradient.addColorStop(.72, `rgba(24,147,255,${position.alpha * .025 * twinkle})`)
       gradient.addColorStop(1, 'rgba(24,147,255,0)')
       context.fillStyle = gradient
       context.beginPath()
@@ -160,7 +160,7 @@ export function ConstellationHero() {
       context.fill()
       context.fillStyle = `rgba(244,253,255,${Math.min(position.alpha * twinkle * .92, 1)})`
       context.beginPath()
-      context.arc(position.x, position.y, Math.max(radius * .58, .9), 0, Math.PI * 2)
+      context.arc(position.x, position.y, Math.max(radius * .76, .55), 0, Math.PI * 2)
       context.fill()
     })
   }, [connections, layoutVersion, points, progress, twinkleTime])
