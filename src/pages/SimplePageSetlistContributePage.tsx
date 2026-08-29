@@ -39,6 +39,7 @@ export function SimplePageSetlistContributePage() {
 
   useEffect(() => { const access = () => setIsOpen(readLocalParticipationSettings().isOpen); const catalog = () => setTracks(readSetlistTracks()); const unsubscribe = setlistCatalogRepository.subscribe((remoteTracks) => { if (remoteTracks.length) setTracks(remoteTracks) }, () => undefined); window.addEventListener('brattypolitan-participation-change', access); window.addEventListener('brattypolitan-setlist-change', catalog); return () => { unsubscribe?.(); window.removeEventListener('brattypolitan-participation-change', access); window.removeEventListener('brattypolitan-setlist-change', catalog) } }, [])
   useEffect(() => { if (session.user?.displayName) setName((current) => current || session.user!.displayName!) }, [session.user?.displayName])
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'auto' }) }, [])
   useEffect(() => {
     const picker = document.querySelector('.memory-page-picker > div')
     if (!picker) return

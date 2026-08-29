@@ -21,7 +21,10 @@
 .site-shell:has(.contribution)::before { content: ''; position: fixed; z-index: 0; inset: 0; background: url('/images/bratty-contribute-background.png') center 18% / cover no-repeat; opacity: .48; }
 .site-shell:has(.contribution)::after { content: ''; position: fixed; z-index: 0; inset: 0; background: radial-gradient(ellipse at 50% 32%, rgba(0,0,0,.38) 0%, rgba(0,0,0,.76) 51%, #000 100%), linear-gradient(90deg, rgba(0,0,0,.82), rgba(0,0,0,.4) 50%, rgba(0,0,0,.82)); }
 .site-shell:has(.contribution) > * { position: relative; z-index: 1; }
-.site-shell:has(.contribution) .content-card { text-shadow: 0 2px 16px rgba(0,0,0,.9); }
+.site-shell:has(.contribution) .content-card { width: min(100%, 760px); margin: 0 auto; padding: clamp(76px, 10vh, 116px) 0 58px; text-shadow: 0 2px 16px rgba(0,0,0,.9); }
+.site-shell:has(.contribution) .contribution-form { margin-top: 30px; padding: clamp(16px, 3.5vw, 28px); border: 1px solid rgba(245,220,80,.28); background: rgba(3,5,8,.68); box-shadow: 0 20px 60px rgba(0,0,0,.28); backdrop-filter: blur(8px); }
+.site-shell:has(.contribution) .contribution-form > p { margin: 0; max-width: 580px; color: rgba(255,255,255,.82); line-height: 1.5; }
+.site-shell:has(.contribution) .contribution-form label { font-size: .8rem; }
 
 /* La selección se abre como una sección de la experiencia para poder llegar a ella con scroll. */
 .site-shell:has(.contribution) .setlist-modal { position: relative; z-index: 2; inset: auto; display: block; padding: 0 40px 72px; background: transparent; backdrop-filter: none; }
@@ -31,10 +34,21 @@
 .postit-color-picker { display: grid; gap: 8px; margin: 0; padding: 13px; border: 1px solid rgba(245,220,80,.48); background: rgba(0,0,0,.45); }.postit-color-picker legend { padding: 0 5px; color: #f5dc50; font: .67rem 'DM Mono',monospace; letter-spacing: .06em; }.postit-color-picker > div { display: flex; flex-wrap: wrap; gap: 8px; }.postit-color { width: 30px !important; height: 30px !important; min-height: 0 !important; padding: 0 !important; border: 2px solid rgba(255,255,255,.46) !important; background: var(--postit-color, #f6d875) !important; box-shadow: none !important; }.postit-color.is-selected { outline: 2px solid #f5dc50; outline-offset: 3px; }.postit-color.postit-yellow { --postit-color:#f6d875; }.postit-color.postit-green { --postit-color:#8fd878; }.postit-color.postit-blue { --postit-color:#83b8ee; }.postit-color.postit-purple { --postit-color:#b493e8; }.postit-color.postit-pink { --postit-color:#f49ab7; }.postit-color.postit-red { --postit-color:#e85e63; }.postit-color.postit-brown { --postit-color:#b67a51; }.postit-color.postit-violet { --postit-color:#8c67d6; }.postit-color.postit-white { --postit-color:#fffdf3; }.postit-color.postit-black { --postit-color:#171719; }.postit-color.postit-gray { --postit-color:#a9adb4; }.postit-color.postit-dark-green { --postit-color:#255d4a; }.postit-color.postit-royal-blue { --postit-color:#2457bf; }.postit-color.postit-cyan { --postit-color:#59d7e3; }.postit-color.postit-pride { background:linear-gradient(135deg,#e95760 0 17%,#f39d4b 17% 33%,#f4d452 33% 49%,#65bd73 49% 65%,#5c91da 65% 81%,#9a6cc8 81%) !important; }
 @media(max-width:560px) { .site-shell:has(.contribution) .setlist-modal { padding: 0 16px 44px; } }
 
-.memory-page-picker > div { grid-template-columns: 42px minmax(100px,180px) 42px auto; }
+.memory-page-picker > div { grid-template-columns: 42px minmax(140px,220px) 42px auto; }
 .memory-page-picker .memory-page-open { width: auto; min-width: 86px; padding: 0 12px !important; color: #111 !important; border-color: #f5dc50 !important; background: #f5dc50 !important; font: .62rem 'DM Mono', monospace; letter-spacing: .05em; text-transform: uppercase; }
 
 /* El editor refleja en vivo el color que se convertirá en el post-it. */
 .contribution-form:has(.postit-color.is-selected) textarea { color: #25201a; border-color: rgba(255,255,255,.78); background: var(--postit-color, #f6d875); text-shadow: 0 1px rgba(255,255,255,.2); transition: background .18s ease, color .18s ease; }
 .contribution-form:has(.postit-color.postit-yellow.is-selected) textarea { --postit-color:#f6d875; }.contribution-form:has(.postit-color.postit-green.is-selected) textarea { --postit-color:#8fd878; }.contribution-form:has(.postit-color.postit-blue.is-selected) textarea { --postit-color:#83b8ee; }.contribution-form:has(.postit-color.postit-purple.is-selected) textarea { --postit-color:#b493e8; }.contribution-form:has(.postit-color.postit-pink.is-selected) textarea { --postit-color:#f49ab7; }.contribution-form:has(.postit-color.postit-red.is-selected) textarea { --postit-color:#e85e63; }.contribution-form:has(.postit-color.postit-brown.is-selected) textarea { --postit-color:#b67a51; }.contribution-form:has(.postit-color.postit-violet.is-selected) textarea { --postit-color:#8c67d6; }.contribution-form:has(.postit-color.postit-white.is-selected) textarea { --postit-color:#fffdf3; }.contribution-form:has(.postit-color.postit-gray.is-selected) textarea { --postit-color:#a9adb4; }.contribution-form:has(.postit-color.postit-cyan.is-selected) textarea { --postit-color:#59d7e3; }
 .contribution-form:has(.postit-color.postit-black.is-selected) textarea,.contribution-form:has(.postit-color.postit-dark-green.is-selected) textarea,.contribution-form:has(.postit-color.postit-royal-blue.is-selected) textarea { color:#fff; text-shadow:0 1px rgba(0,0,0,.42); }.contribution-form:has(.postit-color.postit-black.is-selected) textarea { --postit-color:#171719; }.contribution-form:has(.postit-color.postit-dark-green.is-selected) textarea { --postit-color:#255d4a; }.contribution-form:has(.postit-color.postit-royal-blue.is-selected) textarea { --postit-color:#2457bf; }.contribution-form:has(.postit-color.postit-pride.is-selected) textarea { color:#241b20; background:linear-gradient(135deg,#e95760 0 17%,#f39d4b 17% 33%,#f4d452 33% 49%,#65bd73 49% 65%,#5c91da 65% 81%,#9a6cc8 81%); }
+
+@media (max-width: 560px) {
+  .site-shell:has(.contribution) .content-card { padding-top: 70px; padding-bottom: 40px; }
+  .site-shell:has(.contribution) .content-card h1 { margin-bottom: 18px; }
+  .site-shell:has(.contribution) .contribution-form { margin-top: 20px; padding: 14px; gap: 14px; }
+  .memory-page-picker { padding: 14px; }
+  .memory-page-picker > div { grid-template-columns: 42px minmax(0, 1fr) 42px; }
+  .memory-page-picker .memory-page-open { width: 100%; min-width: 0; height: 42px; grid-column: 1 / -1; }
+  .setlist-launcher { align-items: flex-start; flex-wrap: wrap; }
+  .setlist-launcher span { width: 100%; }
+}
