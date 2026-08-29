@@ -5,18 +5,18 @@
 .album-header p, .album-editor-header p { margin: 0; color: rgba(245,235,220,.58); }
 .album-reader { display: grid; justify-items: center; gap: 22px; }
 .scrapbook-cover, .scrapbook-loading { box-sizing: border-box; width: min(80vw, 400px, calc(68svh * .72)); aspect-ratio: .72; border: 0; box-shadow: 18px 22px 38px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,242,209,.16); }
-.scrapbook-cover { position: relative; overflow: visible; padding: 10% 9%; display: flex; flex-direction: column; justify-content: space-between; color: #f5dfbe; background: linear-gradient(112deg, #3a1e13, #7a4324 42%, #a06134 75%, #4b2818); cursor: pointer; text-align: left; isolation: isolate; transform: rotateZ(-.5deg); transition: transform .35s ease, filter .35s ease; }
+.scrapbook-cover { position: relative; overflow: visible; padding: 10% 9%; display: flex; flex-direction: column; justify-content: space-between; color: #f5dfbe; background: linear-gradient(112deg, #3a1e13, #7a4324 42%, #a06134 75%, #4b2818); cursor: pointer; text-align: left; isolation: isolate; container-type: inline-size; transform: rotateZ(-.5deg); transition: transform .35s ease, filter .35s ease; }
 .scrapbook-cover:hover { filter: brightness(1.08); transform: rotateZ(-.15deg) translateY(-4px); }
 .scrapbook-cover::before { content: ''; position: absolute; z-index: -1; inset: 0; opacity: .34; background-image: repeating-linear-gradient(82deg, transparent 0 4px, rgba(255,255,255,.1) 5px, transparent 6px 12px), radial-gradient(circle at 18% 15%, rgba(255,220,165,.22), transparent 30%); mix-blend-mode: soft-light; }
 span.cover-page-edge { position: absolute !important; z-index: 0 !important; top: 2%; right: 0; width: 3.2%; height: 95%; border-radius: 0 4px 4px 0; background: repeating-linear-gradient(to bottom, #e8dabc 0 2px, #b7a27e 2px 3px, #f4e9ce 3px 5px); box-shadow: 4px 3px 7px rgba(0,0,0,.28); }
 .scrapbook-cover span, .scrapbook-cover strong, .scrapbook-cover small { position: relative; z-index: 1; }
 .scrapbook-cover span { font-family: 'DM Mono', monospace; font-size: .6rem; letter-spacing: .16em; }
-.scrapbook-cover strong { font-size: clamp(2rem, 8vw, 4.6rem); line-height: .8; letter-spacing: -.08em; }
+.scrapbook-cover strong { max-width: 100%; font-size: clamp(1.65rem, 13cqw, 3.35rem); line-height: .84; letter-spacing: -.075em; overflow-wrap: anywhere; }
 .scrapbook-cover small { align-self: end; font-family: 'DM Mono', monospace; font-size: .58rem; letter-spacing: .1em; }
 .cover-mark { position: absolute !important; z-index: 2 !important; top: 10%; right: 8%; width: 21%; display: grid; justify-items: center; gap: 2px; }
 .cover-emblem { position: static; width: 100%; height: auto; filter: drop-shadow(0 2px 1px rgba(0,0,0,.16)); }
 .cover-mark b { color: #b3090c; font-family: Arial, sans-serif; font-size: clamp(1.45rem, 4.5vw, 2.25rem); line-height: .8; text-shadow: 0 1px rgba(255,160,115,.24); }
-.cover-bookmark { position: absolute !important; z-index: 1 !important; right: 11%; bottom: 0; width: 7%; height: 15%; display: grid; place-items: start center; padding-top: 8%; color: #fff; background: linear-gradient(90deg, #003dca, #1477ff 50%, #003da6); box-shadow: 3px 4px 6px rgba(0,0,0,.3); clip-path: polygon(0 0,100% 0,100% 100%,50% 87%,0 100%); cursor: pointer; }
+.cover-bookmark { position: absolute !important; z-index: 1 !important; right: 9%; bottom: 3%; width: 7%; height: 13%; display: grid; place-items: start center; padding-top: 8%; color: #fff; background: linear-gradient(90deg, #003dca, #1477ff 50%, #003da6); box-shadow: 3px 4px 6px rgba(0,0,0,.3); cursor: pointer; }
 .cover-bookmark i { font: 700 clamp(.42rem, 1.3vw, .62rem) 'DM Mono', monospace; font-style: normal; }
 .back-cover { background: linear-gradient(115deg, #2e1b14, #5d3927); }
 .scrapbook-spread { position: relative; display: grid; grid-template-columns: minmax(0,1fr) 3.2% minmax(0,1fr); width: min(94vw, 840px, calc(78svh * 1.52)); aspect-ratio: 1.52; cursor: pointer; perspective: 1800px; transform-style: preserve-3d; filter: drop-shadow(20px 24px 22px rgba(0,0,0,.45)); }
@@ -28,8 +28,8 @@ span.cover-page-edge { position: absolute !important; z-index: 0 !important; top
 .scrapbook-sheet--left { border-radius: 5px 0 0 5px; transform-origin: right center; }
 .scrapbook-sheet--right { border-radius: 0 5px 5px 0; transform-origin: left center; }
 .scrapbook-gutter { position: relative; z-index: 5; overflow: visible; background: linear-gradient(90deg, rgba(72,48,29,.24), rgba(255,252,236,.54) 48%, rgba(72,48,29,.2)); }
-.scrapbook-gutter .spiral-binding { left: 50%; top: 3%; width: 220%; height: 94%; transform: translateX(-50%); }
-.scrapbook-gutter .spiral-binding i { width: 100%; height: clamp(5px, .9vw, 9px); transform: translateX(-50%); }
+.scrapbook-gutter .spiral-binding { left: 50%; top: 3%; width: 270%; height: 94%; transform: translateX(-50%); }
+.scrapbook-gutter .spiral-binding i { width: 100%; height: clamp(5px, .9vw, 9px); border-radius: 8px 0 0 8px; transform: translateX(-50%); }
 .scrapbook-spread.is-turning.turn-next .scrapbook-sheet--right { animation: page-flip-next .42s cubic-bezier(.2,.72,.2,1); }
 .scrapbook-spread.is-turning.turn-previous .scrapbook-sheet--left { animation: page-flip-previous .42s cubic-bezier(.2,.72,.2,1); }
 .scrapbook-spread.is-opening { animation: book-open .78s cubic-bezier(.18,.78,.2,1) both; transform-origin: center center; }
@@ -40,8 +40,8 @@ span.cover-page-edge { position: absolute !important; z-index: 0 !important; top
 .spiral-binding { position: absolute; z-index: 12; left: 5.8%; top: 4%; width: 8%; height: 92%; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; pointer-events: none; }
 .spiral-binding i { width: 96%; height: clamp(7px, 1.75vw, 11px); display: block; box-sizing: border-box; border: clamp(1px, .28vw, 2px) solid #827f7a; border-right-color: #343332; border-radius: 7px 0 0 7px; background: linear-gradient(180deg, #f2eee5, #77736e 52%, #c7c2b8); box-shadow: -2px 2px 2px rgba(0,0,0,.44), inset 1px 1px 1px rgba(255,255,255,.72); transform: translateX(-62%); }
 .spiral-binding.is-cover i { border-color: #161616; border-right-color: #090909; background: linear-gradient(180deg, #e6e0d5, #353434 47%, #9d998f); box-shadow: -2px 2px 2px rgba(0,0,0,.72), inset 1px 1px 1px rgba(255,255,255,.45); }
-.scrapbook-cover > .spiral-binding { left: -.8%; top: 4%; width: 9%; height: 92%; }
-.scrapbook-cover > .spiral-binding i { transform: translateX(-44%); }
+.scrapbook-cover > .spiral-binding { left: -4%; top: 4%; width: 12%; height: 92%; }
+.scrapbook-cover > .spiral-binding i { width: 92%; transform: translateX(-16%); }
 .album-paper.grid { background-image: linear-gradient(rgba(91,133,152,.16) 1px, transparent 1px), linear-gradient(90deg, rgba(91,133,152,.16) 1px, transparent 1px), radial-gradient(circle, rgba(131,94,54,.08), transparent 55%); background-size: 7.5% 5.4%, 7.5% 5.4%, 100% 100%; }
 .album-paper.lined { background-image: repeating-linear-gradient(to bottom, transparent 0 7.25%, rgba(85,129,148,.28) 7.45% 7.75%, transparent 7.9% 15%), linear-gradient(90deg, transparent 11%, rgba(198,91,86,.32) 11.2% 11.5%, transparent 11.7%); }
 .album-page-number { position: absolute; right: 7%; bottom: 4.5%; margin: 0; color: rgba(64,49,35,.55); font-family: 'DM Mono', monospace; font-size: .63rem; }
