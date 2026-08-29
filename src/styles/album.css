@@ -28,11 +28,11 @@ span.cover-page-edge { position: absolute !important; z-index: 0 !important; top
 .scrapbook-sheet--left { border-radius: 5px 0 0 5px; transform-origin: right center; }
 .scrapbook-sheet--right { border-radius: 0 5px 5px 0; transform-origin: left center; }
 .scrapbook-gutter { position: relative; z-index: 5; overflow: visible; background: linear-gradient(90deg, rgba(72,48,29,.24), rgba(255,252,236,.54) 48%, rgba(72,48,29,.2)); }
-.scrapbook-gutter::before, .scrapbook-gutter::after { content: ''; position: absolute; z-index: 7; top: 3%; width: 5px; height: 94%; background: radial-gradient(circle at 50% 4px, #3b2a1d 0 1.5px, rgba(0,0,0,.2) 2px, transparent 3px); background-size: 5px calc(100% / 18); background-repeat: repeat-y; }
-.scrapbook-gutter::before { left: -2px; }
-.scrapbook-gutter::after { right: -2px; }
 .scrapbook-gutter .spiral-binding { left: 50%; top: 3%; width: 270%; height: 94%; transform: translateX(-50%); }
-.scrapbook-gutter .spiral-binding i { width: 100%; height: clamp(5px, .9vw, 9px); border-radius: 8px 0 0 8px; transform: translateX(-10%); }
+.scrapbook-gutter .spiral-binding i { position: relative; width: 100%; height: clamp(5px, .9vw, 9px); border-radius: 8px 0 0 8px; transform: translateX(-10%); }
+.scrapbook-gutter .spiral-binding i::before, .scrapbook-gutter .spiral-binding i::after { content: ''; position: absolute; z-index: -1; top: 50%; width: 4px; aspect-ratio: 1; border-radius: 50%; background: #38271b; box-shadow: inset 0 1px 1px rgba(0,0,0,.72), 0 1px rgba(255,248,224,.34); transform: translateY(-50%); }
+.scrapbook-gutter .spiral-binding i::before { left: -3px; }
+.scrapbook-gutter .spiral-binding i::after { right: -3px; }
 .scrapbook-spread.is-turning.turn-next .scrapbook-sheet--right { animation: page-flip-next .42s cubic-bezier(.2,.72,.2,1); }
 .scrapbook-spread.is-turning.turn-previous .scrapbook-sheet--left { animation: page-flip-previous .42s cubic-bezier(.2,.72,.2,1); }
 .scrapbook-spread.is-opening { animation: book-open .78s cubic-bezier(.18,.78,.2,1) both; transform-origin: center center; }
