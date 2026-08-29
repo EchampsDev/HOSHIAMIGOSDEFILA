@@ -20,7 +20,11 @@
 .site-shell:has(.contribution) { position: relative; isolation: isolate; min-height: 100svh; }
 .site-shell:has(.contribution)::before { content: ''; position: fixed; z-index: 0; inset: 0; background: url('/images/bratty-contribute-background.png') center 18% / cover no-repeat; opacity: .48; }
 .site-shell:has(.contribution)::after { content: ''; position: fixed; z-index: 0; inset: 0; background: radial-gradient(ellipse at 50% 32%, rgba(0,0,0,.38) 0%, rgba(0,0,0,.76) 51%, #000 100%), linear-gradient(90deg, rgba(0,0,0,.82), rgba(0,0,0,.4) 50%, rgba(0,0,0,.82)); }
-.site-shell:has(.contribution) > * { position: relative; z-index: 1; }
+.site-shell:has(.contribution) > :not(.explore-drawer-layer) { position: relative; z-index: 1; }
+
+/* El panel Explorar debe salir del flujo de la página de participación:
+   así abre sobre la vista, conserva su propio scroll y no añade altura al documento. */
+.site-shell:has(.contribution) > .explore-drawer-layer { position: fixed; z-index: 100; }
 .site-shell:has(.contribution) .content-card { width: min(100%, 760px); margin: 0 auto; padding: clamp(76px, 10vh, 116px) 0 58px; text-shadow: 0 2px 16px rgba(0,0,0,.9); }
 .site-shell:has(.contribution) .contribution-form { margin-top: 30px; padding: clamp(16px, 3.5vw, 28px); border: 1px solid rgba(245,220,80,.28); background: rgba(3,5,8,.68); box-shadow: 0 20px 60px rgba(0,0,0,.28); backdrop-filter: blur(8px); }
 .site-shell:has(.contribution) .contribution-form > p { margin: 0; max-width: 580px; color: rgba(255,255,255,.82); line-height: 1.5; }
