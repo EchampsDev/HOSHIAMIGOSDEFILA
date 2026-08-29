@@ -16,7 +16,7 @@ span.cover-page-edge { position: absolute !important; z-index: 0 !important; top
 .cover-mark { position: absolute !important; z-index: 2 !important; top: 10%; right: 8%; width: 21%; display: grid; justify-items: center; gap: 2px; }
 .cover-emblem { position: static; width: 100%; height: auto; filter: drop-shadow(0 2px 1px rgba(0,0,0,.16)); }
 .cover-mark b { color: #b3090c; font-family: Arial, sans-serif; font-size: clamp(1.45rem, 4.5vw, 2.25rem); line-height: .8; text-shadow: 0 1px rgba(255,160,115,.24); }
-.cover-bookmark { position: absolute !important; z-index: 1 !important; right: 7%; bottom: -8%; width: 6.5%; height: 20%; display: grid; place-items: start center; padding-top: 8%; color: #fff; background: linear-gradient(90deg, #003dca, #1477ff 50%, #003da6); box-shadow: 3px 4px 6px rgba(0,0,0,.3); cursor: pointer; }
+.cover-bookmark { position: absolute !important; z-index: 1 !important; right: 7%; bottom: -8%; width: 6.5%; height: 8%; display: grid; place-items: start center; padding-top: 8%; color: #fff; background: linear-gradient(90deg, #003dca, #1477ff 50%, #003da6); box-shadow: 3px 4px 6px rgba(0,0,0,.3); cursor: pointer; }
 .cover-bookmark i { font: 700 clamp(.42rem, 1.3vw, .62rem) 'DM Mono', monospace; font-style: normal; }
 .back-cover { background: linear-gradient(115deg, #2e1b14, #5d3927); }
 .scrapbook-spread { position: relative; display: grid; grid-template-columns: minmax(0,1fr) 3.2% minmax(0,1fr); width: min(94vw, 840px, calc(78svh * 1.52)); aspect-ratio: 1.52; cursor: pointer; perspective: 1800px; transform-style: preserve-3d; filter: drop-shadow(20px 24px 22px rgba(0,0,0,.45)); }
