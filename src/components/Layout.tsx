@@ -27,6 +27,7 @@ export function Layout({ children }: PropsWithChildren) {
         {session.isConfigured && (session.user ? <button type="button" className="topbar-google" onClick={() => void session.signOut()}>Salir · {session.user.displayName?.split(' ')[0] ?? 'Google'}</button> : <button type="button" className="topbar-google" onClick={() => void session.signIn()}>Accede con tu cuenta de Google</button>)}
       </nav>
     </header>
+    {session.error && <p className="session-error" role="alert">{session.error}</p>}
     {children}
     <footer data-scroll-reveal>BRATTY · CDMX · 2026 <FourPointMark className="footer-four-point-mark" /></footer>
 
