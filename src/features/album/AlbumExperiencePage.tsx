@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AlbumControls } from './components/AlbumControls'
 import { PageIndex } from './components/PageIndex'
@@ -12,6 +12,10 @@ export function AlbumExperiencePage() {
   const [indexOpen, setIndexOpen] = useState(false)
   const [direction, setDirection] = useState<'next' | 'previous'>('next')
   const [bookmarkPage, setBookmarkPage] = useState(() => Number(localStorage.getItem('brattypolitan.album-bookmark-page')) || 1)
+  useEffect(() => {
+    const target = Number(new URLSearchParams(window.location.search).get('page'))
+    if (target > 0) album.goTo(target)
+  }, [album.album])
   const next = () => { setDirection('next'); album.next() }
   const previous = () => { setDirection('previous'); album.previous() }
   const goTo = (page: number) => { setDirection(page >= album.pageNumber ? 'next' : 'previous'); album.goTo(page) }

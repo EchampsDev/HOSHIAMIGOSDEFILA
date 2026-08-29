@@ -39,6 +39,15 @@ export function SimplePageSetlistContributePage() {
 
   useEffect(() => { const access = () => setIsOpen(readLocalParticipationSettings().isOpen); const catalog = () => setTracks(readSetlistTracks()); const unsubscribe = setlistCatalogRepository.subscribe((remoteTracks) => { if (remoteTracks.length) setTracks(remoteTracks) }, () => undefined); window.addEventListener('brattypolitan-participation-change', access); window.addEventListener('brattypolitan-setlist-change', catalog); return () => { unsubscribe?.(); window.removeEventListener('brattypolitan-participation-change', access); window.removeEventListener('brattypolitan-setlist-change', catalog) } }, [])
   useEffect(() => { if (session.user?.displayName) setName((current) => current || session.user!.displayName!) }, [session.user?.displayName])
+  useEffect(() => {
+    const picker = document.querySelector('.memory-page-picker > div')
+    if (!picker) return
+    const button = document.createElement('button')
+    button.type = 'button'; button.className = 'memory-page-open'; button.textContent = 'Ver hoja'
+    const openPage = () => { window.location.assign(`/album?page=${page}`) }
+    button.addEventListener('click', openPage); picker.append(button)
+    return () => { button.removeEventListener('click', openPage); button.remove() }
+  }, [page])
 
   const author = (): AuthorIdentity => ({ participantId: session.user?.uid ?? idForParticipant(), displayName: name.trim() || session.user?.displayName || undefined, age: age ? Number(age) : undefined })
   const selectedTracks = tracks.filter((track) => selectedIds.includes(track.id))
