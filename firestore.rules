@@ -6,6 +6,10 @@ service cloud.firestore {
     function isAdmin() {
       return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
+    function isConstellationContributor() {
+      return signedIn() && exists(/databases/$(database)/documents/userRoles/$(request.auth.uid))
+        && get(/databases/$(database)/documents/userRoles/$(request.auth.uid)).data.role == 'CONSTELLATION_CONTRIBUTOR';
+    }
 
     // Admin roles are bootstrapped from the Firebase console or Admin SDK only.
     match /admins/{userId} {
@@ -14,11 +18,32 @@ service cloud.firestore {
       allow list, create, update, delete: if false;
     }
 
+    // Perfiles de acceso: la cuenta crea únicamente su propio perfil inicial USER.
+    // Sólo la cuenta administradora puede convertir a alguien en colaborador, especial o invitado.
+    match /userRoles/{userId} {
+      allow get: if signedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      allow create: if signedIn() && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['role', 'displayName', 'email', 'createdAt', 'lastSignInAt'])
+        && request.resource.data.role == 'USER'
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() <= 100
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 160;
+      allow update: if isAdmin() || (signedIn() && request.auth.uid == userId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'email', 'lastSignInAt'])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() <= 100
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 160);
+      allow delete: if isAdmin();
+    }
+
     // Registro mínimo de participación: nombre visible y marcas de inicio de sesión.
     // Cada cuenta sólo puede acceder a su propio documento; no hay lectura masiva.
     match /participantSessions/{userId} {
-      allow get: if signedIn() && request.auth.uid == userId;
-      allow list: if false;
+      allow get: if signedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
       allow create: if signedIn() && request.auth.uid == userId
         && request.resource.data.keys().hasOnly(['displayName', 'lastSignInAt'])
         && request.resource.data.displayName is string
@@ -33,7 +58,9 @@ service cloud.firestore {
     match /siteConfig/{document} {
       allow get: if true;
       allow list: if false;
-      allow create, update, delete: if isAdmin();
+      // Colaboradores aprobados sólo pueden editar la silueta compartida.
+      allow create, update: if isAdmin() || (document == 'constellation' && isConstellationContributor());
+      allow delete: if isAdmin();
     }
 
     match /pages/{pageId} {

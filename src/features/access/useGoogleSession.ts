@@ -1,22 +1,30 @@
 import { useEffect, useState } from 'react'
 import { onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth'
-import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore'
+import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore'
 import { firebaseAuth, firestore, googleProvider, isFirebaseConfigured } from '../../infrastructure/firebase/client'
+import type { UserRole } from './roles'
 
 export function useGoogleSession() {
   const [user, setUser] = useState<User | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [role, setRole] = useState<UserRole | null>(null)
   const [isLoading, setIsLoading] = useState(Boolean(firebaseAuth))
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!firebaseAuth) { setIsLoading(false); return }
     return onAuthStateChanged(firebaseAuth, async (currentUser) => {
-      setUser(currentUser); setIsAdmin(false); setIsLoading(false)
+      setUser(currentUser); setIsAdmin(false); setRole(null); setIsLoading(false)
       if (!currentUser || !firestore) return
       try {
-        const admin = await getDoc(doc(firestore, 'admins', currentUser.uid))
+        const adminReference = doc(firestore, 'admins', currentUser.uid)
+        const roleReference = doc(firestore, 'userRoles', currentUser.uid)
+        const [admin, profile] = await Promise.all([getDoc(adminReference), getDoc(roleReference)])
         setIsAdmin(admin.exists() && admin.data().role === 'admin')
+        setRole((profile.data()?.role as UserRole | undefined) ?? 'USER')
+        const identity = { displayName: currentUser.displayName ?? 'Participante', email: currentUser.email ?? '', lastSignInAt: serverTimestamp() }
+        if (profile.exists()) await updateDoc(roleReference, identity)
+        else await setDoc(roleReference, { ...identity, role: 'USER', createdAt: serverTimestamp() })
         // El registro propio de la experiencia contiene sólo el nombre visible y marcas de sesión.
         await setDoc(doc(firestore, 'participantSessions', currentUser.uid), { displayName: currentUser.displayName ?? 'Participante', lastSignInAt: serverTimestamp() }, { merge: true })
       } catch { /* Las reglas pueden restringir este registro sin impedir el acceso al sitio. */ }
@@ -29,5 +37,5 @@ export function useGoogleSession() {
     catch { setError('No fue posible iniciar sesión con Google.') }
   }
   const signOutUser = async () => { if (firebaseAuth) await signOut(firebaseAuth) }
-  return { isConfigured: isFirebaseConfigured, user, isAdmin, isLoading, error, signIn, signOut: signOutUser }
+  return { isConfigured: isFirebaseConfigured, user, isAdmin, role, isLoading, error, signIn, signOut: signOutUser }
 }

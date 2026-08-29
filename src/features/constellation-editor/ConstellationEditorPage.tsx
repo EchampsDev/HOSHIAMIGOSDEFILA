@@ -336,7 +336,7 @@ function buildAutomaticConnections(points: ConstellationPoint[], maximumDistance
   return [...links.values()]
 }
 
-export function ConstellationEditorPage() {
+export function ConstellationEditorPage({ workshop = false }: { workshop?: boolean }) {
   const session = useAdminSession()
   const [points, setPoints] = useState<ConstellationPoint[]>(() => constellationPoints.map((point) => ({ ...point })))
   const [connections, setConnections] = useState<ConstellationConnection[]>(() => constellationConnections.map((connection) => ({ ...connection })))
@@ -838,15 +838,15 @@ export function ConstellationEditorPage() {
 
   return <main className="constellation-editor-page">
     <header className="editor-header">
-      <div><p>HERRAMIENTA INTERNA · DESARROLLO</p><h1>Constellation Editor</h1></div>
-      <div>{constellationRepository.usesFirebase && (session.user ? <button type="button" onClick={() => void session.signOut()}>Cerrar sesión</button> : <button type="button" onClick={() => void session.signIn()}>Iniciar sesión con Google</button>)}<Link to="/">Volver al landing</Link></div>
+      <div><p>{workshop ? 'TALLER COMPARTIDO · CONSTELACIÓN' : 'HERRAMIENTA INTERNA · DESARROLLO'}</p><h1>{workshop ? 'Taller de constelación' : 'Constellation Editor'}</h1></div>
+      <div>{constellationRepository.usesFirebase && (session.user ? <button type="button" onClick={() => void session.signOut()}>Cerrar sesión</button> : <button type="button" onClick={() => void session.signIn()}>Iniciar sesión con Google</button>)}<Link to={workshop ? '/taller-constelacion' : '/'}>{workshop ? 'Acceso de colaboradores' : 'Volver al landing'}</Link></div>
     </header>
 
     <div className="editor-layout">
       <aside className="editor-panel">
         <section>
           <h2>Referencia del landing</h2>
-          <p className="editor-help">Añade una imagen como referencia visual del landing. Se publicará al guardar con la cuenta administradora.</p>
+          <p className="editor-help">Añade una imagen como referencia visual del landing. {workshop ? 'Las personas colaboradoras pueden ajustar puntos y conexiones; la imagen de referencia queda reservada para administración.' : 'Se publicará al guardar con la cuenta administradora.'}</p>
           <label>Altura <output>{Math.round(scene.referenceY)}%</output><input type="range" min="20" max="80" step="1" value={scene.referenceY} onChange={(event) => updateScene({ referenceY: Number(event.target.value) })} /></label>
           <label>Posición horizontal <output>{Math.round(scene.referenceX)}%</output><input type="range" min="20" max="80" step="1" value={scene.referenceX} onChange={(event) => updateScene({ referenceX: Number(event.target.value) })} /></label>
           <div className="editor-detection-divider" />
