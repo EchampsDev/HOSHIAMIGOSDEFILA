@@ -5,21 +5,27 @@
 .album-header p, .album-editor-header p { margin: 0; color: rgba(245,235,220,.58); }
 .album-reader { display: grid; justify-items: center; gap: 22px; }
 .scrapbook-cover, .scrapbook-sheet, .scrapbook-loading { width: min(88vw, 520px); aspect-ratio: .72; border: 0; box-shadow: 18px 22px 38px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,242,209,.16); }
-.scrapbook-cover { position: relative; overflow: hidden; padding: 11% 9%; display: flex; flex-direction: column; justify-content: space-between; color: #eed9ba; background: linear-gradient(115deg, #3e2417, #87522e 48%, #4d2c1c); cursor: pointer; text-align: left; transform: rotate(-1.3deg); }
-.scrapbook-cover::before { content: ''; position: absolute; inset: 0; opacity: .28; background-image: repeating-linear-gradient(82deg, transparent 0 4px, rgba(255,255,255,.1) 5px, transparent 6px 12px); mix-blend-mode: soft-light; }
+.scrapbook-cover { position: relative; overflow: visible; padding: 11% 9%; display: flex; flex-direction: column; justify-content: space-between; color: #f5dfbe; background: linear-gradient(112deg, #3a1e13, #7a4324 42%, #a06134 75%, #4b2818); cursor: pointer; text-align: left; isolation: isolate; transform: perspective(1200px) rotateY(-7deg) rotateZ(-1.8deg); transform-style: preserve-3d; transition: transform .35s ease, filter .35s ease; }
+.scrapbook-cover:hover { filter: brightness(1.08); transform: perspective(1200px) rotateY(-3deg) rotateZ(-.6deg) translateY(-4px); }
+.scrapbook-cover::before { content: ''; position: absolute; z-index: -1; inset: 0; opacity: .34; background-image: repeating-linear-gradient(82deg, transparent 0 4px, rgba(255,255,255,.1) 5px, transparent 6px 12px), radial-gradient(circle at 18% 15%, rgba(255,220,165,.22), transparent 30%); mix-blend-mode: soft-light; }
+.cover-page-edge { position: absolute; z-index: -2; top: 2.1%; right: -3%; width: 4.6%; height: 95%; border-radius: 0 5px 5px 0; background: repeating-linear-gradient(to bottom, #e8dabc 0 2px, #b7a27e 2px 3px, #f4e9ce 3px 5px); box-shadow: 6px 4px 10px rgba(0,0,0,.38); transform: translateZ(-18px) skewY(-1.4deg); }
 .scrapbook-cover span, .scrapbook-cover strong, .scrapbook-cover small { position: relative; z-index: 1; }
 .scrapbook-cover span { font-family: 'DM Mono', monospace; font-size: .6rem; letter-spacing: .16em; }
 .scrapbook-cover strong { font-size: clamp(2rem, 8vw, 4.6rem); line-height: .8; letter-spacing: -.08em; }
 .scrapbook-cover small { align-self: end; font-family: 'DM Mono', monospace; font-size: .58rem; letter-spacing: .1em; }
+.cover-mark { position: absolute !important; z-index: 2 !important; top: 10%; right: 8%; width: 21%; display: grid; justify-items: center; gap: 2px; }
+.cover-emblem { position: static; width: 100%; height: auto; filter: drop-shadow(0 2px 1px rgba(0,0,0,.16)); }
+.cover-mark b { color: #b3090c; font-family: Arial, sans-serif; font-size: clamp(1.45rem, 4.5vw, 2.25rem); line-height: .8; text-shadow: 0 1px rgba(255,160,115,.24); }
+.cover-bookmark { position: absolute !important; z-index: 1 !important; right: 10%; bottom: -6%; width: 8%; height: 21%; background: linear-gradient(90deg, #003dca, #1477ff 50%, #003da6); box-shadow: 3px 5px 7px rgba(0,0,0,.36); clip-path: polygon(0 0,100% 0,100% 100%,50% 87%,0 100%); }
 .back-cover { background: linear-gradient(115deg, #2e1b14, #5d3927); }
 .scrapbook-sheet { position: relative; overflow: hidden; perspective: 1100px; cursor: pointer; }
 .scrapbook-sheet.is-turning { animation: page-turn .38s cubic-bezier(.2,.74,.27,1); transform-origin: left center; }
 .scrapbook-sheet.is-turning.turn-previous { animation-direction: reverse; transform-origin: right center; }
 @keyframes page-turn { 0% { opacity: .2; transform: perspective(1100px) rotateY(-72deg); } 100% { opacity: 1; transform: perspective(1100px) rotateY(0); } }
 .album-paper { position: relative; width: 100%; height: 100%; overflow: hidden; color: #423528; background-color: #f1e4c7; box-shadow: inset 0 0 28px rgba(94,63,38,.15); }
-.spiral-binding { position: absolute; z-index: 12; left: -1.5%; top: 4%; width: 8%; height: 92%; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; pointer-events: none; }
-.spiral-binding i { width: 62%; aspect-ratio: 1.7; display: block; border: clamp(1px, .28vw, 2px) solid #7a7670; border-right: 0; border-radius: 9px 0 0 9px; background: linear-gradient(180deg, #e5e0d7, #898681); box-shadow: -1px 1px 1px rgba(0,0,0,.35), inset 1px 1px 1px rgba(255,255,255,.65); transform: translateX(-30%); }
-.spiral-binding.is-cover i { border-color: #171717; background: linear-gradient(180deg, #beb9af, #292827 52%, #85817a); box-shadow: -1px 1px 1px rgba(0,0,0,.7), inset 1px 1px 1px rgba(255,255,255,.45); }
+.spiral-binding { position: absolute; z-index: 12; left: 5.8%; top: 4%; width: 8%; height: 92%; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; pointer-events: none; }
+.spiral-binding i { width: 96%; height: clamp(7px, 1.75vw, 11px); display: block; box-sizing: border-box; border: clamp(1px, .28vw, 2px) solid #827f7a; border-right-color: #343332; border-radius: 7px 0 0 7px; background: linear-gradient(180deg, #f2eee5, #77736e 52%, #c7c2b8); box-shadow: -2px 2px 2px rgba(0,0,0,.44), inset 1px 1px 1px rgba(255,255,255,.72); transform: translateX(-62%); }
+.spiral-binding.is-cover i { border-color: #161616; border-right-color: #090909; background: linear-gradient(180deg, #e6e0d5, #353434 47%, #9d998f); box-shadow: -2px 2px 2px rgba(0,0,0,.72), inset 1px 1px 1px rgba(255,255,255,.45); }
 .album-paper.grid { background-image: linear-gradient(rgba(91,133,152,.16) 1px, transparent 1px), linear-gradient(90deg, rgba(91,133,152,.16) 1px, transparent 1px), radial-gradient(circle, rgba(131,94,54,.08), transparent 55%); background-size: 7.5% 5.4%, 7.5% 5.4%, 100% 100%; }
 .album-paper.lined { background-image: repeating-linear-gradient(to bottom, transparent 0 7.25%, rgba(85,129,148,.28) 7.45% 7.75%, transparent 7.9% 15%), linear-gradient(90deg, transparent 11%, rgba(198,91,86,.32) 11.2% 11.5%, transparent 11.7%); }
 .album-page-number { position: absolute; right: 7%; bottom: 4.5%; margin: 0; color: rgba(64,49,35,.55); font-family: 'DM Mono', monospace; font-size: .63rem; }

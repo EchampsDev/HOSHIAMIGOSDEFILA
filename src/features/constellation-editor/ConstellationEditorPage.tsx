@@ -38,6 +38,17 @@ type GroupMoveGesture = {
   points: ConstellationPoint[]
 }
 
+type SelectionGesture = {
+  pointerId: number
+  start: { x: number; y: number }
+  end: { x: number; y: number }
+}
+
+type FreeDrawGesture = {
+  pointerId: number
+  samples: { x: number; y: number }[]
+}
+
 type DetectionMatch = { pointId: string; detected: DetectedPoint }
 type DetectionPlan = { matches: DetectionMatch[]; additions: DetectedPoint[] }
 
@@ -330,6 +341,8 @@ export function ConstellationEditorPage() {
   const [points, setPoints] = useState<ConstellationPoint[]>(() => constellationPoints.map((point) => ({ ...point })))
   const [connections, setConnections] = useState<ConstellationConnection[]>(() => constellationConnections.map((connection) => ({ ...connection })))
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [newPointGroup, setNewPointGroup] = useState<ConstellationPointGroup>('feature')
   const [connectionSourceId, setConnectionSourceId] = useState<string | null>(null)
   const [referenceImage, setReferenceImage] = useState<string | null>(null)
   const [referenceFile, setReferenceFile] = useState<File | null>(null)
@@ -347,6 +360,11 @@ export function ConstellationEditorPage() {
   const [detectionUndo, setDetectionUndo] = useState<{ points: ConstellationPoint[]; connections: ConstellationConnection[] } | null>(null)
   const [isPanning, setIsPanning] = useState(false)
   const [isMovingAll, setIsMovingAll] = useState(false)
+  const [isSelectingMultiple, setIsSelectingMultiple] = useState(false)
+  const [selectionBox, setSelectionBox] = useState<SelectionGesture | null>(null)
+  const [isFreeDrawing, setIsFreeDrawing] = useState(false)
+  const [freeDrawPreview, setFreeDrawPreview] = useState<{ x: number; y: number }[]>([])
+  const [drawAnchorId, setDrawAnchorId] = useState<string | null>(null)
   const [importMessage, setImportMessage] = useState<string | null>(null)
   const [simplifyTarget, setSimplifyTarget] = useState(320)
   const [autoConnectionsEnabled, setAutoConnectionsEnabled] = useState(false)
@@ -355,6 +373,8 @@ export function ConstellationEditorPage() {
   const draggingId = useRef<string | null>(null)
   const panGesture = useRef<PanGesture | null>(null)
   const groupMoveGesture = useRef<GroupMoveGesture | null>(null)
+  const selectionGesture = useRef<SelectionGesture | null>(null)
+  const freeDrawGesture = useRef<FreeDrawGesture | null>(null)
   const viewportRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -398,12 +418,14 @@ export function ConstellationEditorPage() {
   const updateScene = (patch: Partial<ConstellationScene>) => setScene((current) => ({ ...current, ...patch }))
 
   const deleteSelectedPoint = useCallback(() => {
-    if (!selectedId) return
-    setPoints((current) => current.filter((point) => point.id !== selectedId))
-    setConnections((current) => current.filter((connection) => connection.from !== selectedId && connection.to !== selectedId))
-    setConnectionSourceId((current) => current === selectedId ? null : current)
+    const ids = selectedIds.length ? new Set(selectedIds) : selectedId ? new Set([selectedId]) : null
+    if (!ids?.size) return
+    setPoints((current) => current.filter((point) => !ids.has(point.id)))
+    setConnections((current) => current.filter((connection) => !ids.has(connection.from) && !ids.has(connection.to)))
+    setConnectionSourceId((current) => current && ids.has(current) ? null : current)
     setSelectedId(null)
-  }, [selectedId])
+    setSelectedIds([])
+  }, [selectedId, selectedIds])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -432,7 +454,7 @@ export function ConstellationEditorPage() {
       size: 1.8,
       brightness: .9,
       delay: 0,
-      group: 'feature',
+      group: newPointGroup,
     }
     setPoints((current) => [...current, point])
     if (autoConnectionsEnabled) {
@@ -440,13 +462,57 @@ export function ConstellationEditorPage() {
       if (nearest && stageDistance(point, nearest) <= autoConnectionDistance) addConnection(point.id, nearest.id)
     }
     setSelectedId(point.id)
+    setSelectedIds([point.id])
     setConnectionSourceId(null)
+  }
+
+  const createFreeDrawPoints = (samples: { x: number; y: number }[]) => {
+    const spaced = samples.reduce<{ x: number; y: number }[]>((kept, sample) => {
+      if (!kept.length || Math.hypot(sample.x - kept[kept.length - 1].x, sample.y - kept[kept.length - 1].y) >= .014) kept.push(sample)
+      return kept
+    }, [])
+    if (!spaced.length) return
+    const created = spaced.map((position, index) => ({
+      id: createPointId([...points, ...spaced.slice(0, index).map((_, inner) => ({ id: `draw-${inner}` } as ConstellationPoint))]),
+      ...position,
+      size: 1.55,
+      brightness: .9,
+      delay: 0,
+      group: newPointGroup,
+    })) satisfies ConstellationPoint[]
+    setPoints((current) => [...current, ...created])
+    setConnections((current) => {
+      const next = [...current]
+      const link = (from: string, to: string) => {
+        if (from !== to && !next.some((connection) => (connection.from === from && connection.to === to) || (connection.from === to && connection.to === from))) next.push({ from, to, opacity: .34, delay: 0 })
+      }
+      if (drawAnchorId) link(drawAnchorId, created[0].id)
+      created.slice(1).forEach((point, index) => link(created[index].id, point.id))
+      return next
+    })
+    const last = created[created.length - 1]
+    setDrawAnchorId(last.id)
+    setSelectedId(last.id)
+    setSelectedIds(created.map((point) => point.id))
   }
 
   const handleSurfacePointerDown = (event: ReactPointerEvent<SVGSVGElement>) => {
     if (event.target !== event.currentTarget) return
     event.preventDefault()
     const position = normalizedPosition(event)
+    if (isSelectingMultiple) {
+      const gesture = { pointerId: event.pointerId, start: position, end: position }
+      selectionGesture.current = gesture
+      setSelectionBox(gesture)
+      event.currentTarget.setPointerCapture(event.pointerId)
+      return
+    }
+    if (isFreeDrawing) {
+      freeDrawGesture.current = { pointerId: event.pointerId, samples: [position] }
+      setFreeDrawPreview([position])
+      event.currentTarget.setPointerCapture(event.pointerId)
+      return
+    }
     if (isMovingAll) {
       groupMoveGesture.current = { pointerId: event.pointerId, start: position, points: points.map((point) => ({ ...point })) }
       setSelectedId(null)
@@ -470,14 +536,22 @@ export function ConstellationEditorPage() {
   const handlePointPointerDown = (event: ReactPointerEvent<SVGCircleElement>, id: string) => {
     event.preventDefault()
     event.stopPropagation()
+    if (isFreeDrawing) {
+      setDrawAnchorId(id)
+      setSelectedId(id)
+      setSelectedIds([id])
+      return
+    }
     if (connectionSourceId && connectionSourceId !== id) {
       addConnection(connectionSourceId, id)
       setConnectionSourceId(null)
       setSelectedId(id)
+      setSelectedIds([id])
       return
     }
     draggingId.current = id
     setSelectedId(id)
+    setSelectedIds([id])
     event.currentTarget.setPointerCapture(event.pointerId)
   }
 
@@ -499,6 +573,23 @@ export function ConstellationEditorPage() {
       const deltaX = Math.min(Math.max(requestedX, -minX), 1 - maxX)
       const deltaY = Math.min(Math.max(requestedY, -minY), 1 - maxY)
       setPoints(groupGesture.points.map((point) => ({ ...point, x: roundCoordinate(point.x + deltaX), y: roundCoordinate(point.y + deltaY) })))
+      return
+    }
+    const selection = selectionGesture.current
+    if (selection?.pointerId === event.pointerId) {
+      const next = { ...selection, end: normalizedPosition(event) }
+      selectionGesture.current = next
+      setSelectionBox(next)
+      return
+    }
+    const freeDraw = freeDrawGesture.current
+    if (freeDraw?.pointerId === event.pointerId) {
+      const position = normalizedPosition(event)
+      const previous = freeDraw.samples[freeDraw.samples.length - 1]
+      if (!previous || Math.hypot(position.x - previous.x, position.y - previous.y) >= .004) {
+        freeDraw.samples.push(position)
+        setFreeDrawPreview([...freeDraw.samples])
+      }
       return
     }
     const gesture = panGesture.current
@@ -525,6 +616,30 @@ export function ConstellationEditorPage() {
       groupMoveGesture.current = null
       return
     }
+    const selection = selectionGesture.current
+    if (selection?.pointerId === event.pointerId) {
+      const end = normalizedPosition(event)
+      const left = Math.min(selection.start.x, end.x)
+      const right = Math.max(selection.start.x, end.x)
+      const top = Math.min(selection.start.y, end.y)
+      const bottom = Math.max(selection.start.y, end.y)
+      const ids = points.filter((point) => point.x >= left && point.x <= right && point.y >= top && point.y <= bottom).map((point) => point.id)
+      setSelectedIds(ids)
+      setSelectedId(ids[0] ?? null)
+      selectionGesture.current = null
+      setSelectionBox(null)
+      return
+    }
+    const freeDraw = freeDrawGesture.current
+    if (freeDraw?.pointerId === event.pointerId) {
+      const end = normalizedPosition(event)
+      const last = freeDraw.samples[freeDraw.samples.length - 1]
+      if (!last || Math.hypot(end.x - last.x, end.y - last.y) >= .004) freeDraw.samples.push(end)
+      createFreeDrawPoints(freeDraw.samples)
+      freeDrawGesture.current = null
+      setFreeDrawPreview([])
+      return
+    }
     const gesture = panGesture.current
     if (!gesture || gesture.pointerId !== event.pointerId) return
     if (!gesture.moved) addPointAt({ x: gesture.pointX, y: gesture.pointY })
@@ -536,6 +651,10 @@ export function ConstellationEditorPage() {
     draggingId.current = null
     panGesture.current = null
     groupMoveGesture.current = null
+    selectionGesture.current = null
+    freeDrawGesture.current = null
+    setSelectionBox(null)
+    setFreeDrawPreview([])
     setIsPanning(false)
   }
 
@@ -763,14 +882,15 @@ export function ConstellationEditorPage() {
             <code>{selectedPoint.id}</code>
             <div className="editor-coordinate-row"><span>x {selectedPoint.x.toFixed(4)}</span><span>y {selectedPoint.y.toFixed(4)}</span></div>
             <label>Tamaño <output>{selectedPoint.size.toFixed(1)}</output><input type="range" min=".6" max="5" step=".1" value={selectedPoint.size} onChange={(event) => updatePoint(selectedPoint.id, { size: Number(event.target.value) })} /></label>
-            <label>Grupo<select value={selectedPoint.group} onChange={(event) => updatePoint(selectedPoint.id, { group: event.target.value as ConstellationPointGroup })}>{GROUPS.map((group) => <option key={group} value={group}>{group}</option>)}</select></label>
+            <label>Grupo<select value={selectedPoint.group} onChange={(event) => { const group = event.target.value as ConstellationPointGroup; updatePoint(selectedPoint.id, { group }); setNewPointGroup(group) }}>{GROUPS.map((group) => <option key={group} value={group}>{group}</option>)}</select></label>
+            <p className="editor-help">Los puntos nuevos se crearán en este grupo: <b>{newPointGroup}</b>.</p>
             <button type="button" className={connectionSourceId === selectedPoint.id ? 'editor-button is-active' : 'editor-button'} onClick={() => setConnectionSourceId((current) => current === selectedPoint.id ? null : selectedPoint.id)}>{connectionSourceId === selectedPoint.id ? 'Selecciona el destino…' : 'Conectar con otro punto'}</button>
             {selectedConnections.length ? <div className="editor-disconnect-list">
               <p>Conectado con</p>
               {selectedConnections.map(({ neighborId }) => <button type="button" key={neighborId} aria-label={`Desconectar de ${neighborId}`} onClick={() => setConnections((current) => current.filter((connection) => !((connection.from === selectedPoint.id && connection.to === neighborId) || (connection.to === selectedPoint.id && connection.from === neighborId))))}>× <span>{neighborId}</span></button>)}
               {selectedConnections.length > 1 && <button type="button" className="disconnect-all" onClick={() => setConnections((current) => current.filter((connection) => connection.from !== selectedPoint.id && connection.to !== selectedPoint.id))}>Desconectar de todos ({selectedConnections.length})</button>}
             </div> : <p className="editor-help">Este punto no tiene conexiones.</p>}
-            <button type="button" className="editor-danger-button" onClick={deleteSelectedPoint}>Eliminar punto</button>
+            <button type="button" className="editor-danger-button" onClick={deleteSelectedPoint}>{selectedIds.length > 1 ? `Eliminar ${selectedIds.length} puntos` : 'Eliminar punto'}</button>
           </> : <p className="editor-help">Selecciona un punto para editarlo. Haz clic sobre un espacio vacío para crear uno nuevo.</p>}
         </section>
 
@@ -821,16 +941,19 @@ export function ConstellationEditorPage() {
 
       <section className="editor-workspace">
         <div className="editor-toolbar">
-          <div className="editor-status"><span>{points.length} puntos</span><span>{connections.length} conexiones</span><span>Coordenadas 0–1</span></div>
+          <div className="editor-status"><span>{points.length} puntos</span><span>{connections.length} conexiones</span>{selectedIds.length > 1 && <span>{selectedIds.length} seleccionados</span>}<span>Coordenadas 0–1</span></div>
           <div className="editor-group-legend" aria-label="Colores de conexiones por grupo">
             <span className="group-hair">Cabello</span><span className="group-face">Rostro</span><span className="group-feature">Facciones</span><span className="group-body">Cuerpo</span><span className="group-mixed">Mixta</span>
           </div>
+          <label className="editor-new-point-group">Grupo para puntos nuevos <select value={newPointGroup} onChange={(event) => setNewPointGroup(event.target.value as ConstellationPointGroup)}>{GROUPS.map((group) => <option key={group} value={group}>{group}</option>)}</select></label>
           <div className="editor-zoom-controls" aria-label="Controles de zoom">
             <button type="button" onClick={() => updateZoom(zoom - .25)} disabled={zoom === 1} aria-label="Alejar">−</button>
             <label>Zoom <input type="range" min="1" max="4" step=".25" value={zoom} onChange={(event) => updateZoom(Number(event.target.value))} /><output>{Math.round(zoom * 100)}%</output></label>
             <button type="button" onClick={() => updateZoom(zoom + .25)} disabled={zoom === 4} aria-label="Acercar">+</button>
             <button type="button" className="editor-zoom-reset" onClick={() => updateZoom(1)} disabled={zoom === 1}>100%</button>
-            <button type="button" className={`editor-move-all-button${isMovingAll ? ' is-active' : ''}`} onClick={() => setIsMovingAll((current) => !current)} aria-pressed={isMovingAll}>{isMovingAll ? 'Terminar mover' : 'Mover silueta'}</button>
+            <button type="button" className={`editor-move-all-button${isMovingAll ? ' is-active' : ''}`} onClick={() => { setIsMovingAll((current) => { const next = !current; if (next) { setIsSelectingMultiple(false); setIsFreeDrawing(false) } return next }) }} aria-pressed={isMovingAll}>{isMovingAll ? 'Terminar mover' : 'Mover silueta'}</button>
+            <button type="button" className={`editor-select-button${isSelectingMultiple ? ' is-active' : ''}`} onClick={() => { setIsSelectingMultiple((current) => { const next = !current; if (next) { setIsMovingAll(false); setIsFreeDrawing(false) } return next }) }} aria-pressed={isSelectingMultiple}>{isSelectingMultiple ? 'Terminar selección' : 'Seleccionar varios'}</button>
+            <button type="button" className={`editor-draw-button${isFreeDrawing ? ' is-active' : ''}`} onClick={() => { setIsFreeDrawing((current) => { const next = !current; if (next) { setIsMovingAll(false); setIsSelectingMultiple(false) } else setDrawAnchorId(null); return next }) }} aria-pressed={isFreeDrawing}>{isFreeDrawing ? 'Terminar trazo' : 'Trazo libre'}</button>
           </div>
         </div>
         <div className="editor-stage-viewport" ref={viewportRef}>
@@ -846,11 +969,13 @@ export function ConstellationEditorPage() {
                 return <line key={`${connection.from}-${connection.to}-${index}`} className={`group-${group}${isActive ? ' is-active-group' : ''}`} x1={from.x * 1000} y1={from.y * 1389} x2={to.x * 1000} y2={to.y * 1389} />
               })}</g>
               <g className="editor-detected-points" pointerEvents="none">{detectedPoints.map((detected, index) => previewMatches.has(detected) || previewAdditions.has(detected) ? <circle key={index} cx={detected.x * 1000} cy={detected.y * 1389} r={(previewAdditions.has(detected) ? 11 : 8) / zoom} className={previewAdditions.has(detected) ? 'is-new' : 'is-match'} /> : null)}</g>
-              <g className="editor-points">{points.map((point) => <circle key={point.id} cx={point.x * 1000} cy={point.y * 1389} r={Math.max(point.size * 3.2, 5) / zoom} className={`${selectedId === point.id ? 'is-selected ' : ''}group-${point.group}`} onPointerDown={(event) => handlePointPointerDown(event, point.id)} onClick={(event) => event.stopPropagation()} />)}</g>
+              {freeDrawPreview.length > 1 && <polyline className="editor-free-draw-preview" points={freeDrawPreview.map((point) => `${point.x * 1000},${point.y * 1389}`).join(' ')} pointerEvents="none" />}
+              {selectionBox && <rect className="editor-selection-box" x={Math.min(selectionBox.start.x, selectionBox.end.x) * 1000} y={Math.min(selectionBox.start.y, selectionBox.end.y) * 1389} width={Math.abs(selectionBox.end.x - selectionBox.start.x) * 1000} height={Math.abs(selectionBox.end.y - selectionBox.start.y) * 1389} pointerEvents="none" />}
+              <g className="editor-points" pointerEvents={isSelectingMultiple ? 'none' : undefined}>{points.map((point) => <circle key={point.id} cx={point.x * 1000} cy={point.y * 1389} r={Math.max(point.size * 3.2, 5) / zoom} className={`${selectedIds.includes(point.id) ? 'is-selected ' : ''}group-${point.group}`} onPointerDown={(event) => handlePointPointerDown(event, point.id)} onClick={(event) => event.stopPropagation()} />)}</g>
             </svg>
           </div>
         </div>
-        <p className="editor-stage-help">Clic breve y soltar: crear punto · Mantener y arrastrar el fondo: desplazarse · Activa “Mover silueta” y arrastra un área libre para trasladar todos los puntos juntos.</p>
+        <p className="editor-stage-help">Seleccionar varios: arrastra un marco para marcar y borrar puntos juntos. Trazo libre: arrastra para crear una curva de puntos conectados; pulsa un punto para usarlo como inicio del siguiente trazo. Sin modo activo, clic breve crea un punto.</p>
       </section>
     </div>
   </main>
