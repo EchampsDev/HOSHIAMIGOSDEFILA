@@ -9,9 +9,9 @@ export function Scrapbook({ state, page, nextPage, bookmarkPage, onBookmark, onA
   if (state === 'BACK_COVER') return <button type="button" className="scrapbook-cover back-cover" onClick={onAdvance} aria-label="Volver a abrir la libreta"><SpiralBinding cover /><span>FIN DEL PRIMER VOLUMEN</span><strong>BRATTY<br />2026</strong></button>
   if (!page) return <div className="scrapbook-loading">Preparando las páginas…</div>
   return <div key={`${state}-${page.id}`} className={`scrapbook-spread is-turning turn-${direction}${page.pageNumber === 1 ? ' is-opening' : ''}`} onClick={onAdvance}>
-    <div className="scrapbook-sheet scrapbook-sheet--left"><AlbumPaper page={page} showBinding={false} /></div>
+    <div className="scrapbook-sheet scrapbook-sheet--left"><AlbumPaper page={page} bookmarkPage={bookmarkPage} showBinding={false} /></div>
     <div className="scrapbook-gutter" aria-hidden="true"><SpiralBinding /></div>
-    <div className="scrapbook-sheet scrapbook-sheet--right">{nextPage ? <AlbumPaper page={nextPage} showBinding={false} /> : <div className="album-paper blank-paper" />}</div>
+    <div className="scrapbook-sheet scrapbook-sheet--right">{nextPage ? <AlbumPaper page={nextPage} bookmarkPage={bookmarkPage} showBinding={false} /> : <div className="album-paper blank-paper" />}</div>
     <span className="sheet-hint">clic para continuar</span>
   </div>
 }
