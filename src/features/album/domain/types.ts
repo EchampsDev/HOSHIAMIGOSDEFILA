@@ -1,5 +1,7 @@
 export type PaperType = 'GRID' | 'LINED'
-export type AlbumElementType = 'PHOTO' | 'POST_IT' | 'HANDWRITTEN_NOTE' | 'DRAWING' | 'STICKER' | 'TEXT' | 'PLACEHOLDER' | 'OTHER'
+export type AlbumElementType = 'PHOTO' | 'POST_IT' | 'HANDWRITTEN_NOTE' | 'DRAWING' | 'STICKER' | 'TEXT' | 'SETLIST' | 'PLACEHOLDER' | 'OTHER'
+
+export type SetlistEntry = { id: string; title: string; coverUrl?: string }
 export type BookState = 'CLOSED' | 'PAGE' | 'BACK_COVER'
 
 export type AuthorIdentity = {
@@ -38,6 +40,7 @@ export type AlbumElement = {
   content?: string
   styleVariant?: string
   media?: MediaMetadata
+  setlist?: SetlistEntry[]
   layout: ElementLayout
   createdAt: string
   updatedAt: string
@@ -72,7 +75,7 @@ export function clampLayout(layout: ElementLayout): ElementLayout {
 export function createElement(pageId: string, type: AlbumElementType, sequence: number, author: AuthorIdentity = { participantId: 'developer-local' }): AlbumElement {
   const now = new Date().toISOString()
   const contentByType: Partial<Record<AlbumElementType, string>> = {
-    PHOTO: 'Foto por llegar', POST_IT: 'Una nota para Bratty', TEXT: 'Escribe aquí', PLACEHOLDER: 'Recuerdo pendiente', HANDWRITTEN_NOTE: 'Para recordar…', DRAWING: '✦', STICKER: 'BRATTY',
+    PHOTO: 'Foto por llegar', POST_IT: 'Una nota para Bratty', TEXT: 'Escribe aquí', SETLIST: 'MI SETLIST', PLACEHOLDER: 'Recuerdo pendiente', HANDWRITTEN_NOTE: 'Para recordar…', DRAWING: '✦', STICKER: 'BRATTY',
   }
   return {
     id: `element-${crypto.randomUUID?.() ?? `${Date.now()}-${sequence}`}`,
@@ -81,7 +84,7 @@ export function createElement(pageId: string, type: AlbumElementType, sequence: 
     author,
     content: contentByType[type] ?? 'Elemento',
     styleVariant: type === 'POST_IT' ? 'yellow' : 'default',
-    layout: { x: .12 + (sequence % 3) * .08, y: .13 + (sequence % 2) * .09, width: type === 'PHOTO' ? .42 : .32, height: type === 'PHOTO' ? .30 : .18, rotation: type === 'POST_IT' ? -3 : 0, zIndex: sequence + 1, locked: false, hidden: false },
+    layout: { x: .12 + (sequence % 3) * .08, y: .13 + (sequence % 2) * .09, width: type === 'SETLIST' ? .72 : type === 'PHOTO' ? .42 : .32, height: type === 'SETLIST' ? .29 : type === 'PHOTO' ? .30 : .18, rotation: type === 'POST_IT' ? -3 : 0, zIndex: sequence + 1, locked: false, hidden: false },
     createdAt: now,
     updatedAt: now,
   }
