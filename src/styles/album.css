@@ -63,14 +63,13 @@ span.cover-page-edge { position: absolute !important; z-index: 0 !important; top
 .album-photo-image { position: absolute; inset: 8%; width: 84%; height: 68%; object-fit: cover; background: #201c19; }
 .type-photo .album-element-content { position: relative; z-index: 1; align-self: end; font-size: clamp(.44rem, 1.6vw, .68rem); }
 .type-text { padding: 1%; border: 0; background: transparent; box-shadow: none; color: #372b22; font-family: Georgia, serif; }
-.type-setlist { overflow: hidden; padding: 4% 4.5% 7%; color: #fff; border-color: rgba(245,220,80,.74); background: #0f1c3b; box-shadow: 4px 7px 14px rgba(32,22,12,.34); }
-.type-setlist::before { content: ''; position: absolute; z-index: 0; inset: -18%; background: var(--setlist-blur, radial-gradient(circle at 20% 20%, rgba(45,94,190,.7), transparent 54%)); filter: blur(18px) saturate(1.25) brightness(.55); opacity: .72; }
-.type-setlist::after { content: ''; position: absolute; z-index: 0; inset: 0; background: rgba(4,11,29,.62); }
-.type-setlist > * { position: relative; z-index: 1; }
+.type-setlist { overflow: visible; display: block; padding: 0; color: #fff; border: 0; background: transparent; box-shadow: none; }
+.type-setlist::before, .type-setlist::after, .type-setlist .album-element-type { display: none; }
 .album-setlist-tracks { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 4px; min-height: 0; }
-.album-setlist-track { position: relative; isolation: isolate; display: grid; grid-template-columns: 23px 20px minmax(0,1fr); gap: 4px; align-items: center; min-height: 27px; overflow: hidden; padding: 3px; background: rgba(11,24,58,.8); font: clamp(.34rem,1.1vw,.5rem) 'DM Mono', monospace; }
+.album-setlist-track { position: relative; isolation: isolate; display: grid; grid-template-columns: 23px 20px minmax(0,1fr); gap: 4px; align-items: center; min-height: 27px; overflow: hidden; padding: 3px; border: 1px solid rgba(93,150,255,.42); background: rgba(11,24,58,.9); font: clamp(.34rem,1.1vw,.5rem) 'DM Mono', monospace; }
 .album-setlist-track::after { content: ''; position: absolute; z-index: -1; inset: -14px; background: inherit; filter: blur(10px); opacity: .5; }
 .album-setlist-track i { width: 23px; height: 23px; background: #f5dc50 center / cover no-repeat; }.album-setlist-track b { color: #f5dc50; font-weight: 700; }.album-setlist-track em { overflow: hidden; color: #fff; font-style: normal; text-overflow: ellipsis; white-space: nowrap; }
+.type-setlist .album-element-author { display: block; margin-top: 5px; color: rgba(61,45,32,.62); text-shadow: 0 1px rgba(255,250,232,.38); }
 .type-handwritten_note { border: 0; background: rgba(255,251,238,.52); box-shadow: none; color: #32261e; font-family: cursive; }
 .album-element-author { margin: 0; color: rgba(61,45,32,.52); font-family: 'DM Mono', monospace; font-size: clamp(.34rem, 1.2vw, .48rem); }
 .sheet-hint { position: absolute; left: 7%; bottom: 5%; color: rgba(62,48,34,.48); font-family: 'DM Mono', monospace; font-size: .54rem; letter-spacing: .08em; }
