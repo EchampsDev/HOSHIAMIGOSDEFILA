@@ -6,7 +6,9 @@ import { Scrapbook } from './components/Scrapbook'
 import { useAlbum } from './hooks/useAlbum'
 
 export function AlbumExperiencePage() {
-  const album = useAlbum()
+  // Mientras la captura de participantes está en pruebas, la vista pública
+  // consulta el mismo repositorio local donde se escriben los recuerdos.
+  const album = useAlbum(true)
   const [indexOpen, setIndexOpen] = useState(false)
   const [direction, setDirection] = useState<'next' | 'previous'>('next')
   const [bookmarkPage, setBookmarkPage] = useState(() => Number(localStorage.getItem('brattypolitan.album-bookmark-page')) || 1)
