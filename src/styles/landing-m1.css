@@ -307,7 +307,8 @@
 .landing-actions {
   width: min(100%, 610px);
   margin: 34px auto 10px;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
 }
 
 .landing-actions .button {
@@ -317,6 +318,9 @@
 }
 
 .landing-actions .button:hover { transform: translateY(-3px); }
+.landing-actions > .whatsapp-action { align-self: end; }
+.landing-web-column { display: grid; justify-items: stretch; gap: 8px; }
+.landing-web-column .button { width: 100%; }
 .whatsapp-action { color: #fff !important; background: #ec3f35 !important; box-shadow: 0 8px 28px rgba(236, 63, 53, .28); }
 .web-action { color: #fff !important; border: 1px solid #5148ff !important; background: #3026d7 !important; box-shadow: 0 8px 28px rgba(48, 38, 215, .34); }
 .subtle-action { min-height: 42px !important; color: rgba(255,255,255,.78) !important; border-color: rgba(65, 196, 255, .42) !important; background: transparent !important; }
@@ -326,7 +330,7 @@
   min-height: 42px;
   display: inline-flex;
   align-items: center;
-  justify-self: center;
+  justify-self: start;
   gap: 9px;
   padding: 7px 11px;
   color: rgba(255, 255, 255, .92);
@@ -438,6 +442,5 @@
     margin-bottom: -34px;
   }
 
-  .landing-actions { grid-template-columns: 1fr 1fr; }
   .landing-actions .subtle-action { grid-column: 1 / -1; width: 48%; justify-self: center; }
 }
