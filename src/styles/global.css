@@ -32,6 +32,8 @@ body {
   background: #030303;
 }
 
+body:has(.explore-drawer-layer.is-open) { overflow: hidden; }
+
 a:focus-visible,
 .button:focus-visible {
   outline: 2px solid #fff;
@@ -68,7 +70,7 @@ a:focus-visible,
 .explore-drawer-layer { position: fixed; z-index: 100; inset: 0; visibility: hidden; pointer-events: none; }
 .explore-drawer-layer.is-open { visibility: visible; pointer-events: auto; }
 .explore-drawer-backdrop { position: absolute; inset: 0; width: 100%; border: 0; background: rgba(0, 0, 0, .66); opacity: 0; cursor: pointer; transition: opacity .3s ease; }
-.explore-drawer { position: absolute; top: 0; right: 0; width: min(100%, 430px); min-height: 100svh; padding: clamp(24px, 5vw, 42px) clamp(22px, 5vw, 40px); overflow-y: auto; color: #fff; background: #3128d4; box-shadow: -24px 0 60px rgba(0, 0, 0, .45); transform: translateX(105%); transition: transform .36s cubic-bezier(.2, .85, .22, 1); }
+.explore-drawer { position: absolute; top: 0; right: 0; width: min(100%, 430px); height: 100svh; padding: clamp(24px, 5vw, 42px) clamp(22px, 5vw, 40px); overflow-y: auto; overscroll-behavior: contain; color: #fff; background: #3128d4; box-shadow: -24px 0 60px rgba(0, 0, 0, .45); transform: translateX(105%); transition: transform .36s cubic-bezier(.2, .85, .22, 1); }
 .explore-drawer-layer.is-open .explore-drawer { transform: translateX(0); }
 .explore-drawer-layer.is-open .explore-drawer-backdrop { opacity: 1; }
 .explore-drawer header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding-bottom: 25px; border-bottom: 1px solid rgba(255, 255, 255, .42); }
