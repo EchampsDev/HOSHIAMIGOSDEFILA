@@ -16,7 +16,7 @@ span.cover-page-edge { position: absolute !important; z-index: 0 !important; top
 .cover-mark { position: absolute !important; z-index: 2 !important; top: 10%; right: 8%; width: 21%; display: grid; justify-items: center; gap: 2px; }
 .cover-emblem { position: static; width: 100%; height: auto; filter: drop-shadow(0 2px 1px rgba(0,0,0,.16)); }
 .cover-mark b { color: #b3090c; font-family: Arial, sans-serif; font-size: clamp(1.45rem, 4.5vw, 2.25rem); line-height: .8; text-shadow: 0 1px rgba(255,160,115,.24); }
-.cover-bookmark { position: absolute !important; z-index: 1 !important; right: 9%; bottom: 3%; width: 7%; height: 13%; display: grid; place-items: start center; padding-top: 8%; color: #fff; background: linear-gradient(90deg, #003dca, #1477ff 50%, #003da6); box-shadow: 3px 4px 6px rgba(0,0,0,.3); cursor: pointer; }
+.cover-bookmark { position: absolute !important; z-index: 1 !important; right: 5%; bottom: 5%; width: 7%; height: 13%; display: grid; place-items: start center; padding-top: 8%; color: #fff; background: linear-gradient(90deg, #003dca, #1477ff 50%, #003da6); box-shadow: 3px 4px 6px rgba(0,0,0,.3); cursor: pointer; }
 .cover-bookmark i { font: 700 clamp(.42rem, 1.3vw, .62rem) 'DM Mono', monospace; font-style: normal; }
 .back-cover { background: linear-gradient(115deg, #2e1b14, #5d3927); }
 .scrapbook-spread { position: relative; display: grid; grid-template-columns: minmax(0,1fr) 3.2% minmax(0,1fr); width: min(94vw, 840px, calc(78svh * 1.52)); aspect-ratio: 1.52; cursor: pointer; perspective: 1800px; transform-style: preserve-3d; filter: drop-shadow(20px 24px 22px rgba(0,0,0,.45)); }
@@ -29,7 +29,7 @@ span.cover-page-edge { position: absolute !important; z-index: 0 !important; top
 .scrapbook-sheet--right { border-radius: 0 5px 5px 0; transform-origin: left center; }
 .scrapbook-gutter { position: relative; z-index: 5; overflow: visible; background: linear-gradient(90deg, rgba(72,48,29,.24), rgba(255,252,236,.54) 48%, rgba(72,48,29,.2)); }
 .scrapbook-gutter .spiral-binding { left: 50%; top: 3%; width: 270%; height: 94%; transform: translateX(-50%); }
-.scrapbook-gutter .spiral-binding i { width: 100%; height: clamp(5px, .9vw, 9px); border-radius: 8px 0 0 8px; transform: translateX(-50%); }
+.scrapbook-gutter .spiral-binding i { width: 100%; height: clamp(5px, .9vw, 9px); border-radius: 8px 0 0 8px; transform: translateX(-35%); }
 .scrapbook-spread.is-turning.turn-next .scrapbook-sheet--right { animation: page-flip-next .42s cubic-bezier(.2,.72,.2,1); }
 .scrapbook-spread.is-turning.turn-previous .scrapbook-sheet--left { animation: page-flip-previous .42s cubic-bezier(.2,.72,.2,1); }
 .scrapbook-spread.is-opening { animation: book-open .78s cubic-bezier(.18,.78,.2,1) both; transform-origin: center center; }
@@ -40,7 +40,7 @@ span.cover-page-edge { position: absolute !important; z-index: 0 !important; top
 .spiral-binding { position: absolute; z-index: 12; left: 5.8%; top: 4%; width: 8%; height: 92%; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; pointer-events: none; }
 .spiral-binding i { width: 96%; height: clamp(7px, 1.75vw, 11px); display: block; box-sizing: border-box; border: clamp(1px, .28vw, 2px) solid #827f7a; border-right-color: #343332; border-radius: 7px 0 0 7px; background: linear-gradient(180deg, #f2eee5, #77736e 52%, #c7c2b8); box-shadow: -2px 2px 2px rgba(0,0,0,.44), inset 1px 1px 1px rgba(255,255,255,.72); transform: translateX(-62%); }
 .spiral-binding.is-cover i { border-color: #161616; border-right-color: #090909; background: linear-gradient(180deg, #e6e0d5, #353434 47%, #9d998f); box-shadow: -2px 2px 2px rgba(0,0,0,.72), inset 1px 1px 1px rgba(255,255,255,.45); }
-.scrapbook-cover > .spiral-binding { left: -4%; top: 4%; width: 12%; height: 92%; }
+.scrapbook-cover > .spiral-binding { position: absolute !important; z-index: 12 !important; left: -5%; top: 4%; width: 12%; height: 92%; }
 .scrapbook-cover > .spiral-binding i { width: 92%; transform: translateX(-16%); }
 .album-paper.grid { background-image: linear-gradient(rgba(91,133,152,.16) 1px, transparent 1px), linear-gradient(90deg, rgba(91,133,152,.16) 1px, transparent 1px), radial-gradient(circle, rgba(131,94,54,.08), transparent 55%); background-size: 7.5% 5.4%, 7.5% 5.4%, 100% 100%; }
 .album-paper.lined { background-image: repeating-linear-gradient(to bottom, transparent 0 7.25%, rgba(85,129,148,.28) 7.45% 7.75%, transparent 7.9% 15%), linear-gradient(90deg, transparent 11%, rgba(198,91,86,.32) 11.2% 11.5%, transparent 11.7%); }
