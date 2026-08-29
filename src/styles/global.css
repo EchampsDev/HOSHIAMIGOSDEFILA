@@ -145,7 +145,7 @@ h1 {
 
 .note-four-point-mark { margin-top: .12em; font-size: .9rem; }
 .reveal-note p { margin: 0; }
-.reveal-note strong {
+.reveal-note > strong {
   grid-column: 2;
   margin-top: 7px;
   color: rgba(255, 255, 255, .58);

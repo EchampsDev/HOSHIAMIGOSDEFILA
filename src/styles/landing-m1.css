@@ -319,7 +319,7 @@
 
 .landing-actions .button:hover { transform: translateY(-3px); }
 .landing-actions > .whatsapp-action { align-self: end; }
-.landing-web-column { display: grid; justify-items: stretch; gap: 8px; }
+.landing-web-column { display: grid; justify-items: stretch; }
 .landing-web-column .button { width: 100%; }
 .whatsapp-action { color: #fff !important; background: #ec3f35 !important; box-shadow: 0 8px 28px rgba(236, 63, 53, .28); }
 .web-action { color: #fff !important; border: 1px solid #5148ff !important; background: #3026d7 !important; box-shadow: 0 8px 28px rgba(48, 38, 215, .34); }
@@ -345,6 +345,14 @@
 .album-entry-link strong { color: #78cfff; font-size: .55rem; font-weight: 400; letter-spacing: .06em; }
 .album-entry-link strong b { color: #f5dc50; font-size: .82rem; font-weight: 500; }
 .album-entry-link:hover, .album-entry-link:focus-visible { color: #fff; border-color: #f41837; transform: translateY(-2px); }
+
+.reveal-note { grid-template-columns: 20px minmax(0, 1fr) auto; }
+.reveal-note .album-entry-link { grid-column: 3; grid-row: 1 / span 2; align-self: center; justify-self: end; }
+
+@media (max-width: 560px) {
+  .reveal-note { grid-template-columns: 20px minmax(0, 1fr); }
+  .reveal-note .album-entry-link { grid-column: 2; grid-row: auto; justify-self: start; margin-top: 10px; }
+}
 
 .landing-scroll-cue {
   width: fit-content;

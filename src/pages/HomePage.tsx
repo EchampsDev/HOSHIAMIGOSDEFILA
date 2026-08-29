@@ -42,16 +42,16 @@ export function HomePage() {
         <FourPointMark className="note-four-point-mark" />
         <p>Deja una parte de tu historia en la libreta virtual.</p>
         <strong>ARCHIVO COLECTIVO · MODERADO POR EL EQUIPO</strong>
+        {albumAccess.isUnlocked && <Link className="album-entry-link" to="/album" aria-label={`Ver libreta: ${entryCount} entradas publicadas`}>
+          <FourPointMark className="album-entry-mark" />
+          <span>VER LIBRETA</span>
+          <strong><b>{entryCount}</b> {entryCount === 1 ? 'ENTRADA' : 'ENTRADAS'}</strong>
+        </Link>}
       </section>
 
       <nav className="actions landing-actions reveal-actions" data-scroll-reveal aria-label="Explorar Brattypolitan Experience">
         <a className="button whatsapp-action" href="https://wa.me/525659229006?text=Hola%2C%20quiero%20dejar%20algo%20en%20la%20libreta%20virtual%20de%20Brattypolitan%20Experience." target="_blank" rel="noreferrer">ESCRÍBELE O DÉJALE ALGO BONITO A BRATTY VÍA WHATSAPP AQUÍ</a>
         <div className="landing-web-column">
-          {albumAccess.isUnlocked && <Link className="album-entry-link" to="/album" aria-label={`Ver libreta: ${entryCount} entradas publicadas`}>
-            <FourPointMark className="album-entry-mark" />
-            <span>VER LIBRETA</span>
-            <strong><b>{entryCount}</b> {entryCount === 1 ? 'ENTRADA' : 'ENTRADAS'}</strong>
-          </Link>}
           <Link className="button web-action" to="/contribute">ESCRÍBELE O DÉJALE ALGO BONITO A BRATTY AQUÍ</Link>
         </div>
       </nav>
