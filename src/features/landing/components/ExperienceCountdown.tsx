@@ -35,5 +35,8 @@ export function ExperienceCountdown() {
         <small>{unit.label}</small>
       </span>)}
     </time>
+    <a className="countdown-ticket-link" href={experienceLaunch.ticketUrl} target="_blank" rel="noreferrer">
+      ¿Aún no tienes tus boletos?
+    </a>
   </section>
 }

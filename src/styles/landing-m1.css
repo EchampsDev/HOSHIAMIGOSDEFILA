@@ -285,6 +285,25 @@
   text-transform: uppercase;
 }
 
+.countdown-ticket-link {
+  display: inline-block;
+  margin-top: clamp(28px, 5vw, 40px);
+  padding-bottom: 5px;
+  color: #f5dc50;
+  border-bottom: 1px solid currentColor;
+  font: .68rem 'DM Mono', monospace;
+  letter-spacing: .09em;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: color .2s ease, text-shadow .2s ease;
+}
+
+.countdown-ticket-link:hover,
+.countdown-ticket-link:focus-visible {
+  color: #fff;
+  text-shadow: 0 0 12px rgba(245, 220, 80, .8);
+}
+
 .landing-actions {
   width: min(100%, 610px);
   margin: 34px auto 10px;
@@ -301,6 +320,27 @@
 .whatsapp-action { color: #fff !important; background: #ec3f35 !important; box-shadow: 0 8px 28px rgba(236, 63, 53, .28); }
 .web-action { color: #fff !important; border: 1px solid #5148ff !important; background: #3026d7 !important; box-shadow: 0 8px 28px rgba(48, 38, 215, .34); }
 .subtle-action { min-height: 42px !important; color: rgba(255,255,255,.78) !important; border-color: rgba(65, 196, 255, .42) !important; background: transparent !important; }
+
+.album-entry-link {
+  width: fit-content;
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-self: center;
+  gap: 9px;
+  padding: 7px 11px;
+  color: rgba(255, 255, 255, .92);
+  border-bottom: 1px solid rgba(244, 24, 55, .56);
+  font: .66rem 'DM Mono', monospace;
+  letter-spacing: .1em;
+  text-decoration: none;
+  transition: color .2s ease, border-color .2s ease, transform .2s ease;
+}
+
+.album-entry-mark { width: 12px; height: 12px; flex: 0 0 12px; }
+.album-entry-link strong { color: #78cfff; font-size: .55rem; font-weight: 400; letter-spacing: .06em; }
+.album-entry-link strong b { color: #f5dc50; font-size: .82rem; font-weight: 500; }
+.album-entry-link:hover, .album-entry-link:focus-visible { color: #fff; border-color: #f41837; transform: translateY(-2px); }
 
 .landing-scroll-cue {
   width: fit-content;
