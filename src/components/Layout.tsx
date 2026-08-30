@@ -12,6 +12,7 @@ const publicAreas = [
 export function Layout({ children }: PropsWithChildren) {
   const session = useGoogleSession()
   const [isExploreOpen, setIsExploreOpen] = useState(false)
+  const [isCompact, setIsCompact] = useState(false)
 
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setIsExploreOpen(false) }
@@ -19,12 +20,19 @@ export function Layout({ children }: PropsWithChildren) {
     return () => window.removeEventListener('keydown', closeOnEscape)
   }, [])
 
+  useEffect(() => {
+    const syncHeader = () => setIsCompact(window.scrollY > 28)
+    syncHeader()
+    window.addEventListener('scroll', syncHeader, { passive: true })
+    return () => window.removeEventListener('scroll', syncHeader)
+  }, [])
+
   return <main className="site-shell">
-    <header className="topbar">
+    <header className={`topbar${isCompact ? ' is-compact' : ''}`}>
       <Link to="/" className="brand">BRATTYPOLITAN EXPERIENCE</Link>
       <nav className="topbar-actions" aria-label="Navegación">
         <button type="button" className="quiet-link explore-toggle" onClick={() => setIsExploreOpen(true)} aria-expanded={isExploreOpen} aria-controls="explore-sidebar">Explorar</button>
-        {session.isConfigured && (session.user ? <button type="button" className="topbar-google" onClick={() => void session.signOut()}>Salir · {session.user.displayName?.split(' ')[0] ?? 'Google'}</button> : <button type="button" className="topbar-google" onClick={() => void session.signIn()}>Accede con tu cuenta de Google</button>)}
+        {session.isConfigured && (session.user ? <button type="button" className="topbar-google" onClick={() => void session.signOut()} aria-label={`Cerrar sesión de ${session.user.displayName?.split(' ')[0] ?? 'Google'}`}><span className="topbar-google-full">Salir · {session.user.displayName?.split(' ')[0] ?? 'Google'}</span><span className="topbar-google-short">Salir</span></button> : <button type="button" className="topbar-google" onClick={() => void session.signIn()} aria-label="Accede con tu cuenta de Google"><span className="topbar-google-full">Accede con tu cuenta de Google</span><span className="topbar-google-short">Accede con Google</span></button>)}
       </nav>
     </header>
     {session.error && <p className="session-error" role="alert">{session.error}</p>}

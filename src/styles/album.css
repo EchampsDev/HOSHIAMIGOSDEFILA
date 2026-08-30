@@ -5,6 +5,7 @@
 .album-header p, .album-editor-header p { margin: 0; color: rgba(245,235,220,.58); }
 .album-reader { display: grid; justify-items: center; gap: 22px; }
 .scrapbook-cover, .scrapbook-loading { box-sizing: border-box; width: min(80vw, 400px, calc(68svh * .72)); aspect-ratio: .72; border: 0; box-shadow: 18px 22px 38px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,242,209,.16); }
+.front-cover { width: min(48vw, 320px, calc(48svh * .72)); }
 .scrapbook-cover { position: relative; overflow: visible; padding: 10% 9%; display: flex; flex-direction: column; justify-content: space-between; color: #f5dfbe; background: linear-gradient(112deg, #3a1e13, #7a4324 42%, #a06134 75%, #4b2818); cursor: pointer; text-align: left; isolation: isolate; container-type: inline-size; transform: rotateZ(-.5deg); transition: transform .35s ease, filter .35s ease; }
 .scrapbook-cover:hover { filter: brightness(1.08); transform: rotateZ(-.15deg) translateY(-4px); }
 .scrapbook-cover::before { content: ''; position: absolute; z-index: -1; inset: 0; opacity: .34; background-image: repeating-linear-gradient(82deg, transparent 0 4px, rgba(255,255,255,.1) 5px, transparent 6px 12px), radial-gradient(circle at 18% 15%, rgba(255,220,165,.22), transparent 30%); mix-blend-mode: soft-light; }

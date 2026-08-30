@@ -36,12 +36,17 @@ export function HomePage() {
         <a className="landing-scroll-cue" href="#participa" aria-label="Bajar a la sección para participar"><span>DESLIZA PARA DESCUBRIR</span><i aria-hidden="true" /></a>
       </section>
 
-      <ExperienceCountdown />
+      <section className="landing-chapter chapter-encounter" data-scroll-reveal>
+        <p className="chapter-label">01 — EL ENCUENTRO</p>
+        <ExperienceCountdown />
+      </section>
 
-      <section className="reveal-note reveal-note-delay" data-scroll-reveal id="participa">
-        <FourPointMark className="note-four-point-mark" />
-        <p>Deja una parte de tu historia en la libreta virtual.</p>
-        <strong>ARCHIVO COLECTIVO · MODERADO POR EL EQUIPO</strong>
+      <section className="landing-chapter chapter-archive" data-scroll-reveal id="participa">
+        <p className="chapter-label">02 — EL ARCHIVO</p>
+        <div className="archive-intro">
+          <FourPointMark className="note-four-point-mark" />
+          <div><h2>Un recuerdo puede quedarse.</h2><p>Deja una parte de tu historia en la libreta virtual. El archivo colectivo se construye entre todas las personas que estuvieron ahí.</p><strong>ARCHIVO COLECTIVO · MODERADO POR EL EQUIPO</strong></div>
+        </div>
         {albumAccess.isUnlocked && <Link className="album-entry-link" to="/album" aria-label={`Ver libreta: ${entryCount} entradas publicadas`}>
           <FourPointMark className="album-entry-mark" />
           <span>VER LIBRETA</span>
@@ -49,14 +54,18 @@ export function HomePage() {
         </Link>}
       </section>
 
-      <nav className="actions landing-actions reveal-actions" data-scroll-reveal aria-label="Explorar Brattypolitan Experience">
-        <a className="button whatsapp-action" href="https://wa.me/525659229006?text=Hola%2C%20quiero%20dejar%20algo%20en%20la%20libreta%20virtual%20de%20Brattypolitan%20Experience." target="_blank" rel="noreferrer">ESCRÍBELE O DÉJALE ALGO BONITO A BRATTY VÍA WHATSAPP AQUÍ</a>
+      <section className="landing-chapter chapter-participate" data-scroll-reveal>
+        <p className="chapter-label">03 — DEJA TU HUELLA</p>
+        <h2>Hazlo parte de la historia.</h2>
+        <nav className="actions landing-actions" aria-label="Participar en Brattypolitan Experience">
         <div className="landing-web-column">
-          <Link className="button web-action" to="/contribute">ESCRÍBELE O DÉJALE ALGO BONITO A BRATTY AQUÍ</Link>
+          <Link className="button web-action" to="/contribute"><b>✦ DEJA ALGO EN LA LIBRETA</b><small>Forma parte del archivo colectivo</small></Link>
         </div>
-      </nav>
+        <a className="button whatsapp-action" href="https://wa.me/525659229006?text=Hola%2C%20quiero%20dejar%20algo%20en%20la%20libreta%20virtual%20de%20Brattypolitan%20Experience." target="_blank" rel="noreferrer"><b>✦ DEJA ALGO EN LA LIBRETA VÍA WHATSAPP</b><small>Y entérate de todas las novedades de BRATTY</small></a>
+        </nav>
+      </section>
 
-      <p className="landing-continue" data-scroll-reveal><span>✦</span> Sigue explorando · el archivo se construye entre todas las personas</p>
+      <section className="landing-chapter chapter-community" data-scroll-reveal><p className="chapter-label">04 — CONSTRUYAMOS ESTO JUNTOS</p><p className="landing-continue"><span>✦</span> Cada página guarda una memoria. Cada memoria hace más grande este archivo.</p></section>
 
       {session.isAdmin && <nav className="development-shortcuts" aria-label="Accesos de desarrollo">
         <p>DESARROLLO LOCAL</p>
