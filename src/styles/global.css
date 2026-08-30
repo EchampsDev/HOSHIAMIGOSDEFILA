@@ -53,7 +53,13 @@
   .route-loading__star { animation: none; }
 }
 
-html { background: #030303; }
+html {
+  background: #030303;
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  touch-action: manipulation;
+}
 
 body {
   margin: 0;
@@ -64,6 +70,9 @@ body {
 }
 
 body:has(.explore-drawer-layer.is-open) { overflow: hidden; }
+html:has(.landing-flow), body:has(.landing-flow) { overscroll-behavior-y: none; }
+
+a, button, input, select, textarea { touch-action: manipulation; }
 
 a:focus-visible,
 .button:focus-visible {
@@ -240,10 +249,11 @@ footer {
 }
 
 @media (max-width: 560px) {
+  .site-shell { width: 100%; padding-right: max(16px, env(safe-area-inset-right)); padding-left: max(16px, env(safe-area-inset-left)); }
   .site-shell:has(.landing-flow) > .topbar { width: min(calc(100% - 32px), 430px); display: grid; grid-template-columns: 1fr; gap: 10px; padding: 12px 0; }
   .site-shell:has(.landing-flow) > .topbar .brand { justify-self: center; font-size: .7rem; }
   .site-shell:has(.landing-flow) > .topbar .topbar-actions { width: 100%; display: flex; justify-content: center; gap: clamp(20px, 8vw, 34px); }
-  .site-shell:has(.landing-flow) > .topbar .quiet-link, .site-shell:has(.landing-flow) > .topbar .topbar-google { min-height: 32px; display: grid; place-items: center; padding: 0 0 2px; border: 0; border-bottom: 1px solid rgba(255,255,255,.5); background: transparent; font-size: .57rem; }
+  .site-shell:has(.landing-flow) > .topbar .quiet-link, .site-shell:has(.landing-flow) > .topbar .topbar-google { min-height: 44px; display: grid; place-items: center; padding: 0 6px 2px; border: 0; border-bottom: 1px solid rgba(255,255,255,.5); background: transparent; font-size: clamp(.64rem, 2.8vw, .72rem); }
   .site-shell:has(.landing-flow) > .topbar .topbar-google { border-bottom-color: rgba(245,220,80,.75); }
   .site-shell:has(.landing-flow) > .topbar .topbar-google-full { display: none; }
   .site-shell:has(.landing-flow) > .topbar .topbar-google-short { display: inline; }
