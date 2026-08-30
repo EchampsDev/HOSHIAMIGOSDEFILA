@@ -99,6 +99,7 @@
   .setlist-launcher span { width: 100%; }
   .top3-launchers { grid-template-columns: 1fr; }
   .top3-launchers .setlist-launcher { width: 100%; min-height: 82px; }
+  .setlist-search input { font-size: 16px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
