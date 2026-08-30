@@ -77,6 +77,54 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // Fuente editorial privada. Sólo administración puede crear o mutar noticias.
+    match /news/{newsId} {
+      allow read, delete: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.status == 'draft';
+      // El slug queda congelado desde la primera publicación para conservar enlaces compartidos.
+      allow update: if isAdmin()
+        && (!('publishedAt' in resource.data)
+          || request.resource.data.slug == resource.data.slug)
+        // La primera transición a published debe incluir el evento outbox en la misma transacción.
+        && (!(request.resource.data.status == 'published' && resource.data.status != 'published')
+          || existsAfter(/databases/$(database)/documents/newsPublishingEvents/$(newsId)));
+    }
+
+    // Reserva transaccional de slugs para evitar URLs ambiguas o reutilizadas.
+    match /newsSlugs/{slug} {
+      allow read, create, update, delete: if isAdmin();
+    }
+
+    // Proyección pública creada al publicar; los borradores nunca se copian aquí.
+    match /publishedNews/{newsId} {
+      allow get, list: if true;
+      allow create, update: if isAdmin()
+        && request.resource.data.status == 'published'
+        && request.resource.data.visible == true
+        && getAfter(/databases/$(database)/documents/news/$(newsId)).data.status == 'published';
+      allow delete: if isAdmin();
+    }
+
+    // Outbox idempotente: un documento por primera publicación de cada noticia.
+    match /newsPublishingEvents/{newsId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin()
+        && request.resource.data.type == 'NEWS_PUBLISHED'
+        && request.resource.data.newsId == newsId;
+      allow update, delete: if false;
+    }
+
+    // Consentimiento y entregas pertenecen al backend. El cliente admin sólo puede auditar.
+    match /whatsappSubscribers/{subscriberId} {
+      allow get, list: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /newsDeliveries/{deliveryId} {
+      allow get, list: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
     // Reserved for the future comments feature. Public visitors can only read approved comments.
     match /comments/{commentId} {
       allow get, list: if resource.data.moderationStatus == 'APPROVED';
@@ -86,6 +134,7 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
-    match /{document=**} { allow read, write: if isAdmin(); }
+    // Denegación por defecto: toda colección nueva debe declarar su contrato explícitamente.
+    match /{document=**} { allow read, write: if false; }
   }
 }

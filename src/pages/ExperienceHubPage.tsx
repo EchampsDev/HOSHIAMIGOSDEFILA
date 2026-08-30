@@ -10,6 +10,7 @@ const publicAreas = [
 ]
 
 const developerAreas = [
+  { to: '/admin/noticias', eyebrow: 'EDITORIAL', title: 'Administración de Noticias', copy: 'Crea, publica y ordena las novedades visibles en el landing.' },
   { to: '/dev/album-editor', eyebrow: 'EDITOR', title: 'Scrapbook Editor', copy: 'Construye las hojas, sus elementos y sus composiciones.' },
   { to: '/constellation-editor', eyebrow: 'EDITOR', title: 'Constellation Editor', copy: 'Ajusta puntos y conexiones de la silueta guía.' },
   { to: '/taller-constelacion', eyebrow: 'COLABORACIÓN', title: 'Taller de constelación', copy: 'Enlace aislado para quienes ayuden a construir la silueta.' },

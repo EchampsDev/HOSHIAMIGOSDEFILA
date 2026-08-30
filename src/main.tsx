@@ -7,4 +7,5 @@ import './styles/constellation-editor.css'
 import './styles/album.css'
 import './styles/experience-hub.css'
 import './styles/workspace.css'
+import './styles/news.css'
 createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>)

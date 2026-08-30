@@ -10,6 +10,7 @@ import { StarfieldBackground } from '../features/landing/components/StarfieldBac
 import { useScrollReveal } from '../features/landing/hooks/useScrollReveal'
 import { usePublicAlbumAccess } from '../features/album/hooks/usePublicAlbumAccess'
 import { useAlbum } from '../features/album/hooks/useAlbum'
+import { NewsLandingSection } from '../features/news/components/NewsLandingSection'
 
 export function HomePage() {
   const landingRef = useRef<HTMLDivElement>(null)
@@ -65,7 +66,7 @@ export function HomePage() {
         </nav>
       </section>
 
-      <section className="landing-chapter chapter-community" data-scroll-reveal><p className="chapter-label">04 — CONSTRUYAMOS ESTO JUNTOS</p><p className="landing-continue"><span>✦</span> Cada página guarda una memoria. Cada memoria hace más grande este archivo.</p></section>
+      <div id="novedades"><NewsLandingSection /></div>
 
       {session.isAdmin && <nav className="development-shortcuts" aria-label="Accesos de desarrollo">
         <p>DESARROLLO LOCAL</p>

@@ -14,4 +14,12 @@ Las imágenes futuras se representan por `MediaMetadata`: dimensiones originales
 
 Cada `AlbumElement` incluye `author.participantId`, que será emitido por el futuro flujo de acceso QR. Nombre y edad son opcionales y se almacenan junto al elemento sólo si la persona los proporciona. Así, cada foto o recuerdo físico/digital puede vincularse posteriormente al mismo autor en Firestore.
 
+## Noticias
+
+`NewsItem` conserva estado editorial (`draft`, `published`, `archived`), visibilidad adicional, orden, slug estable, fechas de creación/actualización/publicación, autor de publicación, imágenes ordenadas y enlaces sociales. `news` permanece restringida a administración y `publishedNews` es la proyección pública. Cada `NewsImage` admite `provider` y `storagePath` opcionales para distinguir recursos versionados en GitHub de una futura migración a Firebase Storage sin cambiar el contrato visual.
+
+`newsSlugs/{slug}` reserva cada URL mediante `newsId` y `createdAt` dentro de la misma transacción del borrador o publicación. La reserva evita rutas duplicadas y se conserva tras un borrado lógico para no reasignar silenciosamente una URL que ya pudo compartirse.
+
+La distribución se modela separadamente mediante `WhatsAppSubscriber`, `NewsDelivery` y `NewsPublishedEvent`. El consentimiento explícito y la relación con `contributionId` forman parte del dominio; publicar contenido no equivale a enviarlo.
+
 El contrato `AlbumRepository` separa lectura/escritura de la UI. La implementación presente es local; una futura `FirestoreAlbumRepository` deberá persistir páginas, layouts y metadatos de media bajo reglas de usuario autenticado y administración.

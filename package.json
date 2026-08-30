@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/create-site-worker.mjs",
     "typecheck": "tsc -b --pretty false",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "news:image": "node scripts/add-news-image.mjs"
   },
   "dependencies": {
     "firebase": "^12.7.0",
