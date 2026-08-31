@@ -55,22 +55,18 @@
 
 html {
   background: #030303;
-  overflow-x: clip;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  touch-action: manipulation;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100svh;
-  overflow-x: hidden;
   background: #030303;
 }
 
 body:has(.explore-drawer-layer.is-open) { overflow: hidden; }
-html:has(.landing-flow), body:has(.landing-flow) { overscroll-behavior-y: none; }
 
 a, button, input, select, textarea { touch-action: manipulation; }
 
