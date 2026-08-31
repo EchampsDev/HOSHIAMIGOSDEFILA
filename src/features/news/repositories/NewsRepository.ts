@@ -18,7 +18,9 @@ const normalize = (id: string, value: Partial<NewsItem>): NewsItem => ({
   id, title: value.title ?? '', description: value.description ?? '', slug: value.slug ?? id,
   images: Array.isArray(value.images) ? value.images : [], carouselAlt: value.carouselAlt,
   instagramUrl: value.instagramUrl, facebookUrl: value.facebookUrl, xUrl: value.xUrl, tiktokUrl: value.tiktokUrl,
+  externalUrl: value.externalUrl, externalLabel: value.externalLabel,
   order: Number(value.order ?? 0), visible: value.visible !== false, status: value.status ?? 'draft',
+  displayDate: value.displayDate,
   publishedAt: value.publishedAt, publishedBy: value.publishedBy,
   createdAt: value.createdAt ?? new Date().toISOString(), updatedAt: value.updatedAt ?? new Date().toISOString(), deletedAt: value.deletedAt,
 })

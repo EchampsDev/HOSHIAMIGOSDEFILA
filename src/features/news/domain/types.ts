@@ -20,9 +20,12 @@ export type NewsItem = {
   facebookUrl?: string
   xUrl?: string
   tiktokUrl?: string
+  externalUrl?: string
+  externalLabel?: string
   order: number
   visible: boolean
   status: NewsStatus
+  displayDate?: string
   publishedAt?: string
   publishedBy?: string
   createdAt: string

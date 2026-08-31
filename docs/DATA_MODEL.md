@@ -18,7 +18,7 @@ El catálogo musical admite `album: DELUSION | TRES | TDBN | HOSHI` (y `OTHER` �
 
 ## Noticias
 
-`NewsItem` conserva estado editorial (`draft`, `published`, `archived`), visibilidad adicional, orden, slug estable, fechas de creación/actualización/publicación, autor de publicación, imágenes ordenadas y enlaces sociales. `news` permanece restringida a administración y `publishedNews` es la proyección pública. Cada `NewsImage` admite `provider` y `storagePath` opcionales para distinguir recursos versionados en GitHub de una futura migración a Firebase Storage sin cambiar el contrato visual.
+`NewsItem` conserva estado editorial (`draft`, `published`, `archived`), visibilidad adicional, orden, slug estable, fechas de creación/actualización/publicación, una fecha editorial opcional (`displayDate`), autor de publicación, imágenes ordenadas, enlaces sociales y un enlace externo editorial opcional (`externalUrl` + `externalLabel`). `displayDate` controla únicamente la fecha mostrada al público; `publishedAt` mantiene la auditoría de la publicación real. `news` permanece restringida a administración y `publishedNews` es la proyección pública. Cada `NewsImage` admite `provider` y `storagePath` opcionales para distinguir recursos versionados en GitHub de una futura migración a Firebase Storage sin cambiar el contrato visual.
 
 `newsSlugs/{slug}` reserva cada URL mediante `newsId` y `createdAt` dentro de la misma transacción del borrador o publicación. La reserva evita rutas duplicadas y se conserva tras un borrado lógico para no reasignar silenciosamente una URL que ya pudo compartirse.
 
