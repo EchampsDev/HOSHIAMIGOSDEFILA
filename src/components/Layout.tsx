@@ -1,6 +1,7 @@
 import { type PropsWithChildren, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FourPointMark } from './FourPointMark'
+import { BrattypolitanExperienceLockup } from './BrattypolitanWordmark'
 import { useGoogleSession } from '../features/access/useGoogleSession'
 
 const publicAreas = [
@@ -29,7 +30,7 @@ export function Layout({ children }: PropsWithChildren) {
 
   return <main className="site-shell">
     <header className={`topbar${isCompact ? ' is-compact' : ''}`}>
-      <Link to="/" className="brand">BRATTYPOLITAN EXPERIENCE</Link>
+      <Link to="/" className="brand"><BrattypolitanExperienceLockup /></Link>
       <nav className="topbar-actions" aria-label="Navegación">
         <button type="button" className="quiet-link explore-toggle" onClick={() => setIsExploreOpen(true)} aria-expanded={isExploreOpen} aria-controls="explore-sidebar">Explorar</button>
         {session.isConfigured && (session.user ? <button type="button" className="topbar-google" onClick={() => void session.signOut()} aria-label={`Cerrar sesión de ${session.user.displayName?.split(' ')[0] ?? 'Google'}`}><span className="topbar-google-full">Salir · {session.user.displayName?.split(' ')[0] ?? 'Google'}</span><span className="topbar-google-short">Salir</span></button> : <button type="button" className="topbar-google" onClick={() => void session.signIn()} aria-label="Accede con tu cuenta de Google"><span className="topbar-google-full">Accede con tu cuenta de Google</span><span className="topbar-google-short">Accede con Google</span></button>)}
@@ -43,7 +44,7 @@ export function Layout({ children }: PropsWithChildren) {
       <button type="button" className="explore-drawer-backdrop" tabIndex={isExploreOpen ? 0 : -1} aria-label="Cerrar explorador" onClick={() => setIsExploreOpen(false)} />
       <aside id="explore-sidebar" className="explore-drawer" aria-label="Explorar experiencias públicas" aria-modal="true" role="dialog">
         <header>
-          <div><p>BRATTYPOLITAN EXPERIENCE</p><h2>EXPLORAR</h2></div>
+          <div><p><BrattypolitanExperienceLockup /></p><h2>EXPLORAR</h2></div>
           <button type="button" onClick={() => setIsExploreOpen(false)} aria-label="Cerrar explorador">×</button>
         </header>
         <p className="explore-drawer-intro">Un archivo colectivo para recorrer, leer y dejar recuerdos.</p>

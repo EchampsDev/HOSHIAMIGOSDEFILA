@@ -11,6 +11,7 @@ import { useScrollReveal } from '../features/landing/hooks/useScrollReveal'
 import { usePublicAlbumAccess } from '../features/album/hooks/usePublicAlbumAccess'
 import { useAlbum } from '../features/album/hooks/useAlbum'
 import { NewsLandingSection } from '../features/news/components/NewsLandingSection'
+import { BrattypolitanExperienceLockup } from '../components/BrattypolitanWordmark'
 
 export function HomePage() {
   const landingRef = useRef<HTMLDivElement>(null)
@@ -28,7 +29,7 @@ export function HomePage() {
       <section className="hero">
         <div className="hero-copy reveal-title" data-scroll-reveal>
           <p className="eyebrow">UN ARCHIVO COLECTIVO</p>
-          <h1>BRATTYPOLITAN<br />EXPERIENCE</h1>
+          <h1><BrattypolitanExperienceLockup stacked /></h1>
         </div>
         <div className="reveal-constellation" data-scroll-reveal>
           <ConstellationHero />
