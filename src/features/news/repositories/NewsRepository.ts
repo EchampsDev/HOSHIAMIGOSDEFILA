@@ -22,7 +22,19 @@ const normalize = (id: string, value: Partial<NewsItem>): NewsItem => ({
   publishedAt: value.publishedAt, publishedBy: value.publishedBy,
   createdAt: value.createdAt ?? new Date().toISOString(), updatedAt: value.updatedAt ?? new Date().toISOString(), deletedAt: value.deletedAt,
 })
-const publicValue = (item: NewsItem) => ({ ...item, status: 'published' as const })
+
+const withoutUndefined = <T,>(value: T): T => {
+  if (Array.isArray(value)) return value.map(withoutUndefined) as T
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value as Record<string, unknown>)
+      .filter(([, entry]) => entry !== undefined)
+      .map(([key, entry]) => [key, withoutUndefined(entry)])) as T
+  }
+  return value
+}
+
+const firestoreValue = <T,>(value: T) => withoutUndefined(value)
+const publicValue = (item: NewsItem) => firestoreValue({ ...item, status: 'published' as const })
 
 export const newsRepository = {
   usesFirebase: isFirebaseConfigured,
@@ -48,7 +60,7 @@ export const newsRepository = {
       const slugSnapshot = await transaction.get(slug)
       if (slugSnapshot.exists()) throw new Error('Ese slug ya pertenece a otra noticia.')
       transaction.set(slug, { newsId: reference.id, createdAt: now })
-      transaction.set(reference, { ...draft, status: 'draft', createdAt: now, updatedAt: now })
+      transaction.set(reference, firestoreValue({ ...draft, status: 'draft', createdAt: now, updatedAt: now }))
     })
     return reference.id
   },
@@ -68,7 +80,7 @@ export const newsRepository = {
       if (slugSnapshot.exists() && slugSnapshot.data().newsId !== item.id) throw new Error('Ese slug ya pertenece a otra noticia.')
       if (current.slug !== item.slug) transaction.delete(slugReference(current.slug))
       transaction.set(targetSlug, { newsId: item.id, createdAt: current.createdAt })
-      transaction.set(sourceReference, updated)
+      transaction.set(sourceReference, firestoreValue(updated))
       const publicReference = doc(database, 'publishedNews', item.id)
       if (item.status === 'published' && item.visible) transaction.set(publicReference, publicValue(updated))
       else transaction.delete(publicReference)
@@ -93,7 +105,7 @@ export const newsRepository = {
       const published = { ...item, status: 'published' as const, visible: true, publishedAt: current.publishedAt ?? now, publishedBy: current.publishedBy ?? adminUid, updatedAt: now }
       if (current.slug !== item.slug) transaction.delete(slugReference(current.slug))
       transaction.set(targetSlug, { newsId: item.id, createdAt: current.createdAt })
-      transaction.set(sourceReference, published)
+      transaction.set(sourceReference, firestoreValue(published))
       transaction.set(publicReference, publicValue(published))
       if (firstPublication) transaction.set(eventReference, {
         id: eventReference.id, type: 'NEWS_PUBLISHED', newsId: item.id, slug: item.slug, title: item.title,

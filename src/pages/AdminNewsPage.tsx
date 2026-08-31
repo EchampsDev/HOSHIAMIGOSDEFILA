@@ -43,7 +43,7 @@ export function AdminNewsPage() {
     const value = item === editing ? validForm() : cleanDraft(item); if (!value) return
     setBusy(true)
     try { await newsRepository.publish({ ...item, ...value }, session.user.uid); setMessage('Noticia publicada. NEWS_PUBLISHED se creó sólo si fue la primera publicación.'); closeForm() }
-    catch { setMessage('No fue posible publicar la noticia.') } finally { setBusy(false) }
+    catch (error) { setMessage(error instanceof Error ? `No fue posible publicar la noticia: ${error.message}` : 'No fue posible publicar la noticia.') } finally { setBusy(false) }
   }
   const uploadImages = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []); event.target.value = ''
