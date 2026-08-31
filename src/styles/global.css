@@ -39,7 +39,7 @@
 
 .route-loading__scene {
   position: relative;
-  min-height: calc(100svh - 44px);
+  min-height: 100svh;
   color: rgba(247, 247, 244, .92);
   font-size: clamp(1rem, 3vw, 1.25rem);
 }
@@ -76,9 +76,20 @@
   filter: blur(5px);
 }
 
+.route-loading.is-exiting .route-loading__star-position {
+  animation: access-star-flash 650ms cubic-bezier(.22, .61, .36, 1) both;
+}
+
+@keyframes access-star-flash {
+  0% { opacity: 1; filter: brightness(1); }
+  38% { opacity: 1; filter: brightness(1.85) drop-shadow(0 0 18px rgba(244, 24, 55, .92)); }
+  100% { opacity: 0; filter: brightness(2.15) drop-shadow(0 0 28px rgba(244, 24, 55, .28)); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .route-loading { transition: none; }
   .route-loading__scene p { transition: none; }
+  .route-loading.is-exiting .route-loading__star-position { animation: none; }
 }
 
 html {
