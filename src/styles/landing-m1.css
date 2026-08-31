@@ -88,6 +88,17 @@
   transition: opacity .7s ease, transform .7s ease;
 }
 
+.site-shell:has(.opening-scene) .topbar::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  height: 34px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, .65), rgba(0, 0, 0, .24) 48%, transparent 100%);
+}
+
 .site-shell:has(.landing-flow.has-started) .topbar {
   opacity: 1;
   pointer-events: auto;
@@ -438,8 +449,8 @@
 .landing-continue { margin: 0 auto; color: rgba(255,229,229,.7); font-size: .68rem; line-height: 1.65; }
 
 @media (max-width: 560px) {
-  .site-shell:has(.opening-scene) .topbar { top: max(12px, env(safe-area-inset-top)); width: min(calc(100% - 32px), 430px); }
-  .site-shell:has(.landing-flow.has-started) .topbar.is-compact { top: max(8px, env(safe-area-inset-top)); }
+  .site-shell:has(.opening-scene) .topbar { top: 0; width: min(calc(100% - 32px), 430px); }
+  .site-shell:has(.landing-flow.has-started) .topbar.is-compact { top: 0; }
   .opening-scene, .landing-flow, .landing-chapter { min-width: 0; }
   .landing-flow::before { width: 100vw; max-width: 100vw; }
   .landing-chapter { margin-top: 96px; }
