@@ -94,6 +94,7 @@
 
 html {
   background: #030303;
+  overscroll-behavior-y: none;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
@@ -135,6 +136,8 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100svh;
+  overflow-x: clip;
+  overscroll-behavior-y: none;
   background: #030303;
 }
 
@@ -160,8 +163,9 @@ a:focus-visible,
 }
 
 .site-shell > :not(.starfield):not(.explore-drawer-layer) { position: relative; z-index: 1; }
-.topbar { padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,.65); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); transition: padding .25s ease, background .25s ease, backdrop-filter .25s ease, transform .25s ease; }
-.site-shell:not(:has(.landing-flow)) > .topbar { position: sticky; z-index: 9; top: 8px; }
+.topbar { isolation: isolate; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,.68); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); transition: padding .25s ease, background .25s ease, backdrop-filter .25s ease, transform .25s ease; }
+.topbar::before { content: ''; position: absolute; z-index: -1; top: calc(-22px - env(safe-area-inset-top)); right: 50%; bottom: 0; width: 100vw; pointer-events: none; background: linear-gradient(to bottom, rgba(0,0,0,.88), rgba(0,0,0,.66) 72%, rgba(0,0,0,.5)); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); transform: translateX(50%); }
+.site-shell:not(:has(.landing-flow)) > .topbar { position: sticky; z-index: 9; top: 0; }
 .site-shell:has(.landing-flow) > .topbar.is-compact { z-index: 9; padding: 9px 12px; }
 .site-shell:has(.landing-flow) > .topbar.is-compact .brand { font-size: .69rem; }
 .topbar-actions { display: flex; align-items: center; justify-content: flex-end; gap: 16px; }.topbar-google { min-height: 32px; padding: 0; color: rgba(255,255,255,.92); border: 0; border-bottom: 1px solid rgba(245,220,80,.75); background: transparent; cursor: pointer; font: .59rem 'DM Mono', monospace; letter-spacing: .06em; text-transform: uppercase; }.topbar-google-short { display: none; }

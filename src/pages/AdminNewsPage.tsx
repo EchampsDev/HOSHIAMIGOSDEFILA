@@ -1,5 +1,5 @@
-import { useEffect, useState, type ChangeEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useRef, useState, type ChangeEvent } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useGoogleSession } from '../features/access/useGoogleSession'
 import { createStableSlug, emptyNewsDraft, type NewsDraft, type NewsImage, type NewsItem, type NewsStatus } from '../features/news/domain/types'
 import { newsImageRepository } from '../features/news/repositories/NewsImageRepository'
@@ -9,6 +9,7 @@ const cleanDraft = (item: NewsItem): NewsDraft => ({ title: item.title, descript
 const statusLabel: Record<NewsStatus, string> = { draft: 'Borrador', published: 'Publicada', archived: 'Archivada' }
 
 export function AdminNewsPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const session = useGoogleSession()
   const [items, setItems] = useState<NewsItem[]>([])
   const [editing, setEditing] = useState<NewsItem | null>(null)
@@ -18,11 +19,20 @@ export function AdminNewsPage() {
   const [message, setMessage] = useState<string | null>(null)
   const [githubImageUrl, setGithubImageUrl] = useState('')
   const [githubImageAlt, setGithubImageAlt] = useState('')
+  const openedEditRequest = useRef<string | null>(null)
 
-  useEffect(() => newsRepository.subscribeAdmin(setItems, () => setMessage('No fue posible cargar las noticias. Revisa las reglas de Firestore.')), [])
+  const requestedEditId = searchParams.get('edit')
+  useEffect(() => newsRepository.subscribeAdmin((nextItems) => {
+    setItems(nextItems)
+    if (!requestedEditId || openedEditRequest.current === requestedEditId) return
+    const requested = nextItems.find((item) => item.id === requestedEditId)
+    if (!requested) return
+    openedEditRequest.current = requestedEditId
+    setEditing(requested); setForm(cleanDraft(requested)); setFormOpen(true); setMessage(null)
+  }, () => setMessage('No fue posible cargar las noticias. Revisa las reglas de Firestore.')), [requestedEditId])
   const startNew = () => { setEditing(null); setForm(emptyNewsDraft()); setFormOpen(true); setMessage(null) }
   const edit = (item: NewsItem) => { setEditing(item); setForm(cleanDraft(item)); setFormOpen(true); setMessage(null) }
-  const closeForm = () => { setFormOpen(false); setEditing(null); setForm(emptyNewsDraft()); setGithubImageUrl(''); setGithubImageAlt('') }
+  const closeForm = () => { setFormOpen(false); setEditing(null); setForm(emptyNewsDraft()); setGithubImageUrl(''); setGithubImageAlt(''); openedEditRequest.current = null; if (requestedEditId) setSearchParams({}, { replace: true }) }
   const validForm = () => {
     const slug = form.slug || createStableSlug(form.title)
     if (!form.title.trim() || !form.description.trim() || !slug) { setMessage('Completa título, descripción y slug.'); return null }
