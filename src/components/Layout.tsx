@@ -38,7 +38,10 @@ export function Layout({ children }: PropsWithChildren) {
     </header>
     {session.error && <p className="session-error" role="alert">{session.error}</p>}
     {children}
-    <footer data-scroll-reveal>BRATTY · CDMX · 2026 <FourPointMark className="footer-four-point-mark" /></footer>
+    <footer className="site-footer" data-scroll-reveal>
+      <span>BRATTY · CDMX · 2026 <FourPointMark className="footer-four-point-mark" /></span>
+      <img className="site-footer-mark" src="/images/bratty-hoshi-footer.jpg" alt="Símbolo HOSHI de Bratty" />
+    </footer>
 
     <div className={`explore-drawer-layer ${isExploreOpen ? 'is-open' : ''}`} aria-hidden={!isExploreOpen}>
       <button type="button" className="explore-drawer-backdrop" tabIndex={isExploreOpen ? 0 : -1} aria-label="Cerrar explorador" onClick={() => setIsExploreOpen(false)} />
