@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,600;1,700&family=DM+Mono&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 :root {
   font-family: 'Space Grotesk', system-ui, sans-serif;
@@ -126,7 +126,18 @@ html {
   gap: .02em;
 }
 
-.brattypolitan-lockup__experience { white-space: nowrap; }
+.experience-word {
+  display: inline-block;
+  color: #d9b65d;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: .025em;
+  line-height: .82;
+  text-transform: none;
+  text-shadow: 0 0 .5em rgba(217, 182, 93, .2);
+}
+.brattypolitan-lockup__experience { font-size: 1.22em; white-space: nowrap; }
 .hero h1 .brattypolitan-wordmark,
 .experience-hub h1 .brattypolitan-wordmark { width: 7.1em; }
 .brand .brattypolitan-wordmark { width: 7em; }

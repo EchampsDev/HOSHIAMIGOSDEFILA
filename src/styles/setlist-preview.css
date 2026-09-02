@@ -1,5 +1,6 @@
 .setlist-preview-card { max-width: 720px; overflow: hidden; margin: 18px 0; border: 1px solid rgba(245,220,80,.55); background: #0d1628; }
 .setlist-preview-card header { display: grid; gap: 4px; padding: 18px; color: #f5dc50; background: #090909; font: .62rem 'DM Mono',monospace; }
+.setlist-preview-card header .experience-word { margin-left: .2em; font-size: 1rem; vertical-align: -.08em; }
 .setlist-preview-card header strong { color: #fff; font: 700 1.65rem sans-serif; }
 .setlist-preview-card header small { color: #75a8ff; }
 .setlist-preview-card ol { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 1px; margin: 0; padding: 1px; list-style: none; background: rgba(245,220,80,.22); counter-reset: setlist-track; }
@@ -100,6 +101,13 @@
   .top3-launchers { grid-template-columns: 1fr; }
   .top3-launchers .setlist-launcher { width: 100%; min-height: 82px; }
   .setlist-search input { font-size: 16px; }
+}
+
+/* Safari amplía automáticamente la página si un control editable usa menos de 16 px. */
+@media (max-width: 768px) {
+  .site-shell:has(.contribution) input:not([type='checkbox']):not([type='radio']):not([type='file']),
+  .site-shell:has(.contribution) textarea,
+  .site-shell:has(.contribution) select { font-size: 16px !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {

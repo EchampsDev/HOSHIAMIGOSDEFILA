@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom'
+import { ExperienceWord } from '../components/BrattypolitanWordmark'
 
 const publicSite = 'https://brattypolitan-experience.web.app/'
 const localBase = 'http://localhost:5174'
 
 export function WorkspacePage() {
   return <main className="workspace-page">
-    <header><p>BRATTYPOLITAN EXPERIENCE</p><h1>Centro de trabajo</h1><span>Acceso rápido al sitio y a las herramientas de desarrollo.</span></header>
+    <header><p>BRATTYPOLITAN <ExperienceWord /></p><h1>Centro de trabajo</h1><span>Acceso rápido al sitio y a las herramientas de desarrollo.</span></header>
     <section className="workspace-links" aria-label="Accesos">
       <a href={publicSite} target="_blank" rel="noreferrer"><strong>Sitio público</strong><span>Abre la versión publicada en Firebase Hosting.</span></a>
       <a href={`${localBase}/constellation-editor`}><strong>Editor de silueta</strong><span>Importa, edita y exporta las coordenadas de la constelación.</span></a>
