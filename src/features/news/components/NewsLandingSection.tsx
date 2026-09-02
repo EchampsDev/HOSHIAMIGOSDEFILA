@@ -33,7 +33,7 @@ export function NewsLandingSection() {
   return <section className="landing-chapter chapter-news" data-scroll-reveal aria-labelledby="news-section-title">
     <p className="chapter-label" id="news-section-title">04 — NOVEDADES DE BRATTY!!</p>
     {adminError && <p className="news-admin-inline-error" role="alert">{adminError}</p>}
-    {error ? <p className="news-empty">Próximamente compartiremos nuevas historias y actualizaciones de BRATTY.</p> : items.length ? <div className="news-feed">{items.map((item) => <article className="news-card" key={item.id}>
+    {error ? <p className="news-empty">Próximamente compartiremos nuevas historias y actualizaciones de BRATTY.</p> : items.length ? <><p className="news-published-count" aria-live="polite">{items.length} {items.length === 1 ? 'entrada publicada' : 'entradas publicadas'}</p><div className="news-feed">{items.map((item) => <article className="news-card" key={item.id}>
       <div className="news-card-media"><NewsCarousel images={item.images} fallbackAlt={item.carouselAlt || item.title} />
         {session.isAdmin && <nav className="news-card-admin" aria-label={`Administrar ${item.title}`}>
           <Link to={`/admin/noticias?edit=${encodeURIComponent(item.id)}`} aria-label={`Editar ${item.title}`} title="Editar"><AdminIcon name="edit" /></Link>
@@ -41,7 +41,7 @@ export function NewsLandingSection() {
           <button type="button" className="is-danger" disabled={busyId === item.id} onClick={() => void adminAction(item, 'delete')} aria-label={`Eliminar ${item.title}`} title="Eliminar"><AdminIcon name="delete" /></button>
         </nav>}
       </div>
-      <div className="news-card-copy"><time dateTime={newsDateValue(item.displayDate, item.publishedAt)}>{formatNewsDate(item.displayDate, item.publishedAt)}</time><h2><Link to={`/novedades/${item.slug}`}>{item.title}</Link></h2><p>{item.description}</p><NewsSocialLinks item={item} /><Link className="news-read-link" to={`/novedades/${item.slug}`}>Leer novedad →</Link></div>
-    </article>)}</div> : <p className="news-empty">Próximamente compartiremos nuevas historias y actualizaciones de BRATTY.</p>}
+      <div className="news-card-copy"><time dateTime={newsDateValue(item.displayDate, item.publishedAt)}>{formatNewsDate(item.displayDate, item.publishedAt)}</time><h2><Link to={`/novedades/${item.slug}`}>{item.title}</Link></h2><p>{item.description}</p><NewsSocialLinks item={item} /><Link className="news-read-link" to={`/novedades/${item.slug}`}>Leer más →</Link></div>
+    </article>)}</div></> : <p className="news-empty">Próximamente compartiremos nuevas historias y actualizaciones de BRATTY.</p>}
   </section>
 }

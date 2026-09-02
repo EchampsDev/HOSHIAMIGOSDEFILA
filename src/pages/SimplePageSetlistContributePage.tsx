@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties } from 'react'
 import '../styles/setlist-preview.css'
 import { Layout } from '../components/Layout'
 import { ExperienceWord } from '../components/BrattypolitanWordmark'
@@ -105,6 +105,36 @@ const localContributionStore: ContributionStore = {
   },
 }
 
+function TrackCoverFlow({ tracks, selectedIds, onToggle }: { tracks: SetlistTrack[]; selectedIds: string[]; onToggle: (id: string) => void }) {
+  const scrollerRef = useRef<HTMLDivElement>(null)
+  const [activeId, setActiveId] = useState(tracks[0]?.id ?? '')
+  const resolvedActiveId = tracks.some((track) => track.id === activeId) ? activeId : tracks[0]?.id ?? ''
+  const activeIndex = Math.max(0, tracks.findIndex((track) => track.id === resolvedActiveId))
+  const activeTrack = tracks[activeIndex]
+
+  const centerTrack = (id: string) => {
+    const scroller = scrollerRef.current
+    const element = scroller?.querySelector<HTMLElement>(`[data-track-id="${CSS.escape(id)}"]`)
+    if (!scroller || !element) return
+    setActiveId(id)
+    scroller.scrollTo({ left: element.offsetLeft - (scroller.clientWidth - element.offsetWidth) / 2, behavior: 'smooth' })
+  }
+  const syncCenteredTrack = () => {
+    const scroller = scrollerRef.current
+    if (!scroller) return
+    const center = scroller.getBoundingClientRect().left + scroller.clientWidth / 2
+    const nearest = [...scroller.querySelectorAll<HTMLElement>('[data-track-id]')].sort((left, right) => Math.abs(left.getBoundingClientRect().left + left.clientWidth / 2 - center) - Math.abs(right.getBoundingClientRect().left + right.clientWidth / 2 - center))[0]
+    if (nearest?.dataset.trackId) setActiveId(nearest.dataset.trackId)
+  }
+
+  return <div className="setlist-coverflow">
+    <div className="setlist-coverflow-rail" ref={scrollerRef} onScroll={syncCenteredTrack} aria-label="Canciones del álbum, desliza horizontalmente">
+      {tracks.map((track, index) => { const selected = selectedIds.includes(track.id); const position = index < activeIndex ? 'is-before' : index > activeIndex ? 'is-after' : 'is-active'; return <button type="button" key={track.id} data-track-id={track.id} className={`setlist-coverflow-item ${position}${selected ? ' is-selected' : ''}`} aria-label={`${track.title}${selected ? ', seleccionada' : ''}`} aria-pressed={selected} onFocus={() => centerTrack(track.id)} onClick={() => { centerTrack(track.id); onToggle(track.id) }} disabled={!selected && selectedIds.length >= TOP_SIZE}>{track.coverUrl ? <img src={resolveSetlistCoverUrl(track.coverUrl)} alt="" /> : <span className="setlist-coverflow-placeholder">{String(index + 1).padStart(2, '0')}</span>}</button> })}
+    </div>
+    {activeTrack && <p className="setlist-coverflow-caption" aria-live="polite"><b>{activeTrack.title}</b><small>{selectedIds.includes(activeTrack.id) ? 'Seleccionada' : 'Desliza para explorar · toca para seleccionar'}</small></p>}
+  </div>
+}
+
 export function SimplePageSetlistContributePage() {
   const [type, setType] = useState<ContributionType>('SETLIST')
   const [postItColor, setPostItColor] = useState('yellow')
@@ -184,10 +214,17 @@ export function SimplePageSetlistContributePage() {
   const saveImage = async () => {
     try {
       const canvas = await makePreview(selectedTracks, displayName, page, selectionTitle)
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
+      if (!blob) throw new Error('No fue posible preparar el PNG.')
+      const downloadUrl = URL.createObjectURL(blob)
       const link = document.createElement('a')
-      link.href = canvas.toDataURL('image/png')
+      link.href = downloadUrl
       link.download = `${activeTop === 'HOSHI' ? 'top-3-hoshi' : 'top-3-bratty'}.png`
+      link.rel = 'noopener'
+      link.hidden = true
+      document.body.appendChild(link)
       link.click()
+      window.setTimeout(() => { link.remove(); URL.revokeObjectURL(downloadUrl) }, 30_000)
     } catch { setMessage('No fue posible crear la imagen de vista previa.') }
   }
   const shareImage = async () => {
@@ -239,6 +276,6 @@ export function SimplePageSetlistContributePage() {
         {message && <p className="muted">{message}</p>}
       </div>}
     </section>
-    {expanded && <section className="setlist-modal" aria-label={selectionTitle}><div className="setlist-modal-panel" style={selectionPanelStyle}>{preview ? <><p className="eyebrow">VISTA PREVIA</p><h2>Tu selección</h2><div className="setlist-preview-card"><header><span>BRATTYPOLITAN <ExperienceWord /></span><strong>{selectionTitle}</strong><small>{displayName || 'PARTICIPANTE ANÓNIMO'} · PÁGINA {page}</small></header><ol>{selectedTracks.map((track, index) => <li key={track.id}><span className="setlist-preview-album-blur" style={track.coverUrl ? { backgroundImage: `url(${resolveSetlistCoverUrl(track.coverUrl)})` } : undefined} aria-hidden="true" />{track.coverUrl ? <img src={resolveSetlistCoverUrl(track.coverUrl)} alt="" /> : <span className="setlist-preview-cover-placeholder">{String(index + 1).padStart(2, '0')}</span>}<b>{track.title}</b></li>)}</ol></div><footer className="setlist-preview-actions"><button type="button" onClick={() => void saveImage()}>Descargar imagen</button><button type="button" onClick={() => void shareImage()}>Compartir imagen</button><button type="button" className="setlist-send" onClick={() => void sendTop()}>Guardar en la libreta</button></footer><button type="button" className="setlist-back" onClick={() => setPreview(false)}>← Volver a editar</button></> : <><p className="eyebrow">TOP 3 · PÁGINA {page}</p><h2>{selectionTitle}</h2><output className="setlist-count">{selectedIds.length} / {TOP_SIZE} seleccionadas</output>{availableTracks.length ? <><label className="setlist-search"><span>Buscar una canción</span><input type="search" value={trackSearch} onChange={(event) => setTrackSearch(event.target.value)} placeholder={activeTop === 'HOSHI' ? 'Busca dentro de HOSHI…' : 'Busca en toda la música de Bratty…'} autoComplete="off" /><small role="status" aria-live="polite">{visibleResultCount} {visibleResultCount === 1 ? 'resultado' : 'resultados'}</small></label>{visibleTrackGroups.length ? <div className="setlist-album-groups">{visibleTrackGroups.map((group) => { const open = expandedAlbums.includes(group.album) || Boolean(normalizedSearch && group.visibleTracks.length); const cover = group.tracks.find((track) => track.coverUrl)?.coverUrl; const panelId = `album-${group.album.toLowerCase()}-tracks`; return <section className={`setlist-album-group${open ? ' is-open' : ''}`} key={group.album}><button type="button" className="setlist-album-toggle" aria-expanded={open} aria-controls={panelId} onClick={() => toggleAlbum(group.album)}><span className="setlist-album-art">{cover ? <img src={resolveSetlistCoverUrl(cover)} alt="" /> : <i aria-hidden="true">✦</i>}</span><span className="setlist-album-meta"><b>{setlistAlbumLabels[group.album]}</b><small>{group.visibleTracks.length === group.tracks.length ? `${group.tracks.length} canciones` : `${group.visibleTracks.length} de ${group.tracks.length} canciones`}</small></span><i className="setlist-album-chevron" aria-hidden="true" /></button>{open && <div id={panelId} className="setlist-album-catalog">{group.visibleTracks.length ? <div className="setlist-track-grid">{group.visibleTracks.map((track, index) => { const selected = selectedIds.includes(track.id); return <button type="button" key={track.id} className={`setlist-track-option${selected ? ' is-selected' : ''}`} aria-label={`${track.title}${selected ? ', seleccionada' : ''}`} aria-pressed={selected} onClick={() => toggleTrack(track.id)} disabled={!selected && selectedIds.length >= TOP_SIZE}>{track.coverUrl ? <img src={resolveSetlistCoverUrl(track.coverUrl)} alt="" /> : <span className="setlist-track-placeholder">{String(index + 1).padStart(2, '0')}</span>}<b>{track.title}</b></button> })}</div> : <p className="setlist-album-empty">No hay canciones de este álbum que coincidan con la búsqueda.</p>}</div>}</section> })}</div> : <p className="setlist-search-empty">No encontramos canciones que coincidan con tu búsqueda.</p>}</> : <p className="setlist-empty">{activeTop === 'HOSHI' ? 'Todavía no hay canciones asociadas a la portada Hoshi.' : 'El equipo todavía no ha clasificado canciones en estos álbumes.'}</p>}<footer><button type="button" className="setlist-cancel" onClick={() => setExpanded(false)}>Cancelar</button><button type="button" className="setlist-send" onClick={() => setPreview(true)} disabled={selectedIds.length !== TOP_SIZE}>Ver vista previa</button></footer></>}</div></section>}
+    {expanded && <section className="setlist-modal" aria-label={selectionTitle}><div className="setlist-modal-panel" style={selectionPanelStyle}>{preview ? <><p className="eyebrow">VISTA PREVIA</p><h2>Tu selección</h2><div className="setlist-preview-card"><header><span>BRATTYPOLITAN <ExperienceWord /></span><strong>{selectionTitle}</strong><small>{displayName || 'PARTICIPANTE ANÓNIMO'} · PÁGINA {page}</small></header><ol>{selectedTracks.map((track, index) => <li key={track.id}><span className="setlist-preview-album-blur" style={track.coverUrl ? { backgroundImage: `url(${resolveSetlistCoverUrl(track.coverUrl)})` } : undefined} aria-hidden="true" />{track.coverUrl ? <img src={resolveSetlistCoverUrl(track.coverUrl)} alt="" /> : <span className="setlist-preview-cover-placeholder">{String(index + 1).padStart(2, '0')}</span>}<b>{track.title}</b></li>)}</ol></div><footer className="setlist-preview-actions"><button type="button" onClick={() => void saveImage()}>Descargar imagen</button><button type="button" onClick={() => void shareImage()}>Compartir imagen</button><button type="button" className="setlist-send" onClick={() => void sendTop()}>Guardar en la libreta</button></footer><button type="button" className="setlist-back" onClick={() => setPreview(false)}>← Volver a editar</button></> : <><p className="eyebrow">TOP 3 · PÁGINA {page}</p><h2>{selectionTitle}</h2><output className="setlist-count">{selectedIds.length} / {TOP_SIZE} seleccionadas</output>{availableTracks.length ? <><label className="setlist-search"><span>Buscar una canción</span><input type="search" value={trackSearch} onChange={(event) => setTrackSearch(event.target.value)} placeholder={activeTop === 'HOSHI' ? 'Busca dentro de HOSHI…' : 'Busca en toda la música de Bratty…'} autoComplete="off" /><small role="status" aria-live="polite">{visibleResultCount} {visibleResultCount === 1 ? 'resultado' : 'resultados'}</small></label>{visibleTrackGroups.length ? <div className="setlist-album-groups">{visibleTrackGroups.map((group) => { const open = expandedAlbums.includes(group.album) || Boolean(normalizedSearch && group.visibleTracks.length); const cover = group.tracks.find((track) => track.coverUrl)?.coverUrl; const panelId = `album-${group.album.toLowerCase()}-tracks`; return <section className={`setlist-album-group${open ? ' is-open' : ''}`} key={group.album}><button type="button" className="setlist-album-toggle" aria-expanded={open} aria-controls={panelId} onClick={() => toggleAlbum(group.album)}><span className="setlist-album-art">{cover ? <img src={resolveSetlistCoverUrl(cover)} alt="" /> : <i aria-hidden="true">✦</i>}</span><span className="setlist-album-meta"><b>{setlistAlbumLabels[group.album]}</b><small>{group.visibleTracks.length === group.tracks.length ? `${group.tracks.length} canciones` : `${group.visibleTracks.length} de ${group.tracks.length} canciones`}</small></span><i className="setlist-album-chevron" aria-hidden="true" /></button>{open && <div id={panelId} className="setlist-album-catalog">{group.visibleTracks.length ? <TrackCoverFlow tracks={group.visibleTracks} selectedIds={selectedIds} onToggle={toggleTrack} /> : <p className="setlist-album-empty">No hay canciones de este álbum que coincidan con la búsqueda.</p>}</div>}</section> })}</div> : <p className="setlist-search-empty">No encontramos canciones que coincidan con tu búsqueda.</p>}</> : <p className="setlist-empty">{activeTop === 'HOSHI' ? 'Todavía no hay canciones asociadas a la portada Hoshi.' : 'El equipo todavía no ha clasificado canciones en estos álbumes.'}</p>}<footer><button type="button" className="setlist-cancel" onClick={() => setExpanded(false)}>Cancelar</button><button type="button" className="setlist-send" onClick={() => setPreview(true)} disabled={selectedIds.length !== TOP_SIZE}>Ver vista previa</button></footer></>}</div></section>}
   </Layout>
 }

@@ -439,7 +439,7 @@
 .chapter-label { margin: 0 0 clamp(24px, 4vw, 36px); color: rgba(255,255,255,.47); font: .62rem 'DM Mono', monospace; letter-spacing: .17em; }
 .chapter-encounter { text-align: center; }
 .chapter-encounter .experience-countdown { margin: 0 auto; }
-.experience-countdown { padding: clamp(46px, 8vw, 72px) 0; border-color: rgba(244,24,55,.28); }
+.experience-countdown { position: relative; padding: clamp(34px, 6vw, 52px); border: 1px solid rgba(255,48,78,.72); background: radial-gradient(circle at 50% 18%, rgba(244,24,55,.3), transparent 52%),linear-gradient(145deg,rgba(112,4,20,.62),rgba(25,1,6,.9) 68%); box-shadow: 0 0 0 1px rgba(255,80,104,.08),0 22px 74px rgba(0,0,0,.42),0 0 30px rgba(244,24,55,.32),inset 0 0 34px rgba(244,24,55,.12); animation: countdown-card-pulse 2.8s ease-in-out infinite; }
 .experience-countdown h2 { max-width: 430px; margin-bottom: clamp(34px, 6vw, 52px); font-size: clamp(1.45rem, 5vw, 2.5rem); }
 .experience-countdown::after { content: 'TEATRO METROPOLITAN · 20:30 HRS'; display: block; margin-top: clamp(30px, 5vw, 42px); color: rgba(255,255,255,.56); font: .62rem 'DM Mono', monospace; letter-spacing: .13em; }
 .chapter-archive { padding: clamp(34px, 6vw, 52px); border: 1px solid rgba(244,24,55,.17); background: linear-gradient(135deg, rgba(126,8,19,.15), rgba(0,0,0,.04) 62%); box-shadow: 0 32px 90px rgba(0,0,0,.22); }
@@ -513,11 +513,17 @@
 
 @keyframes scroll-cue { 50% { transform: translateY(8px); opacity: .25; } }
 
+@keyframes countdown-card-pulse {
+  0%,100% { border-color: rgba(255,48,78,.56); box-shadow: 0 0 0 1px rgba(255,80,104,.06),0 22px 74px rgba(0,0,0,.42),0 0 24px rgba(244,24,55,.24),inset 0 0 28px rgba(244,24,55,.1); }
+  50% { border-color: rgba(255,104,126,.98); box-shadow: 0 0 0 2px rgba(255,50,82,.16),0 26px 82px rgba(0,0,0,.5),0 0 52px rgba(244,24,55,.54),inset 0 0 46px rgba(244,24,55,.18); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ambient-star,
   .constellation-hero.is-resting canvas,
   .four-point-star.is-active,
-  .opening-star { animation: none; }
+  .opening-star,
+  .experience-countdown { animation: none; }
   .four-point-star { transition: none; }
   .site-shell:has(.opening-scene) [data-scroll-reveal] {
     opacity: 1;
