@@ -107,10 +107,15 @@ const localContributionStore: ContributionStore = {
 
 function TrackCoverFlow({ tracks, selectedIds, onToggle }: { tracks: SetlistTrack[]; selectedIds: string[]; onToggle: (id: string) => void }) {
   const scrollerRef = useRef<HTMLDivElement>(null)
+  const scrollSettleRef = useRef<number | null>(null)
   const [activeId, setActiveId] = useState(tracks[0]?.id ?? '')
   const resolvedActiveId = tracks.some((track) => track.id === activeId) ? activeId : tracks[0]?.id ?? ''
   const activeIndex = Math.max(0, tracks.findIndex((track) => track.id === resolvedActiveId))
   const activeTrack = tracks[activeIndex]
+
+  useEffect(() => () => {
+    if (scrollSettleRef.current !== null) window.clearTimeout(scrollSettleRef.current)
+  }, [])
 
   const centerTrack = (id: string) => {
     const scroller = scrollerRef.current
@@ -122,14 +127,23 @@ function TrackCoverFlow({ tracks, selectedIds, onToggle }: { tracks: SetlistTrac
   const syncCenteredTrack = () => {
     const scroller = scrollerRef.current
     if (!scroller) return
-    const center = scroller.getBoundingClientRect().left + scroller.clientWidth / 2
-    const nearest = [...scroller.querySelectorAll<HTMLElement>('[data-track-id]')].sort((left, right) => Math.abs(left.getBoundingClientRect().left + left.clientWidth / 2 - center) - Math.abs(right.getBoundingClientRect().left + right.clientWidth / 2 - center))[0]
+    const center = scroller.scrollLeft + scroller.clientWidth / 2
+    let nearest: HTMLElement | undefined
+    let nearestDistance = Number.POSITIVE_INFINITY
+    for (const element of scroller.querySelectorAll<HTMLElement>('[data-track-id]')) {
+      const distance = Math.abs(element.offsetLeft + element.offsetWidth / 2 - center)
+      if (distance < nearestDistance) { nearest = element; nearestDistance = distance }
+    }
     if (nearest?.dataset.trackId) setActiveId(nearest.dataset.trackId)
+  }
+  const scheduleCenteredTrackSync = () => {
+    if (scrollSettleRef.current !== null) window.clearTimeout(scrollSettleRef.current)
+    scrollSettleRef.current = window.setTimeout(syncCenteredTrack, 120)
   }
 
   return <div className="setlist-coverflow">
-    <div className="setlist-coverflow-rail" ref={scrollerRef} onScroll={syncCenteredTrack} aria-label="Canciones del álbum, desliza horizontalmente">
-      {tracks.map((track, index) => { const selected = selectedIds.includes(track.id); const position = index < activeIndex ? 'is-before' : index > activeIndex ? 'is-after' : 'is-active'; return <button type="button" key={track.id} data-track-id={track.id} className={`setlist-coverflow-item ${position}${selected ? ' is-selected' : ''}`} aria-label={`${track.title}${selected ? ', seleccionada' : ''}`} aria-pressed={selected} onFocus={() => centerTrack(track.id)} onClick={() => { centerTrack(track.id); onToggle(track.id) }} disabled={!selected && selectedIds.length >= TOP_SIZE}>{track.coverUrl ? <img src={resolveSetlistCoverUrl(track.coverUrl)} alt="" /> : <span className="setlist-coverflow-placeholder">{String(index + 1).padStart(2, '0')}</span>}</button> })}
+    <div className="setlist-coverflow-rail" ref={scrollerRef} onScroll={scheduleCenteredTrackSync} aria-label="Canciones del álbum, desliza horizontalmente">
+      {tracks.map((track, index) => { const selected = selectedIds.includes(track.id); const position = index < activeIndex ? 'is-before' : index > activeIndex ? 'is-after' : 'is-active'; return <button type="button" key={track.id} data-track-id={track.id} className={`setlist-coverflow-item ${position}${selected ? ' is-selected' : ''}`} aria-label={`${track.title}${selected ? ', seleccionada' : ''}`} aria-pressed={selected} onClick={() => { centerTrack(track.id); onToggle(track.id) }} disabled={!selected && selectedIds.length >= TOP_SIZE}>{track.coverUrl ? <img src={resolveSetlistCoverUrl(track.coverUrl)} alt="" /> : <span className="setlist-coverflow-placeholder">{String(index + 1).padStart(2, '0')}</span>}</button> })}
     </div>
     {activeTrack && <p className="setlist-coverflow-caption" aria-live="polite"><b>{activeTrack.title}</b><small>{selectedIds.includes(activeTrack.id) ? 'Seleccionada' : 'Desliza para explorar · toca para seleccionar'}</small></p>}
   </div>

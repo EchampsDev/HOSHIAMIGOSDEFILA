@@ -77,18 +77,16 @@
 .setlist-album-group.is-open .setlist-album-chevron { background: radial-gradient(circle, rgba(245,220,80,.2), rgba(48,4,11,.84) 72%); filter: drop-shadow(0 0 9px rgba(245,220,80,.24)); transform: rotate(180deg); }
 .setlist-album-catalog { padding: 10px; border-top: 1px solid rgba(245,220,80,.28); animation: album-catalog-enter .24s ease both; }
 .setlist-coverflow { overflow: hidden; padding: 8px 0 14px; background: linear-gradient(180deg,rgba(0,0,0,.38),rgba(16,2,5,.62)); }
-.setlist-coverflow-rail { --coverflow-size: clamp(132px,52vw,230px); min-height: calc(var(--coverflow-size) + 72px); display: flex; align-items: center; overflow-x: auto; overflow-y: hidden; padding: 24px calc((100% - var(--coverflow-size))/2) 46px; scroll-padding-inline: calc((100% - var(--coverflow-size))/2); scroll-snap-type: x mandatory; scrollbar-width: none; perspective: 900px; touch-action: pan-x pan-y; }
+.setlist-coverflow-rail { --coverflow-size: clamp(132px,52vw,230px); min-height: calc(var(--coverflow-size) + 42px); display: flex; align-items: center; gap: 6px; overflow-x: auto; overflow-y: hidden; padding: 20px calc((100% - var(--coverflow-size))/2) 22px; scroll-padding-inline: calc((100% - var(--coverflow-size))/2); scroll-snap-type: x proximity; scrollbar-width: none; perspective: 900px; touch-action: pan-x pan-y; overscroll-behavior-inline: contain; -webkit-overflow-scrolling: touch; }
 .setlist-coverflow-rail::-webkit-scrollbar { display: none; }
-.setlist-coverflow-item { position: relative; flex: 0 0 var(--coverflow-size); width: var(--coverflow-size); aspect-ratio: 1; margin-inline: -19px; padding: 0; overflow: visible; color: #fff; border: 1px solid rgba(255,255,255,.25); background: #090909; box-shadow: 0 18px 34px rgba(0,0,0,.52); scroll-snap-align: center; cursor: pointer; transform-style: preserve-3d; transition: transform .3s cubic-bezier(.2,.7,.2,1),opacity .3s ease,filter .3s ease,border-color .25s ease; }
-.setlist-coverflow-item:first-child { margin-left: 0; }.setlist-coverflow-item:last-child { margin-right: 0; }
+.setlist-coverflow-item { position: relative; flex: 0 0 var(--coverflow-size); width: var(--coverflow-size); aspect-ratio: 1; padding: 0; overflow: hidden; color: #fff; border: 1px solid rgba(255,255,255,.25); background: #090909; box-shadow: 0 14px 28px rgba(0,0,0,.46); scroll-snap-align: center; cursor: pointer; transform-style: preserve-3d; transition: transform .22s cubic-bezier(.2,.7,.2,1),opacity .22s ease,border-color .22s ease; }
 .setlist-coverflow-item img,.setlist-coverflow-placeholder { width: 100%; height: 100%; display: grid; place-items: center; object-fit: cover; background: linear-gradient(135deg,#4e0712,#f5dc50); }
-.setlist-coverflow-item img { -webkit-box-reflect: below 7px linear-gradient(transparent 58%,rgba(255,255,255,.18)); }
-.setlist-coverflow-item.is-before { z-index: 1; opacity: .62; filter: brightness(.62) saturate(.8); transform: translateX(16%) rotateY(54deg) scale(.78); transform-origin: right center; }
-.setlist-coverflow-item.is-after { z-index: 1; opacity: .62; filter: brightness(.62) saturate(.8); transform: translateX(-16%) rotateY(-54deg) scale(.78); transform-origin: left center; }
-.setlist-coverflow-item.is-active { z-index: 3; opacity: 1; filter: none; border-color: rgba(245,220,80,.82); box-shadow: 0 24px 44px rgba(0,0,0,.62),0 0 22px rgba(244,24,55,.2); transform: translateZ(34px) scale(1); }
+.setlist-coverflow-item.is-before { z-index: 1; opacity: .5; transform: rotateY(42deg) scale(.84); transform-origin: right center; }
+.setlist-coverflow-item.is-after { z-index: 1; opacity: .5; transform: rotateY(-42deg) scale(.84); transform-origin: left center; }
+.setlist-coverflow-item.is-active { z-index: 3; opacity: 1; border-color: rgba(245,220,80,.82); box-shadow: 0 20px 36px rgba(0,0,0,.58),0 0 18px rgba(244,24,55,.18); transform: translateZ(16px) scale(.98); }
 .setlist-coverflow-item.is-selected::after { content: '✦'; position: absolute; z-index: 4; top: 8px; right: 8px; width: 26px; height: 26px; display: grid; place-items: center; color: #111; background: #f5dc50; border-radius: 50%; box-shadow: 0 0 14px rgba(245,220,80,.58); font-size: .68rem; }
 .setlist-coverflow-item:disabled { cursor: default; opacity: .3; }
-.setlist-coverflow-caption { min-height: 52px; display: grid; place-items: center; gap: 6px; margin: -18px 16px 0 !important; color: #fff !important; text-align: center; }
+.setlist-coverflow-caption { min-height: 52px; display: grid; place-items: center; gap: 6px; margin: 0 16px !important; color: #fff !important; text-align: center; }
 .setlist-coverflow-caption b { font-size: clamp(.85rem,3.6vw,1.1rem); line-height: 1.2; text-shadow: 0 2px 10px #000; }
 .setlist-coverflow-caption small { color: #f5dc50; font: .52rem 'DM Mono',monospace; letter-spacing: .08em; text-transform: uppercase; }
 .setlist-album-empty { margin: 0; padding: 18px; border: 1px dashed rgba(255,255,255,.18); }
