@@ -282,7 +282,15 @@ footer {
 }
 
 .site-footer { display: grid; justify-items: center; gap: 22px; padding-bottom: max(18px, env(safe-area-inset-bottom)); }
-.site-footer-mark { display: block; width: clamp(82px, 17vw, 116px); height: auto; border-radius: 2px; box-shadow: 0 0 28px rgba(244, 20, 47, .12); }
+.site-footer-mark {
+  display: block;
+  width: clamp(82px, 17vw, 116px);
+  aspect-ratio: 852 / 1280;
+  background: #f41837;
+  -webkit-mask: url('/images/bratty-hoshi-footer-v2.png') center / contain no-repeat;
+  mask: url('/images/bratty-hoshi-footer-v2.png') center / contain no-repeat;
+  filter: drop-shadow(0 0 14px rgba(244, 20, 55, .18));
+}
 
 .content-card { margin: auto 0; padding: 11vh 0 8vh; max-width: 590px; }
 .content-card h1 { margin-bottom: 28px; font-size: clamp(2rem, 8vw, 3.8rem); }
