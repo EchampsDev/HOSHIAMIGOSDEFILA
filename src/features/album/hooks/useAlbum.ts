@@ -23,6 +23,10 @@ export function useAlbum(localOnly = false, spreadMode = false) {
   }, [repository])
 
   const currentPage = album?.pages[pageNumber - 1] ?? null
+  useEffect(() => {
+    if (!spreadMode || bookState !== 'PAGE' || !album) return
+    setPageNumber((current) => spreadStart(current, album.pageCount))
+  }, [album, bookState, spreadMode])
   const persistPages = useCallback(async (pages: ScrapbookPage[]) => {
     setAlbum((current) => current ? { ...current, pages: current.pages.map((item) => pages.find((page) => page.id === item.id) ?? item) } : current)
     try { for (const page of pages) await repository.savePage(page); return true }
@@ -38,12 +42,12 @@ export function useAlbum(localOnly = false, spreadMode = false) {
   const next = useCallback(() => {
     if (!album) return
     if (bookState === 'CLOSED') return open()
-    const step = spreadMode ? 2 : 1
+    const step = spreadMode && pageNumber > 1 ? 2 : 1
     if (bookState === 'PAGE' && pageNumber + step <= album.pageCount) return setPageNumber((current) => current + step)
     if (bookState === 'PAGE') setBookState('BACK_COVER')
   }, [album, bookState, open, pageNumber, spreadMode])
   const previous = useCallback(() => {
-    const step = spreadMode ? 2 : 1
+    const step = spreadMode && pageNumber > 2 ? 2 : 1
     if (bookState === 'BACK_COVER') return setBookState('PAGE')
     if (bookState === 'PAGE' && pageNumber > 1) return setPageNumber((current) => Math.max(1, current - step))
     if (bookState === 'PAGE') setBookState('CLOSED')

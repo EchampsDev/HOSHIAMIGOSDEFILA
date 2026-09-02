@@ -65,7 +65,8 @@ export function isElementOwner(element: AlbumElement, participantId?: string | n
 
 export function spreadStart(pageNumber: number, pageCount = 100) {
   const bounded = Math.min(Math.max(Math.round(pageNumber || 1), 1), pageCount)
-  return bounded % 2 === 0 ? bounded - 1 : bounded
+  if (bounded === 1) return 1
+  return bounded % 2 === 0 ? bounded : bounded - 1
 }
 
 export type ScrapbookPage = {
