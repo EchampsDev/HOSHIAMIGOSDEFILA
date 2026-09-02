@@ -6,11 +6,23 @@
   pointer-events: none;
 }
 
+.starfield::before {
+  content: '';
+  position: absolute;
+  inset: -2%;
+  background: url('/images/landing-deep-field-v1.jpg') center / cover no-repeat;
+  opacity: .62;
+  filter: saturate(.84) contrast(1.08) brightness(.72);
+  transform: scale(1.02);
+}
+
 .starfield::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 39%, rgba(255, 255, 255, .035), transparent 32%);
+  background:
+    radial-gradient(circle at 50% 39%, rgba(255, 255, 255, .035), transparent 32%),
+    linear-gradient(rgba(0, 0, 0, .14), rgba(0, 0, 0, .36));
 }
 
 .ambient-star {
