@@ -8,6 +8,10 @@ import { getSetlistAlbum, readSetlistTracks, setlistAlbumLabels, setlistAlbumOrd
 import { resolveSetlistCoverUrl, setlistCatalogRepository } from '../features/album/repositories/SetlistCatalogRepository'
 import { LocalAlbumRepository } from '../features/album/repositories/LocalAlbumRepository'
 import { clampLayout, createElement, type AlbumElement, type AlbumElementType, type AuthorIdentity, type ElementLayout, type SetlistEntry } from '../features/album/domain/types'
+import { pageCapacity } from '../features/album/domain/types'
+import { getLocalParticipantId } from '../features/album/domain/participantIdentity'
+import { PageIndex } from '../features/album/components/PageIndex'
+import { useAlbum } from '../features/album/hooks/useAlbum'
 
 const TOP_SIZE = 3
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
@@ -23,9 +27,6 @@ const topTitles: Record<TopSelectionType, string> = {
   HOSHI: 'MI TOP 3 DE HOSHI',
   BRATTY: 'MI TOP 3 DE TODA LA MÚSICA DE BRATTY',
 }
-const idForParticipant = () => `participant-${crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`}`
-const withinPageRange = (value: number) => Math.min(Math.max(Math.round(value || 1), 1), 100)
-
 function imageLoader(source: string) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image()
@@ -93,6 +94,7 @@ const localContributionStore: ContributionStore = {
     const album = await repository.getAlbum()
     const targetPage = album.pages[input.pageNumber - 1]
     if (!targetPage) throw new Error('La página seleccionada no existe.')
+    if (pageCapacity(targetPage).isFull) throw new Error('La cara seleccionada ya contiene cuatro elementos.')
     const element = createElement(targetPage.id, input.type, targetPage.elements.length + 1, input.author)
     element.content = input.content || element.content
     element.styleVariant = input.styleVariant ?? element.styleVariant
@@ -165,8 +167,10 @@ export function SimplePageSetlistContributePage() {
   const [expanded, setExpanded] = useState(false)
   const [preview, setPreview] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [pageSelectorOpen, setPageSelectorOpen] = useState(false)
   const session = useGoogleSession()
   const participation = useParticipationAccess()
+  const scrapbook = useAlbum(true)
   const isOpen = participation.isOpen
 
   useEffect(() => {
@@ -176,9 +180,8 @@ export function SimplePageSetlistContributePage() {
     return () => { unsubscribe?.(); window.removeEventListener('brattypolitan-setlist-change', catalog) }
   }, [])
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'auto' }) }, [])
-
   const displayName = name.trim() || session.user?.displayName || ''
-  const author = (): AuthorIdentity => ({ participantId: session.user?.uid ?? idForParticipant(), displayName: displayName || undefined, age: age ? Number(age) : undefined })
+  const author = (): AuthorIdentity => ({ participantId: session.user?.uid ?? getLocalParticipantId(), displayName: displayName || undefined, age: age ? Number(age) : undefined })
   const trackGroups = setlistAlbumOrder
     .filter((album) => activeTop === 'BRATTY' || album === 'HOSHI')
     .map((album) => ({ album, tracks: tracks.filter((track) => getSetlistAlbum(track) === album) }))
@@ -260,7 +263,7 @@ export function SimplePageSetlistContributePage() {
       setMessage(`Recuerdo guardado en la página ${page}. ID: ${identity.participantId}`)
       setContent('')
       setPhoto(null)
-    } catch { setMessage('No fue posible guardar el recuerdo localmente.') }
+    } catch (error) { setMessage(error instanceof Error ? error.message : 'No fue posible guardar el recuerdo localmente.') }
   }
   const sendTop = async () => {
     if (selectedTracks.length !== TOP_SIZE) { setMessage('Selecciona exactamente tres canciones antes de enviar.'); return }
@@ -271,7 +274,7 @@ export function SimplePageSetlistContributePage() {
       setSelectedIds([])
       setPreview(false)
       setExpanded(false)
-    } catch { setMessage('No fue posible guardar el Top 3 localmente.') }
+    } catch (error) { setMessage(error instanceof Error ? error.message : 'No fue posible guardar el Top 3 localmente.') }
   }
 
   return <Layout>
@@ -284,12 +287,13 @@ export function SimplePageSetlistContributePage() {
         <label>Tipo de recuerdo<select value={type} onChange={(event) => { setType(event.target.value as ContributionType); setExpanded(false); setPreview(false) }}><option value="SETLIST">Top 3 musical</option><option value="PHOTO">Foto</option><option value="STICKER">Sticker</option><option value="POST_IT">Post-it</option><option value="TEXT">Texto libre</option></select></label>
         <label>Nombre (opcional)<input value={name} onChange={(event) => setName(event.target.value)} /></label>
         <label>Edad (opcional)<input type="number" min="1" max="120" value={age} onChange={(event) => setAge(event.target.value)} /></label>
-        <section className="memory-page-picker"><p>¿En qué página dejaste o dejarás tu recuerdo?</p><small>Selecciona una página de la libreta digital.</small><div><button type="button" onClick={() => setPage((current) => withinPageRange(current - 1))} disabled={page === 1}>−</button><label>Página<input type="number" min="1" max="100" value={page} onChange={(event) => setPage(withinPageRange(Number(event.target.value)))} /></label><button type="button" onClick={() => setPage((current) => withinPageRange(current + 1))} disabled={page === 100}>+</button><button type="button" className="memory-page-open" onClick={() => window.location.assign(`/album?page=${page}`)}>Ver hoja</button></div></section>
+        <section className="memory-page-picker"><p>¿En qué cara dejaste o dejarás tu recuerdo?</p><small>{scrapbook.album ? `${pageCapacity(scrapbook.album.pages[page - 1]).remaining} de 4 espacios disponibles en la cara ${page}.` : 'Consultando espacios disponibles…'}</small><div><button type="button" onClick={() => setPageSelectorOpen(true)}>Elegir cara</button><label>Cara<input type="number" min="1" max="100" value={page} readOnly /></label><button type="button" className="memory-page-open" onClick={() => window.location.assign(`/album?page=${page}`)}>Ver cara</button></div></section>
         {type === 'SETLIST' ? <section className="top3-launchers" aria-label="Elige tu tipo de Top 3"><button type="button" className="setlist-launcher" onClick={() => openTopSelection('HOSHI')}><b>✦ MI TOP 3 DE HOSHI</b><span>Selecciona 3 canciones de Hoshi</span></button><button type="button" className="setlist-launcher is-all-bratty" onClick={() => openTopSelection('BRATTY')}><b>✦ MI TOP 3 DE TODA LA MÚSICA DE BRATTY</b><span>Selecciona 3 canciones del catálogo completo</span></button></section> : type === 'PHOTO' ? <label>Foto · máximo 5 MB<input type="file" accept="image/*" onChange={choosePhoto} />{photo && <small>{(photo.size / 1024 / 1024).toFixed(2)} MB lista</small>}</label> : <>{type === 'POST_IT' && <fieldset className="postit-color-picker"><legend>Color del post-it</legend><div>{postItColors.map(([value, label]) => <button key={value} type="button" className={`postit-color postit-${value}${postItColor === value ? ' is-selected' : ''}`} aria-label={label} aria-pressed={postItColor === value} title={label} onClick={() => setPostItColor(value)} />)}</div></fieldset>}<label>{type === 'STICKER' ? 'Sticker o emoji' : type === 'POST_IT' ? 'Texto del post-it' : 'Texto libre'}<textarea maxLength={280} value={content} onChange={(event) => setContent(event.target.value)} placeholder={type === 'STICKER' ? '✦ 💖 ⭐' : 'Escribe aquí…'} /></label></>}
         {type !== 'SETLIST' && <button type="button" onClick={() => void saveElement()}>Guardar recuerdo en la libreta</button>}
         {message && <p className="muted">{message}</p>}
       </div>}
     </section>
+    <PageIndex open={pageSelectorOpen} pages={scrapbook.album?.pages} pageCount={scrapbook.album?.pageCount ?? 100} current={page} ownerId={session.user?.uid ?? getLocalParticipantId()} mode="select" title="Elige una cara con espacio" onClose={() => setPageSelectorOpen(false)} onGoTo={setPage} />
     {expanded && <section className="setlist-modal" aria-label={selectionTitle}><div className="setlist-modal-panel" style={selectionPanelStyle}>{preview ? <><p className="eyebrow">VISTA PREVIA</p><h2>Tu selección</h2><div className="setlist-preview-card"><header><span>BRATTYPOLITAN <ExperienceWord /></span><strong>{selectionTitle}</strong><small>{displayName || 'PARTICIPANTE ANÓNIMO'} · PÁGINA {page}</small></header><ol>{selectedTracks.map((track, index) => <li key={track.id}><span className="setlist-preview-album-blur" style={track.coverUrl ? { backgroundImage: `url(${resolveSetlistCoverUrl(track.coverUrl)})` } : undefined} aria-hidden="true" />{track.coverUrl ? <img src={resolveSetlistCoverUrl(track.coverUrl)} alt="" /> : <span className="setlist-preview-cover-placeholder">{String(index + 1).padStart(2, '0')}</span>}<b>{track.title}</b></li>)}</ol></div><footer className="setlist-preview-actions"><button type="button" onClick={() => void saveImage()}>Descargar imagen</button><button type="button" onClick={() => void shareImage()}>Compartir imagen</button><button type="button" className="setlist-send" onClick={() => void sendTop()}>Guardar en la libreta</button></footer><button type="button" className="setlist-back" onClick={() => setPreview(false)}>← Volver a editar</button></> : <><p className="eyebrow">TOP 3 · PÁGINA {page}</p><h2>{selectionTitle}</h2><output className="setlist-count">{selectedIds.length} / {TOP_SIZE} seleccionadas</output>{availableTracks.length ? <><label className="setlist-search"><span>Buscar una canción</span><input type="search" value={trackSearch} onChange={(event) => setTrackSearch(event.target.value)} placeholder={activeTop === 'HOSHI' ? 'Busca dentro de HOSHI…' : 'Busca en toda la música de Bratty…'} autoComplete="off" /><small role="status" aria-live="polite">{visibleResultCount} {visibleResultCount === 1 ? 'resultado' : 'resultados'}</small></label>{visibleTrackGroups.length ? <div className="setlist-album-groups">{visibleTrackGroups.map((group) => { const open = expandedAlbums.includes(group.album) || Boolean(normalizedSearch && group.visibleTracks.length); const cover = group.tracks.find((track) => track.coverUrl)?.coverUrl; const panelId = `album-${group.album.toLowerCase()}-tracks`; return <section className={`setlist-album-group${open ? ' is-open' : ''}`} key={group.album}><button type="button" className="setlist-album-toggle" aria-expanded={open} aria-controls={panelId} onClick={() => toggleAlbum(group.album)}><span className="setlist-album-art">{cover ? <img src={resolveSetlistCoverUrl(cover)} alt="" /> : <i aria-hidden="true">✦</i>}</span><span className="setlist-album-meta"><b>{setlistAlbumLabels[group.album]}</b><small>{group.visibleTracks.length === group.tracks.length ? `${group.tracks.length} canciones` : `${group.visibleTracks.length} de ${group.tracks.length} canciones`}</small></span><i className="setlist-album-chevron" aria-hidden="true" /></button>{open && <div id={panelId} className="setlist-album-catalog">{group.visibleTracks.length ? <TrackCoverFlow tracks={group.visibleTracks} selectedIds={selectedIds} onToggle={toggleTrack} /> : <p className="setlist-album-empty">No hay canciones de este álbum que coincidan con la búsqueda.</p>}</div>}</section> })}</div> : <p className="setlist-search-empty">No encontramos canciones que coincidan con tu búsqueda.</p>}</> : <p className="setlist-empty">{activeTop === 'HOSHI' ? 'Todavía no hay canciones asociadas a la portada Hoshi.' : 'El equipo todavía no ha clasificado canciones en estos álbumes.'}</p>}<footer><button type="button" className="setlist-cancel" onClick={() => setExpanded(false)}>Cancelar</button><button type="button" className="setlist-send" onClick={() => setPreview(true)} disabled={selectedIds.length !== TOP_SIZE}>Ver vista previa</button></footer></>}</div></section>}
   </Layout>
 }

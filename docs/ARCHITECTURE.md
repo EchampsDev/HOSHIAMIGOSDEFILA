@@ -26,6 +26,8 @@ Las conexiones del editor se clasifican visualmente por el grupo compartido de s
 
 La libreta digital vive en `src/features/album`: sus modelos de página y elementos usan coordenadas normalizadas; `LocalAlbumRepository` es la única capa que usa almacenamiento local y cumple el contrato `AlbumRepository`, que se podrá implementar con Firestore sin acoplar la UI. `/album` es el lector público y `/dev/album-editor` sólo está disponible durante desarrollo; en producción requerirá autenticación y permisos de administración antes de exponerse.
 
+El lector compone pliegos de dos caras independientes: la navegación avanza de dos en dos y una cara par nunca se reutiliza como cara izquierda del pliego siguiente. Las reglas de capacidad, propiedad, revelación y “me gusta” viven en el dominio de la feature; la UI no escribe directamente en Firebase. Durante la etapa local, `brattypolitan-album-change` sincroniza las distintas vistas abiertas en el mismo navegador sin acoplar componentes al almacenamiento.
+
 La lectura pública de `/album` está temporalmente bloqueada mediante `albumAccess.ts` hasta que termine el evento y se consoliden las fotografías. Esto no afecta al editor de desarrollo, que permanece activo. El estado se sustituirá después por una decisión administrada desde Firestore.
 
 `/explorar` es el centro público y sólo lista experiencias públicas. `/admin/experiencias` es el centro administrativo temporal para desarrollo; su visibilidad se decidirá después con el rol autenticado de Firebase, no por la ruta por sí sola.

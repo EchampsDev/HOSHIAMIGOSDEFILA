@@ -41,15 +41,12 @@ function AlbumEditorWorkspace() {
     return () => link.remove()
   }, [])
   const [participationOpen, setParticipationOpen] = useState(() => readLocalParticipationSettings().isOpen)
-  const [pending, setPending] = useState<PendingSubmission[]>(() => readPendingSubmissions())
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [author, setAuthor] = useState<AuthorIdentity>({ participantId: 'developer-local' })
   const stageRef = useRef<HTMLDivElement | null>(null)
   const gesture = useRef<Gesture | null>(null)
   const selected = album.currentPage?.elements.find((element) => element.id === selectedId) ?? null
   const updateSelected = (patch: Partial<AlbumElement>) => { if (selected) album.updateElement(selected.id, patch) }
-  const rejectSubmission = (id: string) => { const next = pending.filter((item) => item.id !== id); setPending(next); writePendingSubmissions(next) }
-  const approveSubmission = async (submission: PendingSubmission) => { if (!album.album) return; const repository = new LocalAlbumRepository(); for (const number of submission.pageNumbers) { const page = album.album.pages[number - 1]; const element = createElement(page.id, submission.type, page.elements.length + 1, submission.author); element.content = submission.content || element.content; element.media = submission.media; page.elements.push(element); await repository.savePage({ ...page, updatedAt: new Date().toISOString() }) }; rejectSubmission(submission.id); window.location.reload() }
   const pointerDown = (event: ReactPointerEvent<HTMLElement>, element: AlbumElement, mode: 'move' | 'resize' | 'rotate') => { if (element.layout.locked) return; event.preventDefault(); gesture.current = { id: element.id, mode, startX: event.clientX, startY: event.clientY, layout: element.layout }; event.currentTarget.setPointerCapture(event.pointerId) }
   const pointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     const active = gesture.current

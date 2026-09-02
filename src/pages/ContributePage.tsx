@@ -1,8 +1,7 @@
 import { useEffect, useState, type ChangeEvent } from 'react'
 import { Layout } from '../components/Layout'
 import { readLocalParticipationSettings } from '../features/album/data/localParticipation'
-import { LocalAlbumRepository } from '../features/album/repositories/LocalAlbumRepository'
-import { createElement, type AlbumElementType, type AuthorIdentity } from '../features/album/domain/types'
+import { type AlbumElementType, type AuthorIdentity } from '../features/album/domain/types'
 import { readPendingSubmissions, writePendingSubmissions } from '../features/album/data/localModeration'
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 const TYPES: { value: AlbumElementType; label: string }[] = [{ value: 'PHOTO', label: 'Foto' }, { value: 'POST_IT', label: 'Post-it' }, { value: 'STICKER', label: 'Sticker / emoji' }, { value: 'TEXT', label: 'Texto libre' }]

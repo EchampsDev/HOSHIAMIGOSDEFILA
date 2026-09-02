@@ -14,6 +14,8 @@ Las imágenes futuras se representan por `MediaMetadata`: dimensiones originales
 
 Cada `AlbumElement` incluye `author.participantId`, que será emitido por el futuro flujo de acceso QR. Nombre y edad son opcionales y se almacenan junto al elemento sólo si la persona los proporciona. Así, cada foto o recuerdo físico/digital puede vincularse posteriormente al mismo autor en Firestore.
 
+Cada cara admite como máximo cuatro elementos visibles (`MAX_ELEMENTS_PER_PAGE`). `likedBy` conserva los identificadores que marcaron “me gusta” y `contentRevealed` permite que moderación revele posteriormente el contenido; mientras sea falso, las personas distintas del autor ven sólo la silueta del elemento. El autor se reconoce mediante el UID autenticado o, en el prototipo local, mediante un identificador estable guardado en el navegador. Los cambios de posición, tamaño, rotación, capa, cara y eliminación verifican esa propiedad antes de persistirse.
+
 El catálogo musical admite `album: DELUSION | TRES | TDBN | HOSHI` (y `OTHER` únicamente como valor heredado). La portada versionada en `images/tracks/` es la fuente de clasificación prioritaria: `delusion.jpg`, `tres.jpg`, `tdbn.jpg` y `Hoshi.jpg` asignan automáticamente su álbum. Los elementos `SETLIST` se mantienen por compatibilidad, pero su `content` identifica el Top 3 elegido y `setlist` conserva exactamente tres canciones. El Top 3 de HOSHI filtra sólo esa portada y el catálogo completo se presenta agrupado por los cuatro álbumes.
 
 ## Noticias

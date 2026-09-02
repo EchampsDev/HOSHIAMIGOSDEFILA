@@ -12,7 +12,7 @@ export function useGoogleSession() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!firebaseAuth) { setIsLoading(false); return }
+    if (!firebaseAuth) return
     return onAuthStateChanged(firebaseAuth, async (currentUser: User | null) => {
       setUser(currentUser); setIsAdmin(false); setRole(null); setIsLoading(false)
       if (!currentUser || !firestore) return
