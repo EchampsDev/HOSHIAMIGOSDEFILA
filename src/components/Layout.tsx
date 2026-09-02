@@ -40,7 +40,7 @@ export function Layout({ children }: PropsWithChildren) {
     {children}
     <footer className="site-footer" data-scroll-reveal>
       <span>BRATTY · CDMX · 2026 <FourPointMark className="footer-four-point-mark" /></span>
-      <img className="site-footer-mark" src="/images/bratty-hoshi-footer.jpg" alt="Símbolo HOSHI de Bratty" />
+      <img className="site-footer-mark" src="/images/bratty-hoshi-footer.png" alt="Símbolo HOSHI de Bratty" />
     </footer>
 
     <div className={`explore-drawer-layer ${isExploreOpen ? 'is-open' : ''}`} aria-hidden={!isExploreOpen}>
