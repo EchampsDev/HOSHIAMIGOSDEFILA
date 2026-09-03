@@ -9,7 +9,7 @@ export function AlbumControls({ state, pageNumber, pageCount, bookmarkPage, pres
   const range = pageNumber === 1 ? '1' : `${pageNumber}–${Math.min(pageNumber + 1, pageCount)}`
   const position = state === 'PAGE' ? `${viewMode === 'BOOK' ? range : pageNumber} / ${pageCount}` : state === 'CLOSED' ? 'Cerrada' : 'Contraportada'
   return <nav className={`album-controls${locked ? ' is-locked' : ''}`} aria-label="Controles de la libreta" aria-disabled={locked}>
-    <button type="button" onClick={onPrevious} disabled={locked || state === 'CLOSED'}>← <span>Anterior</span></button><p>{position}</p><button type="button" onClick={onNext} disabled={locked}><span>Siguiente</span> →</button>
+    <div className="album-page-navigation"><button type="button" onClick={onPrevious} disabled={locked || state === 'CLOSED'}>← <span>Retroceder</span></button><p>{position}</p><button type="button" onClick={onNext} disabled={locked}><span>Avanzar</span> →</button></div>
     <button type="button" onClick={onIndex} disabled={locked}>Índice</button>
     <label className="album-bookmark-picker">Marcador <select value={bookmarkPage} disabled={locked} onChange={(event) => onBookmarkPage(Number(event.target.value))}>{Array.from({ length: pageCount }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1}</option>)}</select></label>
     {!presenting ? <button type="button" disabled={locked} onClick={onPresent}>Presentación</button> : paused ? <button type="button" disabled={locked} onClick={onResume}>Reanudar</button> : <button type="button" disabled={locked} onClick={onPause}>Pausar</button>}
