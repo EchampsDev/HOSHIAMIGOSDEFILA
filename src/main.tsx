@@ -8,4 +8,5 @@ import './styles/album.css'
 import './styles/experience-hub.css'
 import './styles/workspace.css'
 import './styles/news.css'
+import './styles/about.css'
 createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>)
