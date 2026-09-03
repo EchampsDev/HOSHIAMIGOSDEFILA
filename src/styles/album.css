@@ -310,3 +310,12 @@ span.cover-page-edge { position: absolute !important; z-index: 0 !important; top
 @media (prefers-reduced-motion:reduce) {
   .cover-four-point-star { animation:none !important; }
 }
+
+/* Marcador exterior y estrella fija de la pasta */
+.cover-four-point-star,
+.cover-four-point-star.is-active { animation:none !important; transition:none !important; transform:none !important; }
+.scrapbook-sheet > .album-page-bookmark { z-index:5; top:4%; bottom:-8%; width:6.5%; height:auto; padding-top:4%; }
+.scrapbook-sheet--left > .album-page-bookmark { right:auto; left:5%; }
+.scrapbook-sheet--right > .album-page-bookmark,
+.scrapbook-sheet--single > .album-page-bookmark { right:5%; left:auto; }
+.scrapbook-sheet > .album-page-bookmark::after { content:''; position:absolute; right:0; bottom:-1px; left:0; height:10%; background:inherit; clip-path:polygon(0 0,100% 0,100% 100%,50% 72%,0 100%); filter:brightness(.9); }
