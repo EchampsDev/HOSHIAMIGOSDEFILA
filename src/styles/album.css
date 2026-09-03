@@ -270,3 +270,43 @@ span.cover-page-edge { position: absolute !important; z-index: 0 !important; top
 @media (prefers-reduced-motion:reduce) {
   .red-four-star,.scrapbook-spread.is-turning .scrapbook-sheet,.scrapbook-single.is-turning .scrapbook-sheet { animation:none !important; }
 }
+
+/* Segunda pasada: encuadernación correcta y edición intencional */
+.scrapbook-spread.is-first-open::after { left:50%; }
+.scrapbook-open-cover::before,
+.scrapbook-open-cover::after { display:none; }
+
+.spiral-binding .spiral-unit { position:relative; width:100%; height:clamp(7px,1.75vw,11px); display:block; flex:0 0 auto; isolation:isolate; }
+.spiral-binding .spiral-unit > i { position:absolute; z-index:3; inset:0 auto auto 0; }
+.spiral-binding .spiral-unit > b { display:none; }
+.scrapbook-gutter .spiral-binding .spiral-unit { height:clamp(8px,1.2vw,12px); }
+.scrapbook-gutter .spiral-binding .spiral-unit > i { top:0; width:100%; height:72%; transform:none; }
+.scrapbook-gutter .spiral-binding .spiral-unit > b { position:absolute; z-index:1; top:38%; display:block; width:clamp(8px,1.25vw,12px); height:62%; border-radius:50%; background:radial-gradient(ellipse at 50% 46%,#090705 0 38%,#4e3b2b 44%,#b8a98d 61%,rgba(239,226,198,.78) 70%,transparent 73%); box-shadow:inset 0 2px 3px #000,0 1px 1px rgba(255,250,228,.65); }
+.scrapbook-gutter .spiral-binding .spiral-unit > b:first-child { left:1px; }
+.scrapbook-gutter .spiral-binding .spiral-unit > b:nth-child(2) { right:1px; }
+.scrapbook-cover > .spiral-binding .spiral-unit { height:clamp(7px,1.75vw,11px); }
+.scrapbook-cover > .spiral-binding .spiral-unit > i { width:92%; height:100%; transform:translateX(-16%); }
+
+.cover-four-point-star { position:relative; inset:auto; width:clamp(36px,18cqw,78px); height:auto; aspect-ratio:72 / 100; opacity:1; transform:none; --star-scale:1; --star-intensity:1.05; }
+.cover-four-point-star.is-active { transform:none; }
+.cover-mark { width:18%; aspect-ratio:852 / 1280; }
+.cover-footer-mark { display:block; width:100%; height:100%; background:#f41837; -webkit-mask:url('/images/bratty-hoshi-footer-v2.png') center / contain no-repeat; mask:url('/images/bratty-hoshi-footer-v2.png') center / contain no-repeat; filter:drop-shadow(0 0 8px rgba(244,20,55,.28)); }
+.cover-emblem,.cover-mark > b { display:none; }
+
+.album-element.is-owned { cursor:pointer; }
+.album-element.is-editing { cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; }
+.album-element.is-editing:active { cursor:grabbing; }
+.album-reader.is-editing .scrapbook-spread,
+.album-reader.is-editing .scrapbook-single,
+.scrapbook-spread.is-editing,
+.scrapbook-single.is-editing { touch-action:none; overscroll-behavior:contain; }
+.scrapbook-spread.is-editing .scrapbook-sheet,
+.scrapbook-single.is-editing .scrapbook-sheet { cursor:default; }
+.scrapbook-spread.is-editing .sheet-hint,
+.scrapbook-single.is-editing .single-page-zone { opacity:.18; }
+.album-controls.is-locked { opacity:.52; }
+.album-edit-trigger { color:#151000 !important; border-color:#f2c953 !important; background:#f2c953 !important; box-shadow:0 0 17px rgba(242,201,83,.28); font-weight:800 !important; }
+
+@media (prefers-reduced-motion:reduce) {
+  .cover-four-point-star { animation:none !important; }
+}
