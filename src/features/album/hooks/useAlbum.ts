@@ -25,7 +25,8 @@ export function useAlbum(localOnly = false, spreadMode = false) {
   const currentPage = album?.pages[pageNumber - 1] ?? null
   useEffect(() => {
     if (!spreadMode || bookState !== 'PAGE' || !album) return
-    setPageNumber((current) => spreadStart(current, album.pageCount))
+    const timer = window.setTimeout(() => setPageNumber((current) => spreadStart(current, album.pageCount)), 0)
+    return () => window.clearTimeout(timer)
   }, [album, bookState, spreadMode])
   const persistPages = useCallback(async (pages: ScrapbookPage[]) => {
     setAlbum((current) => current ? { ...current, pages: current.pages.map((item) => pages.find((page) => page.id === item.id) ?? item) } : current)

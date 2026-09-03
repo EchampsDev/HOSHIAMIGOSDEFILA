@@ -4,6 +4,11 @@ service firebase.storage {
   match /b/{bucket}/o {
     function signedIn() { return request.auth != null; }
     function isAdmin() { return signedIn() && firestore.exists(/databases/(default)/documents/admins/$(request.auth.uid)); }
+    function isSpecialGuest() {
+      return signedIn()
+        && firestore.exists(/databases/(default)/documents/userRoles/$(request.auth.uid))
+        && firestore.get(/databases/(default)/documents/userRoles/$(request.auth.uid)).data.role == 'SPECIAL';
+    }
     match /constellation/{allPaths=**} {
       allow read: if true;
       allow write: if isAdmin() && request.resource.size < 10 * 1024 * 1024 && request.resource.contentType.matches('image/.*');
@@ -11,6 +16,12 @@ service firebase.storage {
     match /news/{allPaths=**} {
       allow read: if true;
       allow write: if isAdmin() && request.resource.size < 10 * 1024 * 1024 && request.resource.contentType.matches('image/.*');
+    }
+    match /bratty-surprise/current/video {
+      allow read: if true;
+      allow write: if (isAdmin() || isSpecialGuest())
+        && request.resource.size < 300 * 1024 * 1024
+        && request.resource.contentType.matches('video/(mp4|quicktime|webm)');
     }
     match /{allPaths=**} {
       allow read, write: if false;

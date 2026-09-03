@@ -15,6 +15,7 @@ const developerAreas = [
   { to: '/dev/album-editor', eyebrow: 'EDITOR', title: 'Scrapbook Editor', copy: 'Construye las hojas, sus elementos y sus composiciones.' },
   { to: '/constellation-editor', eyebrow: 'EDITOR', title: 'Constellation Editor', copy: 'Ajusta puntos y conexiones de la silueta guía.' },
   { to: '/taller-constelacion', eyebrow: 'COLABORACIÓN', title: 'Taller de constelación', copy: 'Enlace aislado para quienes ayuden a construir la silueta.' },
+  { to: '/dev/bratty-experience', eyebrow: 'EXPERIENCIA ESPECIAL', title: 'Acceso para Bratty', copy: 'Activa la invitación, revisa su video y publica la sorpresa previa a la libreta.' },
 ]
 
 export function ExperienceHubPage({ admin = false }: { admin?: boolean }) {

@@ -10,6 +10,10 @@ service cloud.firestore {
       return signedIn() && exists(/databases/$(database)/documents/userRoles/$(request.auth.uid))
         && get(/databases/$(database)/documents/userRoles/$(request.auth.uid)).data.role == 'CONSTELLATION_CONTRIBUTOR';
     }
+    function isSpecialGuest() {
+      return signedIn() && exists(/databases/$(database)/documents/userRoles/$(request.auth.uid))
+        && get(/databases/$(database)/documents/userRoles/$(request.auth.uid)).data.role == 'SPECIAL';
+    }
 
     // Admin roles are bootstrapped from the Firebase console or Admin SDK only.
     match /admins/{userId} {
@@ -60,6 +64,28 @@ service cloud.firestore {
       allow list: if false;
       // Colaboradores aprobados sólo pueden editar la silueta compartida.
       allow create, update: if isAdmin() || (document == 'constellation' && isConstellationContributor());
+      allow delete: if isAdmin();
+    }
+
+    // Envío aislado de Bratty. La cuenta especial puede reemplazar la entrega
+    // actual; administración conserva el control editorial de la sorpresa.
+    match /brattySubmissions/{submissionId} {
+      allow get: if submissionId == 'current';
+      allow list: if false;
+      allow create, update: if submissionId == 'current'
+        && (isAdmin() || isSpecialGuest())
+        && request.resource.data.keys().hasOnly(['authorName', 'message', 'videoUrl', 'storagePath', 'originalName', 'contentType', 'uploadedAt'])
+        && request.resource.data.authorName is string
+        && request.resource.data.authorName.size() <= 100
+        && request.resource.data.message is string
+        && request.resource.data.message.size() <= 500
+        && request.resource.data.videoUrl is string
+        && request.resource.data.storagePath == 'bratty-surprise/current/video'
+        && request.resource.data.originalName is string
+        && request.resource.data.originalName.size() <= 180
+        && request.resource.data.contentType is string
+        && request.resource.data.contentType.matches('video/.*')
+        && request.resource.data.uploadedAt is string;
       allow delete: if isAdmin();
     }
 
