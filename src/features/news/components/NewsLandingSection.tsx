@@ -20,6 +20,11 @@ export function NewsLandingSection() {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [adminError, setAdminError] = useState<string | null>(null)
   useEffect(() => newsRepository.subscribePublished(setItems, () => setError('No fue posible cargar las novedades.')), [])
+  const newestId = items.reduce<string | null>((selectedId, item) => {
+    if (!selectedId) return item.id
+    const selected = items.find((candidate) => candidate.id === selectedId)
+    return Date.parse(item.publishedAt ?? item.createdAt) > Date.parse(selected?.publishedAt ?? selected?.createdAt ?? '') ? item.id : selectedId
+  }, null)
   const adminAction = async (item: NewsItem, action: 'hide' | 'delete') => {
     if (!session.isAdmin || busyId) return
     if (action === 'delete' && !window.confirm(`¿Eliminar ${item.title}? Se archivará de forma recuperable.`)) return
@@ -33,7 +38,8 @@ export function NewsLandingSection() {
   return <section className="landing-chapter chapter-news" data-scroll-reveal aria-labelledby="news-section-title">
     <p className="chapter-label" id="news-section-title">04 — NOVEDADES DE BRATTY!!</p>
     {adminError && <p className="news-admin-inline-error" role="alert">{adminError}</p>}
-    {error ? <p className="news-empty">Próximamente compartiremos nuevas historias y actualizaciones de BRATTY.</p> : items.length ? <><p className="news-published-count" aria-live="polite">{items.length} {items.length === 1 ? 'entrada publicada' : 'entradas publicadas'}</p><div className="news-feed">{items.map((item) => <article className="news-card" key={item.id}>
+    {error ? <p className="news-empty">Próximamente compartiremos nuevas historias y actualizaciones de BRATTY.</p> : items.length ? <><p className="news-published-count" aria-live="polite">{items.length} {items.length === 1 ? 'entrada publicada' : 'entradas publicadas'}</p><div className="news-feed">{items.map((item) => <article className={`news-card${item.id === newestId ? ' is-new' : ''}`} key={item.id}>
+      {item.id === newestId && <span className="news-card-new-badge">NUEVA ✦</span>}
       <div className="news-card-media"><NewsCarousel images={item.images} fallbackAlt={item.carouselAlt || item.title} />
         {session.isAdmin && <nav className="news-card-admin" aria-label={`Administrar ${item.title}`}>
           <Link to={`/admin/noticias?edit=${encodeURIComponent(item.id)}`} aria-label={`Editar ${item.title}`} title="Editar"><AdminIcon name="edit" /></Link>
