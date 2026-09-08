@@ -11,3 +11,4 @@ export const userRoleLabels: Record<UserRole, string> = {
 }
 
 export const isConstellationContributor = (role: UserRole | null | undefined) => role === 'CONSTELLATION_CONTRIBUTOR'
+export const isAdministrator = (role: UserRole | null | undefined) => role === 'ADMIN'

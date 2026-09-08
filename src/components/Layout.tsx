@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { FourPointMark } from './FourPointMark'
 import { BrattypolitanExperienceLockup } from './BrattypolitanWordmark'
 import { useGoogleSession } from '../features/access/useGoogleSession'
+import { isConstellationContributor } from '../features/access/roles'
 
 const publicAreas = [
   { to: '/album', eyebrow: 'LECTURA', title: 'Libreta digital', copy: 'Consulta el archivo colectivo y sus recuerdos.' },
@@ -33,6 +34,8 @@ export function Layout({ children }: PropsWithChildren) {
       <Link to="/" className="brand"><BrattypolitanExperienceLockup /></Link>
       <nav className="topbar-actions" aria-label="Navegación">
         <button type="button" className="quiet-link explore-toggle" onClick={() => setIsExploreOpen(true)} aria-expanded={isExploreOpen} aria-controls="explore-sidebar">Explorar</button>
+        {session.isAdmin && <Link className="quiet-link" to="/admin/experiencias">Herramientas</Link>}
+        {!session.isAdmin && isConstellationContributor(session.role) && <Link className="quiet-link" to="/taller-constelacion">Editor</Link>}
         {session.isConfigured && (session.user ? <button type="button" className="topbar-google" onClick={() => void session.signOut()} aria-label={`Cerrar sesión de ${session.user.displayName?.split(' ')[0] ?? 'Google'}`}><span className="topbar-google-full">Salir · {session.user.displayName?.split(' ')[0] ?? 'Google'}</span><span className="topbar-google-short">Salir</span></button> : <button type="button" className="topbar-google" onClick={() => void session.signIn()} aria-label="Accede con tu cuenta de Google"><span className="topbar-google-full">Accede con tu cuenta de Google</span><span className="topbar-google-short">Accede con Google</span></button>)}
       </nav>
     </header>

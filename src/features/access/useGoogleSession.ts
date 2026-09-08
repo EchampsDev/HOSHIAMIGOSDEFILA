@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth'
-import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore'
+import { doc, getDoc, onSnapshot, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore'
 import { firebaseAuth, firestore, googleProvider, isFirebaseConfigured } from '../../infrastructure/firebase/client'
-import type { UserRole } from './roles'
+import { isAdministrator, type UserRole } from './roles'
 
 export function useGoogleSession() {
   const [user, setUser] = useState<User | null>(null)
@@ -13,15 +13,26 @@ export function useGoogleSession() {
 
   useEffect(() => {
     if (!firebaseAuth) return
-    return onAuthStateChanged(firebaseAuth, async (currentUser: User | null) => {
-      setUser(currentUser); setIsAdmin(false); setRole(null); setIsLoading(false)
-      if (!currentUser || !firestore) return
+    let stopRoleUpdates: (() => void) | undefined
+    const stopAuthUpdates = onAuthStateChanged(firebaseAuth, async (currentUser: User | null) => {
+      stopRoleUpdates?.()
+      stopRoleUpdates = undefined
+      setUser(currentUser); setIsAdmin(false); setRole(null); setError(null)
+      if (!currentUser || !firestore) { setIsLoading(false); return }
+      setIsLoading(true)
       try {
         const adminReference = doc(firestore, 'admins', currentUser.uid)
         const roleReference = doc(firestore, 'userRoles', currentUser.uid)
         const [admin, profile] = await Promise.all([getDoc(adminReference), getDoc(roleReference)])
-        setIsAdmin(admin.exists() && admin.data().role === 'admin')
-        setRole((profile.data()?.role as UserRole | undefined) ?? 'USER')
+        const legacyAdmin = admin.exists()
+        const applyRole = (nextRole: UserRole) => {
+          setRole(nextRole)
+          setIsAdmin(legacyAdmin || isAdministrator(nextRole))
+        }
+        applyRole((profile.data()?.role as UserRole | undefined) ?? 'USER')
+        stopRoleUpdates = onSnapshot(roleReference, (snapshot) => {
+          applyRole((snapshot.data()?.role as UserRole | undefined) ?? 'USER')
+        })
         const identity = { displayName: currentUser.displayName ?? 'Participante', email: currentUser.email ?? '', lastSignInAt: serverTimestamp() }
         if (profile.exists()) await updateDoc(roleReference, identity)
         else await setDoc(roleReference, { ...identity, role: 'USER', createdAt: serverTimestamp() })
@@ -30,8 +41,11 @@ export function useGoogleSession() {
       } catch (cause) {
         const code = typeof cause === 'object' && cause && 'code' in cause ? String(cause.code) : 'unknown'
         setError(`Tu cuenta inició sesión, pero no pudo registrarse para los permisos (${code}). Revisa las reglas de Firestore publicadas.`)
+      } finally {
+        setIsLoading(false)
       }
     })
+    return () => { stopRoleUpdates?.(); stopAuthUpdates() }
   }, [])
 
   const signIn = async () => {

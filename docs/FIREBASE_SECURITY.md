@@ -2,7 +2,7 @@
 
 La app pública no recibe permisos administrativos. Las reglas de Firestore solo muestran elementos y comentarios `APPROVED`; las contribuciones y comentarios nuevos nacen en `PENDING` y requieren autenticación.
 
-Un administrador se identifica con un documento `admins/{uid}` creado desde un entorno confiable (Firebase Console o Admin SDK). Un cliente autenticado sólo puede leer el documento cuyo ID coincide con su propio UID; no puede listar, crear, editar ni eliminar roles. Así la interfaz puede comprobar su propio acceso sin exponer la lista de administradores ni permitir que alguien se otorgue privilegios.
+El administrador principal se identifica con un documento `admins/{uid}` creado desde un entorno confiable (Firebase Console o Admin SDK). Esa cuenta puede delegar administración asignando `role: ADMIN` en `userRoles/{uid}` desde el gestor de usuarios. Un cliente autenticado sólo puede leer sus propios documentos de acceso y nunca puede elevar su propio rol; únicamente una cuenta administradora puede cambiar roles.
 
 Storage permanece cerrado salvo la referencia de la constelación. Esa ruta permite lectura pública y únicamente escritura de administradores autenticados; además limita la carga a imágenes de 10 MB. Las contribuciones públicas no tienen permiso de carga.
 
@@ -14,7 +14,7 @@ Storage permanece cerrado salvo la referencia de la constelación. Esa ruta perm
 - Firebase Hosting sirve la aplicación; Firestore guarda y distribuye estos cambios.
 - La imagen de referencia se guarda en Storage bajo `constellation/`. El editor la carga y Firestore publica su URL junto con la silueta.
 
-Los editores usan Google Sign-In. Después de iniciar sesión por primera vez, crea desde la consola de Firestore el documento vacío `admins/{uid}` para esa cuenta. El UID aparece en Firebase Authentication. Las reglas bloquean cualquier escritura hasta que exista ese documento; ni la web pública ni el cliente pueden crearlo por sí mismos.
+Los editores usan Google Sign-In. Para establecer al administrador principal, crea desde la consola de Firestore el documento vacío `admins/{uid}` de esa cuenta. Después, el gestor de usuarios permite delegar el rol Administrador o Contribuyente de proyecto. La administración delegada recibe todas las herramientas; el rol Contribuyente de proyecto recibe únicamente el taller de constelación. Los cambios de rol se reflejan en la sesión abierta sin exigir un nuevo inicio de sesión.
 
 Los valores `VITE_FIREBASE_*` pertenecen a la configuración pública de la app web. En desarrollo viven en `.env.local`, que no se versiona. Para el build de Hosting deben configurarse también en el entorno de GitHub Actions antes de publicar la integración.
 
