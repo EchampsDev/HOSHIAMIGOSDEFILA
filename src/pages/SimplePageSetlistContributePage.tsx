@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties } fro
 import '../styles/setlist-preview.css'
 import { Layout } from '../components/Layout'
 import { ExperienceWord } from '../components/BrattypolitanWordmark'
+import { FourPointMark } from '../components/FourPointMark'
 import { useGoogleSession } from '../features/access/useGoogleSession'
 import { useParticipationAccess } from '../features/album/hooks/useParticipationAccess'
 import { getSetlistAlbum, readSetlistTracks, setlistAlbumLabels, setlistAlbumOrder, type SetlistTrack } from '../features/album/data/localSetlistCatalog'
@@ -15,6 +16,7 @@ import { useAlbum } from '../features/album/hooks/useAlbum'
 
 const TOP_SIZE = 3
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
+const WIZARD_TOTAL = 5
 const postItColors = [
   ['yellow', 'Amarillo'], ['green', 'Verde'], ['blue', 'Azul'], ['purple', 'Morado'], ['pink', 'Rosa'], ['red', 'Rojo'], ['brown', 'Café'], ['violet', 'Violeta'], ['white', 'Blanco'], ['black', 'Negro'], ['gray', 'Gris'], ['dark-green', 'Verde oscuro'], ['royal-blue', 'Azul rey'], ['cyan', 'Azul cian'], ['pride', 'Orgullo LGBT+'],
 ] as const
@@ -22,6 +24,14 @@ const postItColors = [
 type ContributionType = AlbumElementType | 'SETLIST'
 type TopSelectionType = 'HOSHI' | 'BRATTY'
 type PhotoDraft = { data: string; size: number; mime: string }
+
+const contributionOptions: { value: ContributionType; icon: string; title: string; copy: string }[] = [
+  { value: 'SETLIST', icon: '♫', title: 'Top 3 musical', copy: 'Elige las tres canciones que más te acompañan.' },
+  { value: 'PHOTO', icon: '▣', title: 'Una foto', copy: 'Guarda una imagen dentro de la libreta.' },
+  { value: 'STICKER', icon: '✦', title: 'Sticker o emoji', copy: 'Deja un símbolo pequeño y lleno de intención.' },
+  { value: 'POST_IT', icon: '▤', title: 'Post-it', copy: 'Escribe una nota y elige su color.' },
+  { value: 'TEXT', icon: 'Aa', title: 'Texto libre', copy: 'Dedícale unas palabras a BRATTY.' },
+]
 
 const topTitles: Record<TopSelectionType, string> = {
   HOSHI: 'MI TOP 3 DE HOSHI',
@@ -168,6 +178,10 @@ export function SimplePageSetlistContributePage() {
   const [preview, setPreview] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [pageSelectorOpen, setPageSelectorOpen] = useState(false)
+  const [step, setStep] = useState(0)
+  const [stepDirection, setStepDirection] = useState<'forward' | 'back'>('forward')
+  const wizardPanelRef = useRef<HTMLElement>(null)
+  const seededGoogleName = useRef(false)
   const session = useGoogleSession()
   const participation = useParticipationAccess()
   const scrapbook = useAlbum(true)
@@ -180,6 +194,13 @@ export function SimplePageSetlistContributePage() {
     return () => { unsubscribe?.(); window.removeEventListener('brattypolitan-setlist-change', catalog) }
   }, [])
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'auto' }) }, [])
+  useEffect(() => {
+    if (!seededGoogleName.current && session.user?.displayName) {
+      seededGoogleName.current = true
+      setName((current) => current || session.user?.displayName || '')
+    }
+  }, [session.user?.displayName])
+  useEffect(() => { wizardPanelRef.current?.focus({ preventScroll: true }) }, [step])
   const displayName = name.trim() || session.user?.displayName || ''
   const author = (): AuthorIdentity => ({ participantId: session.user?.uid ?? getLocalParticipantId(), displayName: displayName || undefined, age: age ? Number(age) : undefined })
   const trackGroups = setlistAlbumOrder
@@ -202,6 +223,20 @@ export function SimplePageSetlistContributePage() {
     ? resolveSetlistCoverUrl(lastSelectedTrack.coverUrl) ?? defaultSelectionBackground
     : defaultSelectionBackground
   const selectionPanelStyle = { '--top3-selection-background': `url("${selectionBackground.replace(/["\\]/g, '\\$&')}")` } as CSSProperties
+  const selectedPageCapacity = scrapbook.album ? pageCapacity(scrapbook.album.pages[page - 1]) : null
+
+  const moveToStep = (next: number) => {
+    const bounded = Math.max(0, Math.min(WIZARD_TOTAL - 1, next))
+    setStepDirection(bounded >= step ? 'forward' : 'back')
+    setStep(bounded)
+    setMessage(null)
+  }
+  const chooseContributionType = (nextType: ContributionType) => {
+    setType(nextType)
+    setExpanded(false)
+    setPreview(false)
+    setMessage(null)
+  }
 
   const toggleCollectiveArchive = async () => {
     try { await participation.setOpen(!participation.isOpen) }
@@ -282,15 +317,53 @@ export function SimplePageSetlistContributePage() {
       <p className="eyebrow">ARCHIVO COLECTIVO · PRUEBA LOCAL</p>
       <h1>Dejar un recuerdo</h1>
       {session.isAdmin && <section className="archive-admin-control"><p>Vista administradora · archivo {isOpen ? 'activo' : 'desactivado'}</p><button type="button" onClick={toggleCollectiveArchive}>{isOpen ? 'Desactivar archivo colectivo' : 'Activar archivo colectivo'}</button></section>}
-      {!isOpen ? <p className="muted">La captura está cerrada por el equipo.</p> : <div className="contribution-form">
-        <p>Elige qué tipo de recuerdo quieres dejar. Recibirás un ID único y se guardará en la página seleccionada.</p>
-        <label>Tipo de recuerdo<select value={type} onChange={(event) => { setType(event.target.value as ContributionType); setExpanded(false); setPreview(false) }}><option value="SETLIST">Top 3 musical</option><option value="PHOTO">Foto</option><option value="STICKER">Sticker</option><option value="POST_IT">Post-it</option><option value="TEXT">Texto libre</option></select></label>
-        <label>Nombre (opcional)<input value={name} onChange={(event) => setName(event.target.value)} /></label>
-        <label>Edad (opcional)<input type="number" min="1" max="120" value={age} onChange={(event) => setAge(event.target.value)} /></label>
-        <section className="memory-page-picker"><p>¿En qué cara dejaste o dejarás tu recuerdo?</p><small>{scrapbook.album ? `${pageCapacity(scrapbook.album.pages[page - 1]).remaining} de 4 espacios disponibles en la cara ${page}.` : 'Consultando espacios disponibles…'}</small><div><button type="button" onClick={() => setPageSelectorOpen(true)}>Elegir cara</button><label>Cara<input type="number" min="1" max="100" value={page} readOnly /></label><button type="button" className="memory-page-open" onClick={() => window.location.assign(`/album?page=${page}`)}>Ver cara</button></div></section>
-        {type === 'SETLIST' ? <section className="top3-launchers" aria-label="Elige tu tipo de Top 3"><button type="button" className="setlist-launcher" onClick={() => openTopSelection('HOSHI')}><b>✦ MI TOP 3 DE HOSHI</b><span>Selecciona 3 canciones de Hoshi</span></button><button type="button" className="setlist-launcher is-all-bratty" onClick={() => openTopSelection('BRATTY')}><b>✦ MI TOP 3 DE TODA LA MÚSICA DE BRATTY</b><span>Selecciona 3 canciones del catálogo completo</span></button></section> : type === 'PHOTO' ? <label>Foto · máximo 5 MB<input type="file" accept="image/*" onChange={choosePhoto} />{photo && <small>{(photo.size / 1024 / 1024).toFixed(2)} MB lista</small>}</label> : <>{type === 'POST_IT' && <fieldset className="postit-color-picker"><legend>Color del post-it</legend><div>{postItColors.map(([value, label]) => <button key={value} type="button" className={`postit-color postit-${value}${postItColor === value ? ' is-selected' : ''}`} aria-label={label} aria-pressed={postItColor === value} title={label} onClick={() => setPostItColor(value)} />)}</div></fieldset>}<label>{type === 'STICKER' ? 'Sticker o emoji' : type === 'POST_IT' ? 'Texto del post-it' : 'Texto libre'}<textarea maxLength={280} value={content} onChange={(event) => setContent(event.target.value)} placeholder={type === 'STICKER' ? '✦ 💖 ⭐' : 'Escribe aquí…'} /></label></>}
-        {type !== 'SETLIST' && <button type="button" onClick={() => void saveElement()}>Guardar recuerdo en la libreta</button>}
-        {message && <p className="muted">{message}</p>}
+      {!isOpen ? <p className="muted">La captura está cerrada por el equipo.</p> : <div className="contribution-form contribution-wizard">
+        <header className="memory-wizard-progress">
+          <span className="memory-wizard-star"><FourPointMark /></span>
+          <div><p>PASO {step + 1} DE {WIZARD_TOTAL}</p><span>Tu recuerdo para BRATTY</span></div>
+          <div className="memory-wizard-progressbar" role="progressbar" aria-label="Progreso del recuerdo" aria-valuemin={1} aria-valuemax={WIZARD_TOTAL} aria-valuenow={step + 1}><i style={{ width: `${((step + 1) / WIZARD_TOTAL) * 100}%` }} /></div>
+        </header>
+
+        <section ref={wizardPanelRef} key={step} tabIndex={-1} className={`memory-wizard-step is-${stepDirection}`} aria-labelledby={`memory-step-${step}`}>
+          {step === 0 && <>
+            <p className="memory-wizard-kicker">EMPECEMOS CONTIGO</p>
+            <h2 id="memory-step-0">¿Cuál es tu nombre?</h2>
+            <p>{session.user?.displayName ? `Hola, ${session.user.displayName}. Tomamos el nombre de tu cuenta de Google, pero puedes cambiar cómo aparecerá.` : 'Puedes escribir tu nombre o continuar de forma anónima.'}</p>
+            <label className="memory-wizard-field"><span>Tu nombre <small>opcional</small></span><input autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Escribe tu nombre" /></label>
+          </>}
+
+          {step === 1 && <>
+            <p className="memory-wizard-kicker">UN POCO MÁS SOBRE TI</p>
+            <h2 id="memory-step-1">¿Cuál es tu edad?</h2>
+            <p>Este dato es opcional. Puedes dejarlo vacío y seguir adelante.</p>
+            <label className="memory-wizard-field"><span>Tu edad <small>opcional</small></span><input inputMode="numeric" type="number" min="1" max="120" value={age} onChange={(event) => setAge(event.target.value)} placeholder="Edad" /></label>
+          </>}
+
+          {step === 2 && <>
+            <p className="memory-wizard-kicker">ELIGE TU FORMA DE PARTICIPAR</p>
+            <h2 id="memory-step-2">¿Qué quieres dejarle a BRATTY?</h2>
+            <p>Todo formará parte de la misma libreta. Elige la forma que mejor represente tu recuerdo.</p>
+            <div className="memory-type-grid" role="list">{contributionOptions.map((option) => <button type="button" role="listitem" key={option.value} className={type === option.value ? 'is-selected' : ''} aria-pressed={type === option.value} onClick={() => chooseContributionType(option.value)}><i aria-hidden="true">{option.icon}</i><span><b>{option.title}</b><small>{option.copy}</small></span></button>)}</div>
+          </>}
+
+          {step === 3 && <>
+            <p className="memory-wizard-kicker">BUSCA UN ESPACIO</p>
+            <h2 id="memory-step-3">¿En qué cara irá tu recuerdo?</h2>
+            <p>Cada cara admite hasta cuatro recuerdos. Puedes revisar la hoja antes de continuar.</p>
+            <section className={`memory-page-picker memory-page-picker--wizard${selectedPageCapacity?.isFull ? ' is-full' : ''}`}><strong>Cara {page}</strong><small>{selectedPageCapacity ? selectedPageCapacity.isFull ? 'Esta cara ya está llena. Elige otra para continuar.' : `${selectedPageCapacity.remaining} de 4 espacios disponibles.` : 'Consultando espacios disponibles…'}</small><div><button type="button" onClick={() => setPageSelectorOpen(true)}>Elegir otra cara</button><button type="button" className="memory-page-open" onClick={() => window.location.assign(`/album?page=${page}`)}>Ver cara</button></div></section>
+          </>}
+
+          {step === 4 && <>
+            <p className="memory-wizard-kicker">ÚLTIMO PASO · CARA {page}</p>
+            {type === 'SETLIST' ? <><h2 id="memory-step-4">Elige tus tres canciones</h2><p>Arma tu Top 3 y revisa la vista previa antes de guardarlo en la libreta.</p><section className="top3-launchers" aria-label="Elige tu tipo de Top 3"><button type="button" className="setlist-launcher" onClick={() => openTopSelection('HOSHI')}><b>✦ MI TOP 3 DE HOSHI</b><span>Selecciona 3 canciones de Hoshi</span></button><button type="button" className="setlist-launcher is-all-bratty" onClick={() => openTopSelection('BRATTY')}><b>✦ MI TOP 3 DE TODA LA MÚSICA DE BRATTY</b><span>Selecciona 3 canciones del catálogo completo</span></button></section></> : type === 'PHOTO' ? <><h2 id="memory-step-4">Elige una foto para BRATTY</h2><p>Selecciona una imagen de máximo 5 MB. Podrás sustituirla antes de guardar.</p><label className="memory-photo-input"><span>{photo ? 'Cambiar foto' : 'Seleccionar foto'}</span><input type="file" accept="image/*" onChange={choosePhoto} />{photo && <small>{(photo.size / 1024 / 1024).toFixed(2)} MB · lista para guardar</small>}</label><button type="button" className="memory-save-button" onClick={() => void saveElement()} disabled={!photo}>Guardar recuerdo en la libreta</button></> : <><h2 id="memory-step-4">¿Qué le quieres escribir a BRATTY?</h2><p>Escribe algo que te gustaría que encontrara al abrir esta página.</p>{type === 'POST_IT' && <fieldset className="postit-color-picker"><legend>Color del post-it</legend><div>{postItColors.map(([value, label]) => <button key={value} type="button" className={`postit-color postit-${value}${postItColor === value ? ' is-selected' : ''}`} aria-label={label} aria-pressed={postItColor === value} title={label} onClick={() => setPostItColor(value)} />)}</div></fieldset>}<label className="memory-wizard-field memory-wizard-message"><span>{type === 'STICKER' ? 'Tu sticker o emoji' : type === 'POST_IT' ? 'Tu mensaje' : 'Tu mensaje para BRATTY'}</span><textarea maxLength={280} value={content} onChange={(event) => setContent(event.target.value)} placeholder={type === 'STICKER' ? '✦ 💖 ⭐' : 'Escribe aquí…'} /><small>{content.length} / 280</small></label><button type="button" className="memory-save-button" onClick={() => void saveElement()} disabled={!content.trim()}>Guardar recuerdo en la libreta</button></>}
+            {message && <p className="memory-wizard-status" role="status">{message}</p>}
+          </>}
+        </section>
+
+        <footer className="memory-wizard-actions">
+          {step > 0 ? <button type="button" className="memory-wizard-back" onClick={() => moveToStep(step - 1)}>← Anterior</button> : <span />}
+          {step < WIZARD_TOTAL - 1 && <button type="button" className="memory-wizard-next" onClick={() => moveToStep(step + 1)} disabled={step === 3 && Boolean(selectedPageCapacity?.isFull)}>Continuar <span aria-hidden="true">→</span></button>}
+        </footer>
       </div>}
     </section>
     <PageIndex open={pageSelectorOpen} pages={scrapbook.album?.pages} pageCount={scrapbook.album?.pageCount ?? 100} current={page} ownerId={session.user?.uid ?? getLocalParticipantId()} mode="select" title="Elige una cara con espacio" onClose={() => setPageSelectorOpen(false)} onGoTo={setPage} />
