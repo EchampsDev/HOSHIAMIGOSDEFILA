@@ -345,3 +345,110 @@ span.cover-page-edge { position: absolute !important; z-index: 0 !important; top
   .album-page-navigation { gap:6px; }
   .album-page-navigation button { min-width:0; }
 }
+
+/* Libreta de referencia: dos PNG transparentes en un mismo lienzo visual. */
+.scrapbook-cover.front-cover,
+.scrapbook-spread {
+  width:min(96vw,940px,calc(72svh * 1.7768));
+  aspect-ratio:1672 / 941;
+  filter:drop-shadow(18px 24px 22px rgba(0,0,0,.5));
+}
+
+.scrapbook-cover.front-cover {
+  overflow:visible;
+  padding:0;
+  border-radius:0;
+  box-shadow:none;
+  color:#fff8e6;
+  background:transparent url('/images/notebook-closed-transparent.png') center / auto 100% no-repeat;
+  transform:none;
+}
+.scrapbook-cover.front-cover:hover { transform:translateY(-3px); }
+.scrapbook-cover.front-cover::before,
+.front-cover > .spiral-binding,
+.front-cover > .cover-page-edge,
+.front-cover .cover-bookmark { display:none; }
+.front-cover .cover-kicker,
+.front-cover .cover-title,
+.front-cover .cover-hoshi-message,
+.front-cover .cover-mark,
+.front-cover .cover-open-label {
+  position:absolute;
+  z-index:2;
+  margin:0;
+  text-shadow:0 2px 9px rgba(72,0,0,.76);
+}
+.front-cover .cover-kicker {
+  top:24%;
+  left:35%;
+  font-size:clamp(.42rem,1.1vw,.68rem);
+  color:#fff5df;
+}
+.front-cover .cover-title {
+  top:31%;
+  left:35%;
+  width:29%;
+  font-size:clamp(1.25rem,4.1vw,2.7rem);
+  line-height:.84;
+  color:#fff8e8;
+}
+.front-cover .cover-hoshi-message {
+  top:55%;
+  left:35%;
+  width:30%;
+  gap:clamp(5px,1vw,10px);
+}
+.front-cover .cover-hoshi-message b { font-size:clamp(.7rem,2.1vw,1.45rem); }
+.front-cover .cover-four-point-star {
+  width:clamp(28px,7vw,64px);
+  filter:drop-shadow(0 0 2px #fff0d2) drop-shadow(0 0 9px rgba(78,0,0,.8));
+}
+.front-cover .cover-mark { top:10%; right:31.5%; width:6.2%; }
+.front-cover .cover-footer-mark { background:#4b080d; filter:drop-shadow(0 1px 1px rgba(255,238,218,.45)); }
+.front-cover .cover-open-label {
+  right:35%;
+  bottom:8%;
+  font-size:clamp(.42rem,1vw,.62rem);
+  color:#fff8e8;
+}
+
+.scrapbook-spread {
+  box-sizing:border-box;
+  grid-template-columns:minmax(0,1fr) 4.2% minmax(0,1fr);
+  padding:5.5% 5.4% 6%;
+  background:transparent url('/images/notebook-open-transparent.png') center / contain no-repeat;
+}
+.scrapbook-spread::before,
+.scrapbook-spread::after,
+.scrapbook-spread .scrapbook-sheet::before,
+.scrapbook-spread .scrapbook-sheet::after,
+.scrapbook-spread .scrapbook-gutter::before,
+.scrapbook-spread .scrapbook-gutter .spiral-binding { display:none; }
+.scrapbook-spread .scrapbook-gutter { width:auto; }
+.scrapbook-spread .scrapbook-sheet { border-radius:0; box-shadow:none; }
+.scrapbook-spread .album-paper { background-color:rgba(241,228,199,.08); box-shadow:inset 0 0 22px rgba(94,63,38,.06); }
+.scrapbook-spread .album-paper.grid { background-color:rgba(241,228,199,.04); }
+.scrapbook-spread .album-paper.lined { background-color:rgba(241,228,199,.05); }
+.scrapbook-spread .scrapbook-open-cover {
+  overflow:hidden;
+  background:linear-gradient(118deg,rgba(255,255,255,.08),transparent 28% 74%,rgba(0,0,0,.18)),rgba(179,22,30,.94);
+  box-shadow:inset -14px 0 24px rgba(62,0,0,.28);
+}
+.scrapbook-spread .open-cover-panel {
+  color:#fff8e6;
+  border-radius:0;
+  background:transparent;
+}
+.scrapbook-spread .open-cover-panel::before { display:none; }
+.scrapbook-spread .open-cover-panel .cover-four-point-star { filter:drop-shadow(0 0 2px #fff0d2) drop-shadow(0 0 9px rgba(78,0,0,.8)); }
+.scrapbook-spread .open-cover-panel small { color:rgba(255,248,230,.8); }
+.scrapbook-theme-black.scrapbook-spread .album-paper { background-color:rgba(8,9,12,.9); }
+
+@media (max-width:600px) {
+  .scrapbook-cover.front-cover,
+  .scrapbook-spread { width:min(99vw,940px,calc(68svh * 1.7768)); }
+  .front-cover .cover-title { font-size:clamp(1rem,6.7vw,1.9rem); }
+  .front-cover .cover-hoshi-message b { font-size:clamp(.62rem,3.2vw,1rem); }
+  .scrapbook-spread .album-page-title { top:4%; left:6%; }
+  .scrapbook-spread .album-page-number { right:5%; bottom:3%; }
+}
