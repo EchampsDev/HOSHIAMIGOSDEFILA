@@ -325,12 +325,11 @@ span.cover-page-edge { position: absolute !important; z-index: 0 !important; top
 .scrapbook-sheet > .album-page-bookmark i { position:absolute; z-index:2; right:0; bottom:1.5%; left:0; text-align:center; }
 .scrapbook-spread { --bookmark-width:3.25%; }
 .scrapbook-single,.scrapbook-cover { --bookmark-width:6.5%; }
-.album-bookmark-tail { position:absolute; z-index:10; top:100%; bottom:auto; width:var(--bookmark-width); height:11%; display:grid; place-items:center; box-sizing:border-box; color:#fff; background:linear-gradient(90deg,#003dca,#1477ff 50%,#003da6); box-shadow:3px 4px 7px rgba(0,0,0,.38); pointer-events:none; }
+.album-bookmark-tail { position:absolute; z-index:10; top:calc(100% - 1px); bottom:auto; width:var(--bookmark-width); height:6.5%; display:grid; place-items:center; box-sizing:border-box; color:#fff; background:linear-gradient(90deg,#003dca,#1477ff 50%,#003da6); box-shadow:3px 4px 7px rgba(0,0,0,.38); pointer-events:none; }
 .album-bookmark-tail::after { content:''; position:absolute; right:0; bottom:0; left:0; height:34%; background:inherit; clip-path:polygon(0 0,100% 0,100% 100%,50% 69%,0 100%); filter:brightness(.9); }
-.album-bookmark-tail i { position:relative; z-index:2; align-self:end; padding-bottom:24%; font:700 clamp(.42rem,1.25vw,.62rem) 'DM Mono',monospace; font-style:normal; }
+.album-bookmark-tail i { position:relative; z-index:2; align-self:center; padding-bottom:8%; font:700 clamp(.42rem,1.25vw,.62rem) 'DM Mono',monospace; font-style:normal; }
 .scrapbook-spread > .album-bookmark-tail.marker-left { left:2.5%; }
 .scrapbook-spread > .album-bookmark-tail.marker-right { right:2.5%; }
-.scrapbook-spread.is-first-open > .album-bookmark-tail.marker-left { left:52.5%; }
 .scrapbook-single > .album-bookmark-tail.marker-left { left:5%; }
 .scrapbook-single > .album-bookmark-tail.marker-right { right:5%; }
 .cover-bookmark.marker-left { right:auto; left:7%; }
@@ -366,8 +365,10 @@ span.cover-page-edge { position: absolute !important; z-index: 0 !important; top
 .scrapbook-cover.front-cover:hover { transform:translateY(-3px); }
 .scrapbook-cover.front-cover::before,
 .front-cover > .spiral-binding,
-.front-cover > .cover-page-edge,
-.front-cover .cover-bookmark { display:none; }
+.front-cover > .cover-page-edge { display:none; }
+.front-cover .cover-bookmark { top:97%; bottom:auto; width:2.75%; height:6.5%; display:grid; }
+.front-cover .cover-bookmark.marker-left { right:auto; left:32.5%; }
+.front-cover .cover-bookmark.marker-right { right:32.5%; left:auto; }
 .front-cover .cover-kicker,
 .front-cover .cover-title,
 .front-cover .cover-hoshi-message,
