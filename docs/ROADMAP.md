@@ -13,5 +13,7 @@
 - **M9 — Editor:** operaciones administrativas de layout.
 - **M10 — Notifications:** avisos administrativos.
 - **M11 — Archive:** digitalización y enriquecimiento del scrapbook físico.
+- **M12 — Sticker Library (base local):** biblioteca visual, descargas, carga validada, moderación básica e instancias reutilizables en la libreta. ✅
+- **M12.1 — Sticker Library Firebase:** adaptadores de Storage/Firestore y reglas de seguridad cuando el plan Blaze esté activo.
 
 Cada módulo termina tras diseñar, implementar, validar y documentar. No se inicia el siguiente sin autorización.

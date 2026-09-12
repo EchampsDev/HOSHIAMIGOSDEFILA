@@ -13,6 +13,9 @@ import { pageCapacity } from '../features/album/domain/types'
 import { getLocalParticipantId } from '../features/album/domain/participantIdentity'
 import { PageIndex } from '../features/album/components/PageIndex'
 import { useAlbum } from '../features/album/hooks/useAlbum'
+import type { CommunitySticker } from '../features/stickers/domain/types'
+import { StickerPicker } from '../features/stickers/components/StickerPicker'
+import { StickerUploader } from '../features/stickers/components/StickerUploader'
 
 const TOP_SIZE = 3
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
@@ -93,7 +96,7 @@ async function makePreview(tracks: SetlistTrack[], authorName: string, page: num
   return canvas
 }
 
-type ContributionInput = { pageNumber: number; type: AlbumElementType; content?: string; author: AuthorIdentity; media?: PhotoDraft; setlist?: SetlistEntry[]; styleVariant?: string }
+type ContributionInput = { pageNumber: number; type: AlbumElementType; content?: string; author: AuthorIdentity; media?: PhotoDraft; setlist?: SetlistEntry[]; styleVariant?: string; stickerId?: string }
 type ContributionStore = { save: (input: ContributionInput) => Promise<void> }
 const overlapRatio = (a: ElementLayout, b: ElementLayout) => { const width = Math.max(0, Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x)); const height = Math.max(0, Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y)); return width * height / Math.max(.001, Math.min(a.width * a.height, b.width * b.height)) }
 const placeElement = (element: AlbumElement, existing: AlbumElement[]) => { const candidates = [[.08, .08], [.54, .08], [.08, .38], [.54, .38], [.26, .22], [.14, .58], [.48, .58]]; const current = clampLayout(element.layout); const collisionAt = (layout: ElementLayout) => Math.max(0, ...existing.map((other) => overlapRatio(layout, other.layout))); const roomiest = candidates.map(([x, y]) => ({ layout: clampLayout({ ...current, x, y }) })).map(({ layout }) => ({ layout, collision: collisionAt(layout) })).sort((a, b) => a.collision - b.collision)[0]; return { ...(collisionAt(current) > .34 && roomiest ? roomiest.layout : current), zIndex: Math.max(0, ...existing.map((other) => other.layout.zIndex)) + 1 } }
@@ -108,6 +111,7 @@ const localContributionStore: ContributionStore = {
     const element = createElement(targetPage.id, input.type, targetPage.elements.length + 1, input.author)
     element.content = input.content || element.content
     element.styleVariant = input.styleVariant ?? element.styleVariant
+    element.stickerId = input.stickerId
     element.setlist = input.setlist
     element.media = input.media ? { originalWidth: 0, originalHeight: 0, mimeType: input.media.mime, fileSize: input.media.size, downloadUrl: input.media.data } : undefined
     if (input.type === 'PHOTO') { element.content = input.media?.data; element.layout = { ...element.layout, width: .42, height: .3 } }
@@ -177,6 +181,7 @@ export function SimplePageSetlistContributePage() {
   const [expanded, setExpanded] = useState(false)
   const [preview, setPreview] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [selectedSticker, setSelectedSticker] = useState<CommunitySticker | null>(null)
   const [pageSelectorOpen, setPageSelectorOpen] = useState(false)
   const [step, setStep] = useState(0)
   const [stepDirection, setStepDirection] = useState<'forward' | 'back'>('forward')
@@ -291,13 +296,15 @@ export function SimplePageSetlistContributePage() {
   }
   const saveElement = async () => {
     if (type === 'PHOTO' && !photo) { setMessage('Selecciona una foto de máximo 5 MB.'); return }
-    if (type !== 'PHOTO' && !content.trim()) { setMessage('Escribe o selecciona el contenido de tu recuerdo.'); return }
+    if (type === 'STICKER' && !selectedSticker) { setMessage('Elige un sticker aprobado de la biblioteca.'); return }
+    if (type !== 'PHOTO' && type !== 'STICKER' && !content.trim()) { setMessage('Escribe o selecciona el contenido de tu recuerdo.'); return }
     try {
       const identity = author()
-      await localContributionStore.save({ pageNumber: page, type: type as AlbumElementType, content, author: identity, media: photo ?? undefined, styleVariant: type === 'POST_IT' ? postItColor : undefined })
+      await localContributionStore.save({ pageNumber: page, type: type as AlbumElementType, content: type === 'STICKER' ? selectedSticker?.title : content, author: identity, media: photo ?? undefined, styleVariant: type === 'POST_IT' ? postItColor : undefined, stickerId: selectedSticker?.id })
       setMessage(`Recuerdo guardado en la página ${page}. ID: ${identity.participantId}`)
       setContent('')
       setPhoto(null)
+      setSelectedSticker(null)
     } catch (error) { setMessage(error instanceof Error ? error.message : 'No fue posible guardar el recuerdo localmente.') }
   }
   const sendTop = async () => {
@@ -355,7 +362,7 @@ export function SimplePageSetlistContributePage() {
 
           {step === 4 && <>
             <p className="memory-wizard-kicker">ÚLTIMO PASO · CARA {page}</p>
-            {type === 'SETLIST' ? <><h2 id="memory-step-4">Elige tus tres canciones</h2><p>Arma tu Top 3 y revisa la vista previa antes de guardarlo en la libreta.</p><section className="top3-launchers" aria-label="Elige tu tipo de Top 3"><button type="button" className="setlist-launcher" onClick={() => openTopSelection('HOSHI')}><b>✦ MI TOP 3 DE HOSHI</b><span>Selecciona 3 canciones de Hoshi</span></button><button type="button" className="setlist-launcher is-all-bratty" onClick={() => openTopSelection('BRATTY')}><b>✦ MI TOP 3 DE TODA LA MÚSICA DE BRATTY</b><span>Selecciona 3 canciones del catálogo completo</span></button></section></> : type === 'PHOTO' ? <><h2 id="memory-step-4">Elige una foto para BRATTY</h2><p>Selecciona una imagen de máximo 5 MB. Podrás sustituirla antes de guardar.</p><label className="memory-photo-input"><span>{photo ? 'Cambiar foto' : 'Seleccionar foto'}</span><input type="file" accept="image/*" onChange={choosePhoto} />{photo && <small>{(photo.size / 1024 / 1024).toFixed(2)} MB · lista para guardar</small>}</label><button type="button" className="memory-save-button" onClick={() => void saveElement()} disabled={!photo}>Guardar recuerdo en la libreta</button></> : <><h2 id="memory-step-4">¿Qué le quieres escribir a BRATTY?</h2><p>Escribe algo que te gustaría que encontrara al abrir esta página.</p>{type === 'POST_IT' && <fieldset className="postit-color-picker"><legend>Color del post-it</legend><div>{postItColors.map(([value, label]) => <button key={value} type="button" className={`postit-color postit-${value}${postItColor === value ? ' is-selected' : ''}`} aria-label={label} aria-pressed={postItColor === value} title={label} onClick={() => setPostItColor(value)} />)}</div></fieldset>}<label className="memory-wizard-field memory-wizard-message"><span>{type === 'STICKER' ? 'Tu sticker o emoji' : type === 'POST_IT' ? 'Tu mensaje' : 'Tu mensaje para BRATTY'}</span><textarea maxLength={280} value={content} onChange={(event) => setContent(event.target.value)} placeholder={type === 'STICKER' ? '✦ 💖 ⭐' : 'Escribe aquí…'} /><small>{content.length} / 280</small></label><button type="button" className="memory-save-button" onClick={() => void saveElement()} disabled={!content.trim()}>Guardar recuerdo en la libreta</button></>}
+            {type === 'SETLIST' ? <><h2 id="memory-step-4">Elige tus tres canciones</h2><p>Arma tu Top 3 y revisa la vista previa antes de guardarlo en la libreta.</p><section className="top3-launchers" aria-label="Elige tu tipo de Top 3"><button type="button" className="setlist-launcher" onClick={() => openTopSelection('HOSHI')}><b>✦ MI TOP 3 DE HOSHI</b><span>Selecciona 3 canciones de Hoshi</span></button><button type="button" className="setlist-launcher is-all-bratty" onClick={() => openTopSelection('BRATTY')}><b>✦ MI TOP 3 DE TODA LA MÚSICA DE BRATTY</b><span>Selecciona 3 canciones del catálogo completo</span></button></section></> : type === 'PHOTO' ? <><h2 id="memory-step-4">Elige una foto para BRATTY</h2><p>Selecciona una imagen de máximo 5 MB. Podrás sustituirla antes de guardar.</p><label className="memory-photo-input"><span>{photo ? 'Cambiar foto' : 'Seleccionar foto'}</span><input type="file" accept="image/*" onChange={choosePhoto} />{photo && <small>{(photo.size / 1024 / 1024).toFixed(2)} MB · lista para guardar</small>}</label><button type="button" className="memory-save-button" onClick={() => void saveElement()} disabled={!photo}>Guardar recuerdo en la libreta</button></> : type === 'STICKER' ? <><h2 id="memory-step-4">Elige un sticker para BRATTY</h2><p>Selecciona uno aprobado para colocarlo en la libreta o aporta uno nuevo para revisión.</p><StickerPicker selectedId={selectedSticker?.id} onSelect={setSelectedSticker} /><StickerUploader defaultAuthorName={displayName} /><button type="button" className="memory-save-button" onClick={() => void saveElement()} disabled={!selectedSticker}>Colocar sticker en la libreta</button></> : <><h2 id="memory-step-4">¿Qué le quieres escribir a BRATTY?</h2><p>Escribe algo que te gustaría que encontrara al abrir esta página.</p>{type === 'POST_IT' && <fieldset className="postit-color-picker"><legend>Color del post-it</legend><div>{postItColors.map(([value, label]) => <button key={value} type="button" className={`postit-color postit-${value}${postItColor === value ? ' is-selected' : ''}`} aria-label={label} aria-pressed={postItColor === value} title={label} onClick={() => setPostItColor(value)} />)}</div></fieldset>}<label className="memory-wizard-field memory-wizard-message"><span>{type === 'POST_IT' ? 'Tu mensaje' : 'Tu mensaje para BRATTY'}</span><textarea maxLength={280} value={content} onChange={(event) => setContent(event.target.value)} placeholder="Escribe aquí…" /><small>{content.length} / 280</small></label><button type="button" className="memory-save-button" onClick={() => void saveElement()} disabled={!content.trim()}>Guardar recuerdo en la libreta</button></>}
             {message && <p className="memory-wizard-status" role="status">{message}</p>}
           </>}
         </section>

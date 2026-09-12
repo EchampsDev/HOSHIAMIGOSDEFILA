@@ -40,6 +40,7 @@ export type AlbumElement = {
   content?: string
   styleVariant?: string
   media?: MediaMetadata
+  stickerId?: string
   setlist?: SetlistEntry[]
   likedBy?: string[]
   contentRevealed?: boolean
@@ -107,7 +108,7 @@ export function createElement(pageId: string, type: AlbumElementType, sequence: 
     author,
     content: contentByType[type] ?? 'Elemento',
     styleVariant: type === 'POST_IT' ? 'yellow' : 'default',
-    layout: { x: .12 + (sequence % 3) * .08, y: .13 + (sequence % 2) * .09, width: type === 'SETLIST' ? .72 : type === 'PHOTO' ? .42 : .32, height: type === 'SETLIST' ? .29 : type === 'PHOTO' ? .30 : .18, rotation: type === 'POST_IT' ? -3 : 0, zIndex: sequence + 1, locked: false, hidden: false },
+    layout: { x: .12 + (sequence % 3) * .08, y: .13 + (sequence % 2) * .09, width: type === 'SETLIST' ? .72 : type === 'PHOTO' ? .42 : type === 'STICKER' ? .16 : .32, height: type === 'SETLIST' ? .29 : type === 'PHOTO' ? .30 : type === 'STICKER' ? .16 : .18, rotation: type === 'POST_IT' ? -3 : 0, zIndex: sequence + 1, locked: false, hidden: false },
     createdAt: now,
     updatedAt: now,
   }

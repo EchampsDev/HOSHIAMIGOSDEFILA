@@ -27,3 +27,11 @@ El catálogo musical admite `album: DELUSION | TRES | TDBN | HOSHI` (y `OTHER` �
 La distribución se modela separadamente mediante `WhatsAppSubscriber`, `NewsDelivery` y `NewsPublishedEvent`. El consentimiento explícito y la relación con `contributionId` forman parte del dominio; publicar contenido no equivale a enviarlo.
 
 El contrato `AlbumRepository` separa lectura/escritura de la UI. La implementación presente es local; una futura `FirestoreAlbumRepository` deberá persistir páginas, layouts y metadatos de media bajo reglas de usuario autenticado y administración.
+
+## Sticker Library
+
+`CommunitySticker` es el activo reutilizable y conserva título, autor opcional, descripción, referencia del archivo, MIME, peso, dimensiones originales, nombre de descarga seguro, visibilidad (`PUBLIC | SPECIAL_ONLY | PRIVATE`) y moderación (`PENDING | APPROVED | REJECTED`). La consulta pública devuelve únicamente `PUBLIC + APPROVED`.
+
+Una colocación en la libreta no duplica el archivo. `AlbumElement` de tipo `STICKER` guarda `stickerId`; su `id`, `pageId` y `layout` existente forman la instancia. El layout normalizado conserva `x`, `y`, `width`, `height`, `rotation`, `zIndex`, `locked` y `hidden`, y `clampLayout` la mantiene dentro de la hoja.
+
+La persistencia futura puede usar `stickers/{stickerId}` para metadata en Firestore y una ruta generada en Storage para el activo. La referencia de cada instancia apunta al mismo `stickerId`, aunque el sticker se reutilice en varias páginas.

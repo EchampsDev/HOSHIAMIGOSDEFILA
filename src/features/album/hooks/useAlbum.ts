@@ -63,6 +63,13 @@ export function useAlbum(localOnly = false, spreadMode = false) {
     if (!currentPage || pageCapacity(currentPage).isFull) { setSyncError('Esta cara ya contiene cuatro elementos. Elige otra hoja.'); return }
     savePage({ ...currentPage, elements: [...currentPage.elements, createElement(currentPage.id, type, currentPage.elements.length + 1, author)], updatedAt: new Date().toISOString() })
   }, [currentPage, savePage])
+  const addSticker = useCallback((stickerId: string, title: string, author?: AuthorIdentity) => {
+    if (!currentPage || pageCapacity(currentPage).isFull) { setSyncError('Esta cara ya contiene cuatro elementos. Elige otra hoja.'); return }
+    const element = createElement(currentPage.id, 'STICKER', currentPage.elements.length + 1, author)
+    element.stickerId = stickerId
+    element.content = title
+    savePage({ ...currentPage, elements: [...currentPage.elements, element], updatedAt: new Date().toISOString() })
+  }, [currentPage, savePage])
   const updateElementOnPage = useCallback((pageId: string, elementId: string, patch: Partial<Omit<AlbumElement, 'id' | 'pageId'>>, actorId?: string) => {
     const page = album?.pages.find((item) => item.id === pageId)
     const existing = page?.elements.find((element) => element.id === elementId)
@@ -100,5 +107,5 @@ export function useAlbum(localOnly = false, spreadMode = false) {
     return updateElementOnPage(pageId, elementId, { likedBy: likedBy.includes(actorId) ? likedBy.filter((id) => id !== actorId) : [...likedBy, actorId] })
   }, [album, updateElementOnPage])
 
-  return { album, currentPage, bookState, pageNumber, isPresenting, isPaused, syncError, usesFirebase: !localOnly && isFirebaseConfigured, open, next, previous, goTo, setPaper, addElement, updateElement, updateElementOnPage, deleteElement, deleteOwnedElement, moveOwnedElement, toggleLike, startPresentation: () => { if (bookState !== 'PAGE') open(); setIsPresenting(true); setIsPaused(false) }, pausePresentation: () => setIsPaused(true), resumePresentation: () => setIsPaused(false), stopPresentation: () => { setIsPresenting(false); setIsPaused(false) } }
+  return { album, currentPage, bookState, pageNumber, isPresenting, isPaused, syncError, usesFirebase: !localOnly && isFirebaseConfigured, open, next, previous, goTo, setPaper, addElement, addSticker, updateElement, updateElementOnPage, deleteElement, deleteOwnedElement, moveOwnedElement, toggleLike, startPresentation: () => { if (bookState !== 'PAGE') open(); setIsPresenting(true); setIsPaused(false) }, pausePresentation: () => setIsPaused(true), resumePresentation: () => setIsPaused(false), stopPresentation: () => { setIsPresenting(false); setIsPaused(false) } }
 }

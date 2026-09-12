@@ -31,3 +31,11 @@ El lector compone pliegos de dos caras independientes: la navegación avanza de 
 La lectura pública de `/album` está temporalmente bloqueada mediante `albumAccess.ts` hasta que termine el evento y se consoliden las fotografías. Esto no afecta al editor de desarrollo, que permanece activo. El estado se sustituirá después por una decisión administrada desde Firestore.
 
 `/explorar` es el centro público y sólo lista experiencias públicas. `/admin/experiencias` es el centro administrativo temporal para desarrollo; su visibilidad se decidirá después con el rol autenticado de Firebase, no por la ruta por sí sola.
+
+## Sticker Library
+
+`src/features/stickers` encapsula la biblioteca comunitaria. El dominio, la validación, los contratos de repositorio, los servicios y los componentes visuales no dependen de las páginas que los consumen. `/contribute`, `/explorar` y el editor de la libreta componen esos componentes sin acceder directamente a `localStorage` ni a Firebase.
+
+`StickerRepository` gobierna metadata y moderación; `StickerStorageRepository` gobierna el archivo binario. Los adaptadores temporales `LocalStickerRepository` y `LocalStickerStorageRepository` son el único punto que usa almacenamiento del navegador. Cuando el plan permita Firebase Storage, el composition root de la feature podrá cambiar a adaptadores Firebase sin reescribir la UI.
+
+Los archivos comunitarios se validan como PNG o WEBP mediante extensión, MIME, firma binaria y decodificación real. El límite cliente actual es 1 MB y 32–1024 px por lado. Una integración real deberá repetir estas validaciones en backend y Storage Rules, generar los nombres internamente y reservar aprobación y eliminación para administración.
