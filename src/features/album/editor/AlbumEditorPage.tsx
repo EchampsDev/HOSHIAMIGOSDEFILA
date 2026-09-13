@@ -2,12 +2,10 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 import { Link } from 'react-router-dom'
 import { AlbumPaper } from '../components/AlbumPaper'
 import type { AlbumElement, AlbumElementType, AuthorIdentity, ElementLayout } from '../domain/types'
-import { clampLayout, createElement } from '../domain/types'
+import { clampLayout } from '../domain/types'
 import { useAlbum } from '../hooks/useAlbum'
 import { useAdminSession } from '../../access/useAdminSession'
 import { readLocalParticipationSettings, writeLocalParticipationSettings } from '../data/localParticipation'
-import { readPendingSubmissions, writePendingSubmissions, type PendingSubmission } from '../data/localModeration'
-import { LocalAlbumRepository } from '../repositories/LocalAlbumRepository'
 import { usePublicAlbumAccess } from '../hooks/usePublicAlbumAccess'
 import { experienceLaunch } from '../../landing/data/experienceLaunch'
 import type { CommunitySticker } from '../../stickers/domain/types'
@@ -66,13 +64,5 @@ function AlbumEditorWorkspace() {
 }
 
 export function AlbumEditorPage() {
-  const [pending, setPending] = useState<PendingSubmission[]>(() => readPendingSubmissions())
-  const [review, setReview] = useState<PendingSubmission | null>(null)
-  const approve = async (submission: PendingSubmission) => {
-    const repository = new LocalAlbumRepository(); const album = await repository.getAlbum()
-    for (const pageNumber of submission.pageNumbers) { const page = album.pages[pageNumber - 1]; const element = createElement(page.id, submission.type, page.elements.length + 1, submission.author); element.content = submission.content || element.content; element.media = submission.media; page.elements.push(element); await repository.savePage({ ...page, updatedAt: new Date().toISOString() }) }
-    const next = pending.filter((item) => item.id !== submission.id); setPending(next); writePendingSubmissions(next)
-  }
-  const reject = (id: string) => { const next = pending.filter((item) => item.id !== id); setPending(next); writePendingSubmissions(next) }
-  return <>{review && <div className="moderation-preview" role="dialog" aria-modal="true"><div><button type="button" onClick={() => setReview(null)}>Cerrar</button><p>VISTA PREVIA · PENDIENTE</p><h2>{review.type}</h2><p>Autor: {review.author.displayName ?? 'Anónimo'} · páginas {review.pageNumbers.join(', ')}</p>{review.type === 'PHOTO' && review.content?.startsWith('data:image/') ? <img src={review.content} alt="Vista previa" /> : <p>{review.content || 'Sin texto'}</p>}<button type="button" onClick={() => { void approve(review); setReview(null) }}>Aprobar y publicar</button></div></div>}<section className="moderation-panel"><p>HERRAMIENTA INTERNA · SEGURIDAD</p><h2>Publicaciones pendientes · {pending.length}</h2>{pending.length ? pending.map((item) => <article key={item.id}><b>{item.type}</b><small>{item.author.displayName ?? 'Anónimo'} · páginas {item.pageNumbers.join(', ')}</small>{item.type === 'PHOTO' && item.content?.startsWith('data:image/') ? <img src={item.content} alt="Pendiente de revisión" /> : <p>{item.content || 'Sin texto'}</p>}<button type="button" onClick={() => setReview(item)}>Revisar elemento</button><button type="button" onClick={() => void approve(item)}>Aprobar y publicar</button><button type="button" onClick={() => reject(item.id)}>Rechazar</button></article>) : <p>No hay recuerdos pendientes.</p>}</section><StickerModerationPanel /><AlbumEditorWorkspace /></>
+  return <><StickerModerationPanel /><AlbumEditorWorkspace /></>
 }

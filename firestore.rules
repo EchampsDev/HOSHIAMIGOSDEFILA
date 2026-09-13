@@ -18,6 +18,14 @@ service cloud.firestore {
       return signedIn() && exists(/databases/$(database)/documents/userRoles/$(request.auth.uid))
         && get(/databases/$(database)/documents/userRoles/$(request.auth.uid)).data.role == 'SPECIAL';
     }
+    function validSetlistEntry(entry) {
+      return entry is map
+        && entry.keys().hasAll(['id', 'title'])
+        && entry.keys().hasOnly(['id', 'title', 'coverUrl'])
+        && entry.id is string && entry.id.size() <= 160
+        && entry.title is string && entry.title.size() <= 180
+        && (!('coverUrl' in entry) || (entry.coverUrl is string && entry.coverUrl.size() <= 500));
+    }
 
     // Admin roles are bootstrapped from the Firebase console or Admin SDK only.
     match /admins/{userId} {
@@ -105,6 +113,70 @@ service cloud.firestore {
         && request.resource.data.moderationStatus == 'PENDING'
         && request.resource.data.participantId == request.auth.uid;
       allow update, delete: if isAdmin();
+    }
+
+    // Bandeja privada de aportaciones: el usuario sólo crea su propio envío
+    // pendiente; administración es la única autoridad que modera y publica.
+    match /contributions/{contributionId} {
+      allow get: if signedIn() && (resource.data.participantId == request.auth.uid || isAdmin());
+      allow list: if isAdmin();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasAll(['id', 'participantId', 'author', 'type', 'pageNumber', 'status', 'createdAt', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['id', 'participantId', 'author', 'type', 'pageNumber', 'status', 'createdAt', 'updatedAt', 'content', 'media', 'setlist', 'styleVariant', 'stickerId'])
+        && request.resource.data.id == contributionId
+        && contributionId.size() <= 100
+        && request.resource.data.participantId == request.auth.uid
+        && request.resource.data.author is map
+        && request.resource.data.author.keys().hasOnly(['participantId', 'displayName', 'age'])
+        && request.resource.data.author.participantId == request.auth.uid
+        && (!('displayName' in request.resource.data.author) || (request.resource.data.author.displayName is string && request.resource.data.author.displayName.size() <= 100))
+        && (!('age' in request.resource.data.author) || (request.resource.data.author.age is int && request.resource.data.author.age >= 1 && request.resource.data.author.age <= 120))
+        && request.resource.data.status == 'PENDING'
+        && request.resource.data.type in ['PHOTO', 'POST_IT', 'STICKER', 'TEXT', 'SETLIST']
+        && request.resource.data.pageNumber is int
+        && request.resource.data.pageNumber >= 1
+        && request.resource.data.pageNumber <= 100
+        && request.resource.data.createdAt is string
+        && request.resource.data.updatedAt is string
+        && (!('content' in request.resource.data) || (request.resource.data.content is string && request.resource.data.content.size() <= 500))
+        && ((request.resource.data.type == 'SETLIST'
+          && request.resource.data.setlist is list
+          && request.resource.data.setlist.size() == 3
+          && validSetlistEntry(request.resource.data.setlist[0])
+          && validSetlistEntry(request.resource.data.setlist[1])
+          && validSetlistEntry(request.resource.data.setlist[2]))
+          || (request.resource.data.type != 'SETLIST' && !('setlist' in request.resource.data)))
+        && (!('styleVariant' in request.resource.data) || (request.resource.data.styleVariant is string && request.resource.data.styleVariant.size() <= 40))
+        && (!('stickerId' in request.resource.data) || (request.resource.data.stickerId is string && request.resource.data.stickerId.size() <= 160))
+        && ((request.resource.data.type == 'PHOTO' && request.resource.data.media is map
+          && request.resource.data.media.keys().hasAll(['provider', 'objectKey', 'downloadUrl', 'mimeType', 'fileSize', 'originalWidth', 'originalHeight'])
+          && request.resource.data.media.keys().hasOnly(['provider', 'objectKey', 'downloadUrl', 'mimeType', 'fileSize', 'originalWidth', 'originalHeight', 'displayWidth', 'displayHeight'])
+          && request.resource.data.media.provider == 'r2'
+          && request.resource.data.media.objectKey is string
+          && request.resource.data.media.objectKey.matches('photos/' + contributionId + '[.](jpg|png|webp)')
+          && request.resource.data.media.downloadUrl is string && request.resource.data.media.downloadUrl.size() <= 500
+          && request.resource.data.media.mimeType in ['image/jpeg', 'image/png', 'image/webp']
+          && request.resource.data.media.fileSize is int && request.resource.data.media.fileSize > 0 && request.resource.data.media.fileSize <= 5242880
+          && request.resource.data.media.originalWidth is int && request.resource.data.media.originalWidth > 0
+          && request.resource.data.media.originalHeight is int && request.resource.data.media.originalHeight > 0)
+          || (request.resource.data.type != 'PHOTO' && !('media' in request.resource.data)));
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reviewedAt', 'reviewedBy', 'updatedAt'])
+        && request.resource.data.status in ['APPROVED', 'REJECTED'];
+      allow delete: if isAdmin();
+    }
+
+    // Proyección mínima consultada por el Worker para servir únicamente fotos
+    // ya aprobadas, sin exponer el contenido privado de moderación.
+    match /approvedMedia/{mediaId} {
+      allow get: if true;
+      allow list: if false;
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasOnly(['objectKey', 'approvedAt'])
+        && request.resource.data.objectKey is string
+        && request.resource.data.objectKey.matches('photos/' + mediaId + '[.](jpg|png|webp)')
+        && request.resource.data.approvedAt is string;
+      allow delete: if isAdmin();
     }
 
     // Fuente editorial privada. Sólo administración puede crear o mutar noticias.

@@ -187,13 +187,23 @@ async function canReadPhoto(request, object, env) {
   } catch { return false }
 }
 
+async function isApprovedPhoto(key, env) {
+  const mediaId = key.match(/^photos\/([0-9a-f-]+)\./)?.[1]
+  if (!mediaId) return false
+  const response = await fetch(firestoreDocumentUrl(env, `approvedMedia/${encodeURIComponent(mediaId)}`))
+  if (!response.ok) return false
+  const document = await response.json()
+  return document.fields?.objectKey?.stringValue === key
+}
+
 async function serveObject(request, env, key) {
   const object = await env.MEDIA_BUCKET.get(key)
   if (!object) return errorResponse('Archivo no encontrado.', 404)
-  if (key.startsWith('photos/') && !(await canReadPhoto(request, object, env))) return errorResponse('No tienes permiso para ver esta fotografía.', 403)
+  const approvedPhoto = key.startsWith('photos/') && await isApprovedPhoto(key, env)
+  if (key.startsWith('photos/') && !approvedPhoto && !(await canReadPhoto(request, object, env))) return errorResponse('No tienes permiso para ver esta fotografía.', 403)
   const headers = new Headers()
   headers.set('Content-Type', object.httpMetadata?.contentType || 'application/octet-stream')
-  headers.set('Cache-Control', key.startsWith('setlist-covers/') ? 'public, max-age=31536000, immutable' : 'private, no-store')
+  headers.set('Cache-Control', key.startsWith('setlist-covers/') || approvedPhoto ? 'public, max-age=31536000, immutable' : 'private, no-store')
   const etag = object.httpEtag || object.etag
   if (etag) headers.set('ETag', etag)
   return new Response(request.method === 'HEAD' ? null : object.body, { headers })

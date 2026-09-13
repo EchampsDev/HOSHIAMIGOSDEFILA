@@ -60,7 +60,6 @@ export class CloudflareR2PhotoStorageRepository implements PhotoStorageRepositor
   async resolvePhoto(media: MediaMetadata, firebaseIdToken?: string) {
     if (!media.objectKey || !media.downloadUrl) return null
     const ownerToken = readTokens()[media.objectKey]
-    if (!ownerToken) return null
     const response = await fetch(media.downloadUrl, { headers: {
       ...(ownerToken ? { 'X-Media-Token': ownerToken } : {}),
       ...(firebaseIdToken ? { Authorization: `Bearer ${firebaseIdToken}` } : {}),

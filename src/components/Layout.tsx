@@ -4,6 +4,7 @@ import { FourPointMark } from './FourPointMark'
 import { BrattypolitanExperienceLockup } from './BrattypolitanWordmark'
 import { useGoogleSession } from '../features/access/useGoogleSession'
 import { isConstellationContributor } from '../features/access/roles'
+import { AdminNotificationCenter } from '../features/contributions/components/AdminNotificationCenter'
 
 const publicAreas = [
   { to: '/album', eyebrow: 'LECTURA', title: 'Libreta digital', copy: 'Consulta el archivo colectivo y sus recuerdos.' },
@@ -12,6 +13,13 @@ const publicAreas = [
 ]
 
 export function Layout({ children }: PropsWithChildren) {
+  return <>{children}<footer className="site-footer" data-scroll-reveal>
+    <span>BRATTY · CDMX · 2026 <FourPointMark className="footer-four-point-mark" /></span>
+    <span className="site-footer-mark" role="img" aria-label="Símbolo HOSHI de Bratty" />
+  </footer></>
+}
+
+export function AppChrome({ children }: PropsWithChildren) {
   const session = useGoogleSession()
   const [isExploreOpen, setIsExploreOpen] = useState(false)
   const [isCompact, setIsCompact] = useState(false)
@@ -29,11 +37,12 @@ export function Layout({ children }: PropsWithChildren) {
     return () => window.removeEventListener('scroll', syncHeader)
   }, [])
 
-  return <main className="site-shell">
+  return <div className="site-shell">
     <header className={`topbar${isCompact ? ' is-compact' : ''}`}>
       <Link to="/" className="brand"><BrattypolitanExperienceLockup /></Link>
       <nav className="topbar-actions" aria-label="Navegación">
         <button type="button" className="quiet-link explore-toggle" onClick={() => setIsExploreOpen(true)} aria-expanded={isExploreOpen} aria-controls="explore-sidebar">Explorar</button>
+        {session.isAdmin && <AdminNotificationCenter />}
         {session.isAdmin && <Link className="quiet-link" to="/admin/experiencias">Herramientas</Link>}
         {!session.isAdmin && isConstellationContributor(session.role) && <Link className="quiet-link" to="/taller-constelacion">Editor</Link>}
         {session.isConfigured && (session.user ? <button type="button" className="topbar-google" onClick={() => void session.signOut()} aria-label={`Cerrar sesión de ${session.user.displayName?.split(' ')[0] ?? 'Google'}`}><span className="topbar-google-full">Salir · {session.user.displayName?.split(' ')[0] ?? 'Google'}</span><span className="topbar-google-short">Salir</span></button> : <button type="button" className="topbar-google" onClick={() => void session.signIn()} aria-label="Accede con tu cuenta de Google"><span className="topbar-google-full">Accede con tu cuenta de Google</span><span className="topbar-google-short">Accede con Google</span></button>)}
@@ -41,11 +50,6 @@ export function Layout({ children }: PropsWithChildren) {
     </header>
     {session.error && <p className="session-error" role="alert">{session.error}</p>}
     {children}
-    <footer className="site-footer" data-scroll-reveal>
-      <span>BRATTY · CDMX · 2026 <FourPointMark className="footer-four-point-mark" /></span>
-      <span className="site-footer-mark" role="img" aria-label="Símbolo HOSHI de Bratty" />
-    </footer>
-
     <div className={`explore-drawer-layer ${isExploreOpen ? 'is-open' : ''}`} aria-hidden={!isExploreOpen}>
       <button type="button" className="explore-drawer-backdrop" tabIndex={isExploreOpen ? 0 : -1} aria-label="Cerrar explorador" onClick={() => setIsExploreOpen(false)} />
       <aside id="explore-sidebar" className="explore-drawer" aria-label="Explorar experiencias públicas" aria-modal="true" role="dialog">
@@ -60,5 +64,5 @@ export function Layout({ children }: PropsWithChildren) {
         </Link>)}</nav>
       </aside>
     </div>
-  </main>
+  </div>
 }

@@ -1,3 +1,4 @@
 import { BrowserRouter } from 'react-router-dom'
 import { AppRoutes } from './routes'
-export function App() { return <BrowserRouter><AppRoutes /></BrowserRouter> }
+import { AppChrome } from '../components/Layout'
+export function App() { return <BrowserRouter><AppChrome><AppRoutes /></AppChrome></BrowserRouter> }

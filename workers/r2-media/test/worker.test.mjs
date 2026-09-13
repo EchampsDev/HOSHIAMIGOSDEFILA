@@ -31,3 +31,32 @@ test('rechaza escapes URL malformados sin producir un error interno', async () =
   const response = await worker.fetch(new Request('https://media.example/v1/media/photos/%25zz.jpg'), env)
   assert.equal(response.status, 400)
 })
+
+test('sirve públicamente una foto sólo cuando Firestore confirma su aprobación', async () => {
+  const key = 'photos/123e4567-e89b-12d3-a456-426614174000.jpg'
+  const previousFetch = globalThis.fetch
+  globalThis.fetch = async (url) => String(url).includes('/approvedMedia/123e4567-e89b-12d3-a456-426614174000')
+    ? new Response(JSON.stringify({ fields: { objectKey: { stringValue: key } } }), { status: 200 })
+    : new Response(null, { status: 404 })
+  try {
+    const response = await worker.fetch(new Request(`https://media.example/v1/media/${key}`), {
+      ...env,
+      MEDIA_BUCKET: { get: async () => ({ body: new Uint8Array([255, 216, 255]), httpMetadata: { contentType: 'image/jpeg' }, etag: 'approved' }) },
+    })
+    assert.equal(response.status, 200)
+    assert.equal(response.headers.get('Cache-Control'), 'public, max-age=31536000, immutable')
+  } finally { globalThis.fetch = previousFetch }
+})
+
+test('mantiene privada una foto pendiente sin credenciales del propietario', async () => {
+  const key = 'photos/123e4567-e89b-12d3-a456-426614174001.jpg'
+  const previousFetch = globalThis.fetch
+  globalThis.fetch = async () => new Response(null, { status: 404 })
+  try {
+    const response = await worker.fetch(new Request(`https://media.example/v1/media/${key}`), {
+      ...env,
+      MEDIA_BUCKET: { get: async () => ({ body: new Uint8Array([255, 216, 255]), httpMetadata: { contentType: 'image/jpeg' }, customMetadata: {} }) },
+    })
+    assert.equal(response.status, 403)
+  } finally { globalThis.fetch = previousFetch }
+})

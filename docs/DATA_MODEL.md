@@ -32,6 +32,12 @@ La distribución se modela separadamente mediante `WhatsAppSubscriber`, `NewsDel
 
 El contrato `AlbumRepository` separa lectura/escritura de la UI. La implementación presente es local; una futura `FirestoreAlbumRepository` deberá persistir páginas, layouts y metadatos de media bajo reglas de usuario autenticado y administración.
 
+## Cola de aportaciones
+
+`contributions/{contributionId}` conserva `participantId`, `author`, `type`, `pageNumber`, contenido opcional, referencia R2 opcional, estado (`PENDING | APPROVED | REJECTED`) y marcas de creación/revisión. El identificador de una aportación fotográfica coincide con el UUID de `photos/<uuid>.<ext>` para que el Worker pueda resolver su estado sin realizar consultas abiertas. El propietario puede crear y consultar únicamente su documento; sólo administración puede listar y cambiar el estado.
+
+`approvedMedia/{contributionId}` es una proyección pública mínima con `objectKey` y `approvedAt`. No contiene autor, edad, texto ni decisiones internas. Se crea en la misma transacción que publica la aportación en la página y permite que el bucket R2 siga privado mientras el Worker sirve únicamente imágenes aprobadas.
+
 ## Sticker Library
 
 `CommunitySticker` es el activo reutilizable y conserva título, autor opcional, descripción, referencia del archivo, MIME, peso, dimensiones originales, nombre de descarga seguro, visibilidad (`PUBLIC | SPECIAL_ONLY | PRIVATE`) y moderación (`PENDING | APPROVED | REJECTED`). La consulta pública devuelve únicamente `PUBLIC + APPROVED`.

@@ -7,8 +7,7 @@ import { useGoogleSession } from '../features/access/useGoogleSession'
 import { useParticipationAccess } from '../features/album/hooks/useParticipationAccess'
 import { getSetlistAlbum, readSetlistTracks, setlistAlbumLabels, setlistAlbumOrder, type SetlistTrack } from '../features/album/data/localSetlistCatalog'
 import { resolveSetlistCoverUrl, setlistCatalogRepository } from '../features/album/repositories/SetlistCatalogRepository'
-import { LocalAlbumRepository } from '../features/album/repositories/LocalAlbumRepository'
-import { clampLayout, createElement, type AlbumElement, type AlbumElementType, type AuthorIdentity, type ElementLayout, type MediaMetadata, type SetlistEntry } from '../features/album/domain/types'
+import { type AlbumElementType, type AuthorIdentity } from '../features/album/domain/types'
 import { pageCapacity } from '../features/album/domain/types'
 import { getLocalParticipantId } from '../features/album/domain/participantIdentity'
 import { PageIndex } from '../features/album/components/PageIndex'
@@ -18,6 +17,7 @@ import { StickerPicker } from '../features/stickers/components/StickerPicker'
 import { StickerUploader } from '../features/stickers/components/StickerUploader'
 import { validatePhotoFile, type ValidatedPhotoFile } from '../features/media/domain/photoValidation'
 import { photoStorageRepository } from '../features/media/repositories'
+import { contributionRepository } from '../features/contributions/repositories'
 
 const TOP_SIZE = 3
 const WIZARD_TOTAL = 5
@@ -95,31 +95,6 @@ async function makePreview(tracks: SetlistTrack[], authorName: string, page: num
     context.fillText(track.title.slice(0, 18), x + 58, y + 292)
   }
   return canvas
-}
-
-type ContributionInput = { pageNumber: number; type: AlbumElementType; content?: string; author: AuthorIdentity; media?: MediaMetadata; legacyPhotoContent?: string; setlist?: SetlistEntry[]; styleVariant?: string; stickerId?: string }
-type ContributionStore = { save: (input: ContributionInput) => Promise<void> }
-const overlapRatio = (a: ElementLayout, b: ElementLayout) => { const width = Math.max(0, Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x)); const height = Math.max(0, Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y)); return width * height / Math.max(.001, Math.min(a.width * a.height, b.width * b.height)) }
-const placeElement = (element: AlbumElement, existing: AlbumElement[]) => { const candidates = [[.08, .08], [.54, .08], [.08, .38], [.54, .38], [.26, .22], [.14, .58], [.48, .58]]; const current = clampLayout(element.layout); const collisionAt = (layout: ElementLayout) => Math.max(0, ...existing.map((other) => overlapRatio(layout, other.layout))); const roomiest = candidates.map(([x, y]) => ({ layout: clampLayout({ ...current, x, y }) })).map(({ layout }) => ({ layout, collision: collisionAt(layout) })).sort((a, b) => a.collision - b.collision)[0]; return { ...(collisionAt(current) > .34 && roomiest ? roomiest.layout : current), zIndex: Math.max(0, ...existing.map((other) => other.layout.zIndex)) + 1 } }
-
-const localContributionStore: ContributionStore = {
-  async save(input) {
-    const repository = new LocalAlbumRepository()
-    const album = await repository.getAlbum()
-    const targetPage = album.pages[input.pageNumber - 1]
-    if (!targetPage) throw new Error('La página seleccionada no existe.')
-    if (pageCapacity(targetPage).isFull) throw new Error('La cara seleccionada ya contiene cuatro elementos.')
-    const element = createElement(targetPage.id, input.type, targetPage.elements.length + 1, input.author)
-    element.content = input.content || element.content
-    element.styleVariant = input.styleVariant ?? element.styleVariant
-    element.stickerId = input.stickerId
-    element.setlist = input.setlist
-    element.media = input.media
-    if (input.type === 'PHOTO') { element.content = input.legacyPhotoContent; element.layout = { ...element.layout, width: .42, height: .3 } }
-    if (input.type === 'SETLIST') element.layout = { ...element.layout, width: .76, height: .34 }
-    element.layout = placeElement(element, targetPage.elements)
-    await repository.savePage({ ...targetPage, elements: [...targetPage.elements, element], updatedAt: new Date().toISOString() })
-  },
 }
 
 function TrackCoverFlow({ tracks, selectedIds, onToggle }: { tracks: SetlistTrack[]; selectedIds: string[]; onToggle: (id: string) => void }) {
@@ -294,6 +269,7 @@ export function SimplePageSetlistContributePage() {
     } catch (error) { if ((error as DOMException).name !== 'AbortError') setMessage('No fue posible compartir la vista previa.') }
   }
   const saveElement = async () => {
+    if (!session.user) { setMessage('Accede con Google para enviar tu aportación a revisión.'); return }
     if (type === 'PHOTO' && !photo) { setMessage('Selecciona una foto de máximo 5 MB.'); return }
     if (type === 'STICKER' && !selectedSticker) { setMessage('Elige un sticker aprobado de la biblioteca.'); return }
     if (type !== 'PHOTO' && type !== 'STICKER' && !content.trim()) { setMessage('Escribe o selecciona el contenido de tu recuerdo.'); return }
@@ -302,8 +278,8 @@ export function SimplePageSetlistContributePage() {
       const identity = author()
       const firebaseIdToken = photo && session.user ? await session.user.getIdToken() : undefined
       storedPhoto = photo ? await photoStorageRepository.uploadPhoto(photo.file, photo.validation, identity.participantId, firebaseIdToken) : undefined
-      await localContributionStore.save({ pageNumber: page, type: type as AlbumElementType, content: type === 'STICKER' ? selectedSticker?.title : content, author: identity, media: storedPhoto?.media, legacyPhotoContent: storedPhoto?.legacyContent, styleVariant: type === 'POST_IT' ? postItColor : undefined, stickerId: selectedSticker?.id })
-      setMessage(`Recuerdo guardado en la página ${page}. ID: ${identity.participantId}`)
+      await contributionRepository.submit({ pageNumber: page, type: type as AlbumElementType, content: type === 'STICKER' ? selectedSticker?.title : content, author: identity, media: storedPhoto?.media, styleVariant: type === 'POST_IT' ? postItColor : undefined, stickerId: selectedSticker?.id })
+      setMessage(`Aportación enviada a revisión para la página ${page}.`)
       setContent('')
       setPhoto(null)
       setSelectedSticker(null)
@@ -313,11 +289,12 @@ export function SimplePageSetlistContributePage() {
     }
   }
   const sendTop = async () => {
+    if (!session.user) { setMessage('Accede con Google para enviar tu Top 3 a revisión.'); return }
     if (selectedTracks.length !== TOP_SIZE) { setMessage('Selecciona exactamente tres canciones antes de enviar.'); return }
     const identity = author()
     try {
-      await localContributionStore.save({ pageNumber: page, type: 'SETLIST', content: selectionTitle, author: identity, setlist: selectedTracks.map(({ id, title, coverUrl }) => ({ id, title, coverUrl })) })
-      setMessage(`Top 3 guardado en la página ${page}. ID: ${identity.participantId}`)
+      await contributionRepository.submit({ pageNumber: page, type: 'SETLIST', content: selectionTitle, author: identity, setlist: selectedTracks.map(({ id, title, coverUrl }) => ({ id, title, coverUrl })) })
+      setMessage(`Top 3 enviado a revisión para la página ${page}.`)
       setSelectedIds([])
       setPreview(false)
       setExpanded(false)
@@ -326,7 +303,7 @@ export function SimplePageSetlistContributePage() {
 
   return <Layout>
     <section className="content-card contribution">
-      <p className="eyebrow">ARCHIVO COLECTIVO · PRUEBA LOCAL</p>
+      <p className="eyebrow">ARCHIVO COLECTIVO · MODERACIÓN ACTIVA</p>
       <h1>Dejar un recuerdo</h1>
       {session.isAdmin && <section className="archive-admin-control"><p>Vista administradora · archivo {isOpen ? 'activo' : 'desactivado'}</p><button type="button" onClick={toggleCollectiveArchive}>{isOpen ? 'Desactivar archivo colectivo' : 'Activar archivo colectivo'}</button></section>}
       {!isOpen ? <p className="muted">La captura está cerrada por el equipo.</p> : <div className="contribution-form contribution-wizard">
