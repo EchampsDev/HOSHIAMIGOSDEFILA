@@ -1,4 +1,6 @@
-.album-experience, .album-editor-page { min-height: 100svh; color: #211a15; background: radial-gradient(circle at 50% 15%, #35251c 0, #110e0c 42%, #060606 100%); font-family: 'Space Grotesk', system-ui, sans-serif; }
+.site-shell:has(.album-experience)::before { content: ''; position: fixed; z-index: 0; inset: 0; pointer-events: none; background: radial-gradient(circle at 50% 15%, #35251c 0, #110e0c 42%, #060606 100%); }
+.album-experience, .album-editor-page { min-height: 100svh; color: #211a15; font-family: 'Space Grotesk', system-ui, sans-serif; }
+.album-editor-page { background: radial-gradient(circle at 50% 15%, #35251c 0, #110e0c 42%, #060606 100%); }
 .album-experience { padding: clamp(18px, 4vw, 42px); display: grid; align-content: space-between; gap: 28px; }
 .album-header, .album-editor-header { display: flex; align-items: start; justify-content: space-between; gap: 18px; color: #f5ebdc; font-family: 'DM Mono', monospace; font-size: .64rem; letter-spacing: .1em; }
 .album-header a, .album-editor-header a { color: inherit; text-decoration: none; }
