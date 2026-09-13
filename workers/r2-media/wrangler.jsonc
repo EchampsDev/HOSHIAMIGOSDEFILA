@@ -1,0 +1,29 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "brattypolitan-r2-media",
+  "main": "src/index.mjs",
+  "compatibility_date": "2026-09-13",
+  "workers_dev": true,
+  "vars": {
+    "ALLOWED_ORIGINS": "https://brattypolitan-experience.web.app,https://brattypolitan-experience.firebaseapp.com,http://localhost:5173",
+    "FIREBASE_PROJECT_ID": "brattypolitan-experience"
+  },
+  "r2_buckets": [
+    {
+      "binding": "MEDIA_BUCKET",
+      "bucket_name": "brattypolitan-media"
+    }
+  ],
+  "ratelimits": [
+    {
+      "name": "PHOTO_UPLOAD_LIMITER",
+      "namespace_id": "2101",
+      "simple": { "limit": 10, "period": 60 }
+    },
+    {
+      "name": "COVER_UPLOAD_LIMITER",
+      "namespace_id": "2102",
+      "simple": { "limit": 30, "period": 60 }
+    }
+  ]
+}

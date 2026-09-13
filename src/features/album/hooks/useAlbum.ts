@@ -4,6 +4,7 @@ import { LocalAlbumRepository } from '../repositories/LocalAlbumRepository'
 import { FirestoreAlbumRepository } from '../repositories/FirestoreAlbumRepository'
 import type { AlbumRepository } from '../repositories/AlbumRepository'
 import { isFirebaseConfigured } from '../../../infrastructure/firebase/client'
+import { photoStorageRepository } from '../../media/repositories'
 
 export function useAlbum(localOnly = false, spreadMode = false) {
   const repository = useMemo<AlbumRepository>(() => !localOnly && isFirebaseConfigured ? new FirestoreAlbumRepository() : new LocalAlbumRepository(), [localOnly])
@@ -84,7 +85,12 @@ export function useAlbum(localOnly = false, spreadMode = false) {
     const page = album?.pages.find((item) => item.id === pageId)
     const element = page?.elements.find((item) => item.id === elementId)
     if (!page || !element || !isElementOwner(element, actorId)) return false
-    return persistPages([{ ...page, elements: page.elements.filter((item) => item.id !== elementId), updatedAt: new Date().toISOString() }])
+    const deleted = await persistPages([{ ...page, elements: page.elements.filter((item) => item.id !== elementId), updatedAt: new Date().toISOString() }])
+    if (deleted && element.type === 'PHOTO' && element.media?.provider === 'r2') {
+      try { await photoStorageRepository.deletePhoto(element.media) }
+      catch { setSyncError('La publicación se eliminó, pero no fue posible limpiar su fotografía de R2.') }
+    }
+    return deleted
   }, [album, persistPages])
   const moveOwnedElement = useCallback(async (sourcePageId: string, elementId: string, targetPageId: string, actorId: string) => {
     const source = album?.pages.find((page) => page.id === sourcePageId)

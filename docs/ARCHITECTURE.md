@@ -39,3 +39,11 @@ La lectura pública de `/album` está temporalmente bloqueada mediante `albumAcc
 `StickerRepository` gobierna metadata y moderación; `StickerStorageRepository` gobierna el archivo binario. Los adaptadores temporales `LocalStickerRepository` y `LocalStickerStorageRepository` son el único punto que usa almacenamiento del navegador. Cuando el plan permita Firebase Storage, el composition root de la feature podrá cambiar a adaptadores Firebase sin reescribir la UI.
 
 Los archivos comunitarios se validan como PNG o WEBP mediante extensión, MIME, firma binaria y decodificación real. El límite cliente actual es 1 MB y 32–1024 px por lado. Una integración real deberá repetir estas validaciones en backend y Storage Rules, generar los nombres internamente y reservar aprobación y eliminación para administración.
+
+## Media en Cloudflare R2
+
+Las fotografías de recuerdos y las portadas nuevas del catálogo musical usan el contrato de `src/features/media`; la UI no conoce credenciales, bindings ni rutas internas de R2. Producción utiliza la URL estable del Worker `brattypolitan-r2-media`; `VITE_R2_MEDIA_API_URL` permite sustituirla por entorno. En desarrollo, sin esa variable, se conserva el adaptador local y también se mantienen compatibles los recuerdos históricos en formato `data:image/...`.
+
+El Worker independiente vive en `workers/r2-media` y accede al bucket privado `brattypolitan-media` mediante un binding. Las fotografías quedan bajo `photos/` y requieren el token privado del navegador propietario, una sesión Firebase del mismo propietario o una sesión administradora para ser leídas. Las portadas viven bajo `setlist-covers/<album>/` y el Worker permite lectura pública con CORS para mantener compatibles el Cover Flow y las vistas previas generadas en Canvas. La carga y eliminación de portadas exige un ID token de Firebase perteneciente a una cuenta administradora; el Worker consulta los documentos de rol existentes en modo lectura y nunca escribe autenticación ni roles.
+
+Los registros guardan únicamente `provider`, `objectKey`, MIME, tamaño, dimensiones y una URL estable del Worker. Los tokens privados de lectura de fotografías permanecen en el navegador propietario y nunca se escriben en Firestore. Las rutas antiguas de GitHub continúan resolviéndose para no romper catálogos existentes.

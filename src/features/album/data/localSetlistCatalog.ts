@@ -1,6 +1,6 @@
 export const setlistAlbumOrder = ['DELUSION', 'TRES', 'TDBN', 'HOSHI'] as const
 export type SetlistAlbum = typeof setlistAlbumOrder[number]
-export type SetlistTrack = { id: string; title: string; coverUrl?: string; album?: SetlistAlbum | 'OTHER'; createdAt: string }
+export type SetlistTrack = { id: string; title: string; coverUrl?: string; coverObjectKey?: string; album?: SetlistAlbum | 'OTHER'; createdAt: string }
 
 export const setlistAlbumLabels: Record<SetlistAlbum, string> = {
   DELUSION: 'Delusion',

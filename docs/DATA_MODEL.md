@@ -20,7 +20,11 @@ El catálogo musical admite `album: DELUSION | TRES | TDBN | HOSHI` (y `OTHER` �
 
 ## Noticias
 
-`NewsItem` conserva estado editorial (`draft`, `published`, `archived`), visibilidad adicional, orden, slug estable, fechas de creación/actualización/publicación, una fecha editorial opcional (`displayDate`), autor de publicación, imágenes ordenadas, enlaces sociales y un enlace externo editorial opcional (`externalUrl` + `externalLabel`). `displayDate` controla únicamente la fecha mostrada al público; `publishedAt` mantiene la auditoría de la publicación real. `news` permanece restringida a administración y `publishedNews` es la proyección pública. Cada `NewsImage` admite `provider` y `storagePath` opcionales para distinguir recursos versionados en GitHub de una futura migración a Firebase Storage sin cambiar el contrato visual.
+`NewsItem` conserva estado editorial (`draft`, `published`, `archived`), visibilidad adicional, orden, slug estable, fechas de creación/actualización/publicación, una fecha editorial opcional (`displayDate`), autor de publicación, imágenes ordenadas, enlaces sociales y un enlace externo editorial opcional (`externalUrl` + `externalLabel`). `displayDate` controla únicamente la fecha mostrada al público; `publishedAt` mantiene la auditoría de la publicación real. `news` permanece restringida a administración y `publishedNews` es la proyección pública. Cada `NewsImage` admite `provider` y `storagePath` opcionales para distinguir recursos versionados en GitHub de una futura migración a Firebase Storage sin cambiar el contrato visual. Esta integración R2 no modifica imágenes de noticias.
+
+Las fotografías de `AlbumElement` extienden `MediaMetadata` con `provider: 'local' | 'r2'` y `objectKey`. El binario vive exclusivamente en R2; Firestore o el repositorio local sólo conservan la referencia, MIME, peso y dimensiones. El token privado que permite leer una foto no forma parte del modelo persistido compartido.
+
+`SetlistTrack` puede conservar `coverObjectKey` junto a `coverUrl`. `album` es la clasificación autoritativa para portadas R2 con nombres internos UUID; la inferencia histórica por `Hoshi.jpg`, `tres.jpg`, `tdbn.jpg` o `delusion.jpg` se mantiene únicamente como compatibilidad.
 
 `newsSlugs/{slug}` reserva cada URL mediante `newsId` y `createdAt` dentro de la misma transacción del borrador o publicación. La reserva evita rutas duplicadas y se conserva tras un borrado lógico para no reasignar silenciosamente una URL que ya pudo compartirse.
 

@@ -17,6 +17,8 @@ export type MediaMetadata = {
   displayHeight?: number
   mimeType: string
   fileSize: number
+  provider?: 'local' | 'r2'
+  objectKey?: string
   storagePath?: string
   downloadUrl?: string
 }
