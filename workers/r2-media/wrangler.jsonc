@@ -24,6 +24,11 @@
       "name": "COVER_UPLOAD_LIMITER",
       "namespace_id": "2102",
       "simple": { "limit": 30, "period": 60 }
+    },
+    {
+      "name": "NEWS_IMAGE_UPLOAD_LIMITER",
+      "namespace_id": "2103",
+      "simple": { "limit": 30, "period": 60 }
     }
   ]
 }

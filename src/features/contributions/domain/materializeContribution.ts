@@ -26,6 +26,7 @@ export function materializeContribution(contribution: ContributionRecord, page: 
     setlist: contribution.setlist,
     styleVariant: contribution.styleVariant ?? element.styleVariant,
     stickerId: contribution.stickerId,
+    visibility: contribution.visibility,
   })
   if (contribution.type === 'PHOTO') element.layout = { ...element.layout, width: .42, height: .3 }
   if (contribution.type === 'SETLIST') element.layout = { ...element.layout, width: .76, height: .34 }

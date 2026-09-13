@@ -1,5 +1,5 @@
 export type NewsStatus = 'draft' | 'published' | 'archived'
-export type NewsImageProvider = 'github' | 'firebase'
+export type NewsImageProvider = 'github' | 'firebase' | 'r2'
 
 export type NewsImage = {
   url: string
@@ -7,6 +7,7 @@ export type NewsImage = {
   order: number
   provider?: NewsImageProvider
   storagePath?: string
+  objectKey?: string
 }
 
 export type NewsItem = {

@@ -4,7 +4,7 @@ import { pageCapacity, type AlbumDocument, type AlbumElement, type ScrapbookPage
 
 const STORAGE_KEY = 'brattypolitan.scrapbook.v1'
 const copy = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T
-const normalize = (album: AlbumDocument): AlbumDocument => ({ ...album, pages: album.pages.map((page) => ({ ...page, elements: page.elements.map((element) => ({ ...element, likedBy: element.likedBy ?? [], author: element.author ?? { participantId: 'legacy-unassigned' } })) })) })
+const normalize = (album: AlbumDocument): AlbumDocument => ({ ...album, pages: album.pages.map((page) => ({ ...page, elements: page.elements.map((element) => ({ ...element, likedBy: element.likedBy ?? [], visibility: element.visibility ?? 'PUBLIC', author: element.author ?? { participantId: 'legacy-unassigned' } })) })) })
 
 export class LocalAlbumRepository implements AlbumRepository {
   private async read(): Promise<AlbumDocument> {

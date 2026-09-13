@@ -60,3 +60,18 @@ test('mantiene privada una foto pendiente sin credenciales del propietario', asy
     assert.equal(response.status, 403)
   } finally { globalThis.fetch = previousFetch }
 })
+
+test('mantiene privada una foto aprobada marcada como PRIVATE para visitantes', async () => {
+  const key = 'photos/123e4567-e89b-12d3-a456-426614174002.jpg'
+  const previousFetch = globalThis.fetch
+  globalThis.fetch = async (url) => String(url).includes('/approvedMedia/123e4567-e89b-12d3-a456-426614174002')
+    ? new Response(JSON.stringify({ fields: { objectKey: { stringValue: key }, visibility: { stringValue: 'PRIVATE' } } }), { status: 200 })
+    : new Response(null, { status: 404 })
+  try {
+    const response = await worker.fetch(new Request(`https://media.example/v1/media/${key}`), {
+      ...env,
+      MEDIA_BUCKET: { get: async () => ({ body: new Uint8Array([255, 216, 255]), httpMetadata: { contentType: 'image/jpeg' }, etag: 'private-approved' }) },
+    })
+    assert.equal(response.status, 403)
+  } finally { globalThis.fetch = previousFetch }
+})

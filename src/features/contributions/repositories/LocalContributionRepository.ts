@@ -10,7 +10,10 @@ const EVENT = 'brattypolitan-contributions-change'
 const copy = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T
 
 function read(): ContributionRecord[] {
-  try { const value = JSON.parse(localStorage.getItem(KEY) ?? '[]'); return Array.isArray(value) ? value : [] }
+  try {
+    const value = JSON.parse(localStorage.getItem(KEY) ?? '[]')
+    return Array.isArray(value) ? value.map((item: ContributionRecord) => ({ ...item, visibility: item.visibility ?? 'PUBLIC' })) : []
+  }
   catch { return [] }
 }
 function write(items: ContributionRecord[]) { localStorage.setItem(KEY, JSON.stringify(items)); window.dispatchEvent(new Event(EVENT)) }

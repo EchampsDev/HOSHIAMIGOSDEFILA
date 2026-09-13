@@ -3,6 +3,7 @@ export type AlbumElementType = 'PHOTO' | 'POST_IT' | 'HANDWRITTEN_NOTE' | 'DRAWI
 
 export type SetlistEntry = { id: string; title: string; coverUrl?: string }
 export type BookState = 'CLOSED' | 'PAGE' | 'BACK_COVER'
+export type ContentVisibility = 'PUBLIC' | 'PRIVATE'
 
 export type AuthorIdentity = {
   participantId: string
@@ -45,6 +46,7 @@ export type AlbumElement = {
   stickerId?: string
   setlist?: SetlistEntry[]
   likedBy?: string[]
+  visibility?: ContentVisibility
   contentRevealed?: boolean
   layout: ElementLayout
   createdAt: string

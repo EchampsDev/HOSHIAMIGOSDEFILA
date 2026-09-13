@@ -25,7 +25,10 @@ export class FirestoreContributionRepository implements ContributionRepository {
   subscribePending(listener: (items: ContributionRecord[]) => void, onError?: (error: unknown) => void) {
     this.ensureDatabase()
     return onSnapshot(query(collection(this.database!, 'contributions'), where('status', '==', 'PENDING')), (snapshot) => {
-      listener(snapshot.docs.map((item) => item.data() as ContributionRecord).sort((a, b) => b.createdAt.localeCompare(a.createdAt)))
+      listener(snapshot.docs.map((item) => {
+        const data = item.data() as ContributionRecord
+        return { ...data, visibility: data.visibility ?? 'PUBLIC' }
+      }).sort((a, b) => b.createdAt.localeCompare(a.createdAt)))
     }, (error) => onError?.(error))
   }
 
@@ -35,7 +38,8 @@ export class FirestoreContributionRepository implements ContributionRepository {
       const contributionRef = doc(this.database!, 'contributions', id)
       const contributionSnapshot = await transaction.get(contributionRef)
       if (!contributionSnapshot.exists()) throw new Error('La aportación ya no existe.')
-      const contribution = contributionSnapshot.data() as ContributionRecord
+      const storedContribution = contributionSnapshot.data() as ContributionRecord
+      const contribution: ContributionRecord = { ...storedContribution, visibility: storedContribution.visibility ?? 'PUBLIC' }
       if (contribution.status !== 'PENDING') return
       const defaultPage = createDefaultAlbum().pages[contribution.pageNumber - 1]
       if (!defaultPage) throw new Error('La página seleccionada no existe.')
@@ -47,7 +51,7 @@ export class FirestoreContributionRepository implements ContributionRepository {
       const now = new Date().toISOString()
       transaction.set(pageRef, clean({ ...page, elements: [...page.elements, element], updatedAt: now }))
       if (contribution.type === 'PHOTO' && contribution.media?.provider === 'r2' && contribution.media.objectKey) {
-        transaction.set(doc(this.database!, 'approvedMedia', contribution.id), { objectKey: contribution.media.objectKey, approvedAt: now })
+        transaction.set(doc(this.database!, 'approvedMedia', contribution.id), { objectKey: contribution.media.objectKey, visibility: contribution.visibility, approvedAt: now })
       }
       transaction.update(contributionRef, { status: 'APPROVED', reviewedAt: now, reviewedBy: adminUid, updatedAt: now })
     })

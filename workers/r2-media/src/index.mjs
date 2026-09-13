@@ -13,7 +13,7 @@ const requestOrigin = (request) => request.headers.get('Origin') || ''
 const isAllowedOrigin = (request, env) => allowedOrigins(env).has(requestOrigin(request))
 const corsHeaders = (request, env) => isAllowedOrigin(request, env) ? {
   'Access-Control-Allow-Origin': requestOrigin(request),
-  'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Album, X-Media-Token, X-Participant-Id',
+  'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Album, X-Media-Token, X-News-Id, X-Participant-Id',
   'Access-Control-Allow-Methods': 'GET, HEAD, POST, DELETE, OPTIONS',
   'Access-Control-Expose-Headers': 'ETag',
   'Access-Control-Max-Age': '3600',
@@ -82,6 +82,19 @@ async function isAdministrator(identity, env) {
   if (!role.ok) return false
   const document = await role.json()
   return document.fields?.role?.stringValue === 'ADMIN'
+}
+
+async function canInspectPrivateMedia(identity, env) {
+  if (!identity) return false
+  const headers = { Authorization: `Bearer ${identity.token}` }
+  const [admin, role] = await Promise.all([
+    fetch(firestoreDocumentUrl(env, `admins/${encodeURIComponent(identity.uid)}`), { headers }),
+    fetch(firestoreDocumentUrl(env, `userRoles/${encodeURIComponent(identity.uid)}`), { headers }),
+  ])
+  if (admin.ok) return true
+  if (!role.ok) return false
+  const document = await role.json()
+  return ['ADMIN', 'SPECIAL'].includes(document.fields?.role?.stringValue)
 }
 
 async function isParticipationOpen(env) {
@@ -167,10 +180,28 @@ async function uploadSetlistCover(request, env) {
   return json({ objectKey, readUrl: `${new URL(request.url).origin}/v1/media/${objectKey}`, ...body.validation }, 201)
 }
 
+async function uploadNewsImage(request, env) {
+  if (!isAllowedOrigin(request, env)) return errorResponse('Origen no autorizado.', 403)
+  let identity
+  try { identity = await optionalIdentity(request, env) } catch (error) { return errorResponse(error.message, 401) }
+  if (!identity || !(await isAdministrator(identity, env))) return errorResponse('Se requiere una cuenta administradora.', 403)
+  const newsId = (request.headers.get('X-News-Id') || '').trim()
+  if (!/^[a-zA-Z0-9_-]{1,100}$/.test(newsId)) return errorResponse('Identificador de noticia inválido.', 400)
+  if (!(await applyRateLimit(env.NEWS_IMAGE_UPLOAD_LIMITER, `news:${identity.uid}`))) return errorResponse('Alcanzaste el límite temporal de imágenes de noticias.', 429)
+  let body
+  try { body = await imageBody(request) } catch (error) { return errorResponse(error.message, 400) }
+  const objectKey = `news/${newsId}/${crypto.randomUUID()}.${body.validation.extension}`
+  await env.MEDIA_BUCKET.put(objectKey, body.bytes, {
+    httpMetadata: { contentType: body.validation.mimeType, cacheControl: 'public, max-age=31536000, immutable' },
+    customMetadata: { kind: 'news-image', newsId, uploadedBy: identity.uid, originalWidth: String(body.validation.originalWidth), originalHeight: String(body.validation.originalHeight) },
+  })
+  return json({ objectKey, readUrl: `${new URL(request.url).origin}/v1/media/${objectKey}`, ...body.validation }, 201)
+}
+
 function validObjectKey(pathname) {
   try {
     const key = decodeURIComponent(pathname.replace(/^\/v1\/media\//, ''))
-    return /^(?:photos\/[0-9a-f-]+|setlist-covers\/(?:delusion|tres|tdbn|hoshi)\/[0-9a-f-]+)\.(?:jpg|png|webp)$/.test(key) ? key : null
+    return /^(?:photos\/[0-9a-f-]+|setlist-covers\/(?:delusion|tres|tdbn|hoshi)\/[0-9a-f-]+|news\/[a-zA-Z0-9_-]{1,100}\/[0-9a-f-]+)\.(?:jpg|png|webp)$/.test(key) ? key : null
   } catch {
     return null
   }
@@ -183,27 +214,28 @@ async function canReadPhoto(request, object, env) {
     const identity = await optionalIdentity(request, env)
     if (!identity) return false
     if (object.customMetadata?.ownerUid && identity.uid === object.customMetadata.ownerUid) return true
-    return await isAdministrator(identity, env)
+    return await canInspectPrivateMedia(identity, env)
   } catch { return false }
 }
 
-async function isApprovedPhoto(key, env) {
+async function approvedPhotoVisibility(key, env) {
   const mediaId = key.match(/^photos\/([0-9a-f-]+)\./)?.[1]
-  if (!mediaId) return false
+  if (!mediaId) return null
   const response = await fetch(firestoreDocumentUrl(env, `approvedMedia/${encodeURIComponent(mediaId)}`))
-  if (!response.ok) return false
+  if (!response.ok) return null
   const document = await response.json()
-  return document.fields?.objectKey?.stringValue === key
+  if (document.fields?.objectKey?.stringValue !== key) return null
+  return document.fields?.visibility?.stringValue === 'PRIVATE' ? 'PRIVATE' : 'PUBLIC'
 }
 
 async function serveObject(request, env, key) {
   const object = await env.MEDIA_BUCKET.get(key)
   if (!object) return errorResponse('Archivo no encontrado.', 404)
-  const approvedPhoto = key.startsWith('photos/') && await isApprovedPhoto(key, env)
-  if (key.startsWith('photos/') && !approvedPhoto && !(await canReadPhoto(request, object, env))) return errorResponse('No tienes permiso para ver esta fotografía.', 403)
+  const approvedVisibility = key.startsWith('photos/') ? await approvedPhotoVisibility(key, env) : null
+  if (key.startsWith('photos/') && approvedVisibility !== 'PUBLIC' && !(await canReadPhoto(request, object, env))) return errorResponse('No tienes permiso para ver esta fotografía.', 403)
   const headers = new Headers()
   headers.set('Content-Type', object.httpMetadata?.contentType || 'application/octet-stream')
-  headers.set('Cache-Control', key.startsWith('setlist-covers/') || approvedPhoto ? 'public, max-age=31536000, immutable' : 'private, no-store')
+  headers.set('Cache-Control', key.startsWith('setlist-covers/') || key.startsWith('news/') || approvedVisibility === 'PUBLIC' ? 'public, max-age=31536000, immutable' : 'private, no-store')
   const etag = object.httpEtag || object.etag
   if (etag) headers.set('ETag', etag)
   return new Response(request.method === 'HEAD' ? null : object.body, { headers })
@@ -231,6 +263,7 @@ export default {
     else if (request.method === 'GET' && url.pathname === '/health') response = json({ ok: true, bucket: 'private' })
     else if (request.method === 'POST' && url.pathname === '/v1/photos') response = await uploadPhoto(request, env)
     else if (request.method === 'POST' && url.pathname === '/v1/setlist-covers') response = await uploadSetlistCover(request, env)
+    else if (request.method === 'POST' && url.pathname === '/v1/news-images') response = await uploadNewsImage(request, env)
     else if ((request.method === 'GET' || request.method === 'HEAD') && url.pathname.startsWith('/v1/media/')) {
       const key = validObjectKey(url.pathname)
       response = key ? await serveObject(request, env, key) : errorResponse('Ruta de archivo inválida.', 400)

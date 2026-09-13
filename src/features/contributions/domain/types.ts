@@ -1,4 +1,4 @@
-import type { AlbumElementType, AuthorIdentity, MediaMetadata, SetlistEntry } from '../../album/domain/types'
+import type { AlbumElementType, AuthorIdentity, ContentVisibility, MediaMetadata, SetlistEntry } from '../../album/domain/types'
 
 export type ContributionStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 
@@ -7,6 +7,7 @@ export type ContributionInput = {
   pageNumber: number
   type: AlbumElementType
   author: AuthorIdentity
+  visibility: ContentVisibility
   content?: string
   media?: MediaMetadata
   setlist?: SetlistEntry[]

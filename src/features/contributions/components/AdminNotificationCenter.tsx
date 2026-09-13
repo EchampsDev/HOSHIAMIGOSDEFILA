@@ -11,6 +11,7 @@ export function AdminNotificationCenter() {
   const session = useGoogleSession()
   const [items, setItems] = useState<ContributionRecord[]>([])
   const [open, setOpen] = useState(false)
+  const [reviewingId, setReviewingId] = useState<string | null>(null)
   const [workingId, setWorkingId] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
 
@@ -41,10 +42,11 @@ export function AdminNotificationCenter() {
       <div className="admin-notification-summary"><strong>{items.length}</strong><span>{items.length === 1 ? 'pendiente por revisar' : 'pendientes por revisar'}</span></div>
       {message && <p className="admin-notification-message" role="alert">{message}</p>}
       <div className="admin-notification-list">
-        {items.map((item) => <article key={item.id}>
+        {items.map((item) => <article key={item.id} className={reviewingId === item.id ? 'is-reviewing' : ''}>
           <div className="admin-notification-preview">{item.type === 'PHOTO' ? <PhotoArtwork media={item.media} alt="Fotografía pendiente" /> : <span>{item.type === 'SETLIST' ? '♫' : item.type === 'STICKER' ? '✦' : 'Aa'}</span>}</div>
-          <div className="admin-notification-copy"><small>{labels[item.type]} · CARA {item.pageNumber}</small><strong>{item.author.displayName || 'Participante anónimo'}</strong><p>{item.type === 'SETLIST' ? item.setlist?.map((track) => track.title).join(' · ') : item.content || 'Sin texto adicional'}</p><time dateTime={item.createdAt}>{new Date(item.createdAt).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}</time></div>
-          <div className="admin-notification-actions"><button type="button" disabled={workingId === item.id} onClick={() => void moderate(item, 'approve')}>Aprobar</button><button type="button" disabled={workingId === item.id} onClick={() => void moderate(item, 'reject')}>Rechazar</button></div>
+          <div className="admin-notification-copy"><small>{labels[item.type]} · CARA {item.pageNumber} · {item.visibility === 'PRIVATE' ? 'PRIVADA' : 'PÚBLICA'}</small><strong>{item.author.displayName || 'Participante anónimo'}</strong><p>{item.type === 'SETLIST' ? item.setlist?.map((track) => track.title).join(' · ') : item.content || 'Sin texto adicional'}</p><time dateTime={item.createdAt}>{new Date(item.createdAt).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}</time></div>
+          {reviewingId === item.id && <section className="admin-notification-review"><div className="admin-notification-review-media">{item.type === 'PHOTO' ? <PhotoArtwork media={item.media} alt="Fotografía enviada para revisión" /> : <span>{item.content || labels[item.type]}</span>}</div><dl><div><dt>Nombre</dt><dd>{item.author.displayName || 'Anónimo'}</dd></div><div><dt>Edad</dt><dd>{item.author.age ?? 'No indicada'}</dd></div><div><dt>Identificador</dt><dd>{item.participantId}</dd></div><div><dt>Destino</dt><dd>Cara {item.pageNumber}</dd></div><div><dt>Visibilidad</dt><dd>{item.visibility === 'PRIVATE' ? 'Privada' : 'Pública'}</dd></div><div><dt>Enviada</dt><dd>{new Date(item.createdAt).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })}</dd></div></dl></section>}
+          <div className="admin-notification-actions"><button type="button" className="is-review" onClick={() => setReviewingId((current) => current === item.id ? null : item.id)}>{reviewingId === item.id ? 'Cerrar revisión' : 'Revisar elemento'}</button>{reviewingId === item.id && <><button type="button" disabled={workingId === item.id} onClick={() => void moderate(item, 'approve')}>Aceptar publicación</button><button type="button" disabled={workingId === item.id} onClick={() => void moderate(item, 'reject')}>Rechazar</button></>}</div>
         </article>)}
         {!items.length && <p className="admin-notification-empty">Todo está al día.<br /><span>No hay aportaciones pendientes.</span></p>}
       </div>

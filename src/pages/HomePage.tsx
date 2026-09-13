@@ -16,7 +16,7 @@ import { BrattypolitanExperienceLockup } from '../components/BrattypolitanWordma
 export function HomePage() {
   const landingRef = useRef<HTMLDivElement>(null)
   const albumAccess = usePublicAlbumAccess()
-  const album = useAlbum(true)
+  const album = useAlbum()
   const session = useGoogleSession()
   useScrollReveal(landingRef)
   const entryCount = useMemo(() => album.album?.pages.flatMap((page) => page.elements).filter((element) => element.author.participantId !== 'developer-local').length ?? 0, [album.album])

@@ -73,6 +73,13 @@
 .memory-photo-input { min-height: 150px; display: grid !important; place-items: center; align-content: center; gap: 10px !important; padding: 22px; color: #f5dc50; border: 1px dashed rgba(245,220,80,.62); background: rgba(0,0,0,.48); cursor: pointer; text-align: center; }
 .memory-photo-input input { max-width: 100%; color: rgba(255,255,255,.72) !important; border: 0 !important; background: transparent !important; }
 .memory-photo-input small { color: rgba(255,255,255,.68); }
+.memory-visibility-picker { display: grid; gap: 10px; margin: 0; padding: 16px; border: 1px solid rgba(245,220,80,.42); background: rgba(0,0,0,.42); }
+.memory-visibility-picker legend { padding: 0 8px; color: #f5dc50; font: 700 .68rem 'DM Mono',monospace; letter-spacing: .1em; text-transform: uppercase; }
+.memory-visibility-picker > div { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+.contribution-form .memory-visibility-picker button { min-height: 76px; display: grid; align-content: center; gap: 5px; padding: 12px 15px; color: #fff; border: 1px solid rgba(255,255,255,.24); background: #101010; text-align: left; }
+.contribution-form .memory-visibility-picker button.is-selected { color: #111; border-color: #f5dc50; background: #f5dc50; box-shadow: 0 0 22px rgba(245,220,80,.18); }
+.memory-visibility-picker b { font: 700 .76rem 'DM Mono',monospace; text-transform: uppercase; }
+.memory-visibility-picker small { opacity: .68; font-size: .72rem; line-height: 1.35; }
 .contribution-form .memory-save-button { width: 100%; min-height: 58px; justify-self: stretch; color: #111; border: 1px solid #f5dc50; background: #f5dc50; font: 700 .72rem 'DM Mono',monospace; letter-spacing: .06em; text-transform: uppercase; box-shadow: 0 0 24px rgba(245,220,80,.14); transition: transform .2s ease,box-shadow .2s ease,opacity .2s ease; }
 .contribution-form .memory-save-button:hover:not(:disabled),.contribution-form .memory-save-button:focus-visible { transform: translateY(-2px); box-shadow: 0 0 32px rgba(245,220,80,.28); }
 .contribution-form .memory-save-button:disabled { opacity: .4; cursor: default; }
@@ -176,6 +183,7 @@
   .memory-type-grid small { font-size: .72rem; }
   .memory-page-picker--wizard { padding: 18px; }
   .memory-page-picker--wizard > div { grid-template-columns: 1fr; }
+  .memory-visibility-picker > div { grid-template-columns: 1fr; }
   .memory-wizard-actions { position: sticky; bottom: 0; min-height: 76px; padding: 12px 15px max(12px,env(safe-area-inset-bottom)); }
   .contribution-form .memory-wizard-actions button { width: 100%; min-height: 50px; padding: 10px 12px; }
   .memory-page-picker { padding: 14px; }

@@ -6,8 +6,9 @@ import { AlbumControls, type ReaderPaperTheme, type ReaderViewMode } from './com
 import { PageIndex } from './components/PageIndex'
 import { Scrapbook } from './components/Scrapbook'
 import { getLocalParticipantId } from './domain/participantIdentity'
-import { clampLayout, type AlbumElement, type ElementLayout } from './domain/types'
+import { clampLayout, isElementOwner, type AlbumElement, type ElementLayout } from './domain/types'
 import { useAlbum } from './hooks/useAlbum'
+import { useElementReactions } from '../reactions/hooks/useElementReactions'
 
 type Selection = { pageId: string; elementId: string }
 type Gesture = { pageId: string; elementId: string; mode: 'move' | 'resize' | 'rotate'; startX: number; startY: number; width: number; height: number; layout: ElementLayout; latest: ElementLayout; node: HTMLElement }
@@ -15,12 +16,14 @@ type Gesture = { pageId: string; elementId: string; mode: 'move' | 'resize' | 'r
 export function AlbumExperiencePage() {
   const [viewMode, setViewMode] = useState<ReaderViewMode>(() => localStorage.getItem('brattypolitan.album-view') === 'SINGLE' ? 'SINGLE' : 'BOOK')
   const [paperTheme, setPaperTheme] = useState<ReaderPaperTheme>(() => localStorage.getItem('brattypolitan.album-paper-theme') === 'BLACK' ? 'BLACK' : 'CREAM')
-  const album = useAlbum(true, viewMode === 'BOOK')
+  const album = useAlbum(false, viewMode === 'BOOK')
   const albumDocument = album.album
   const goToAlbum = album.goTo
   const updateElementOnPage = album.updateElementOnPage
   const session = useGoogleSession()
   const viewerId = session.user?.uid ?? getLocalParticipantId()
+  const canInspectAll = session.isAdmin || session.role === 'SPECIAL'
+  const elementReactions = useElementReactions()
   const [indexOpen, setIndexOpen] = useState(false)
   const [moveOpen, setMoveOpen] = useState(false)
   const [selection, setSelection] = useState<Selection | null>(null)
@@ -71,6 +74,7 @@ export function AlbumExperiencePage() {
     const element = page?.elements.find((item) => item.id === selection.elementId)
     return page && element ? { page, element } : null
   }, [album.album, selection])
+  const selectedOwned = Boolean(selected && isElementOwner(selected.element, viewerId))
   const next = () => { if (editingElement) return; setSelection(null); setDirection('next'); album.next() }
   const previous = () => { if (editingElement) return; setSelection(null); setDirection('previous'); album.previous() }
   const goTo = (page: number) => { if (editingElement) return; setSelection(null); setDirection(page >= album.pageNumber ? 'next' : 'previous'); album.goTo(page) }
@@ -94,10 +98,10 @@ export function AlbumExperiencePage() {
   return <main className="album-experience">
     <header className="album-header"><Link to="/">BRATTYPOLITAN <ExperienceWord /></Link><p>LIBRETA DIGITAL · VOLUMEN 01</p></header>
     <section className={`album-reader${editingElement ? ' is-editing' : ''}`}>
-      <Scrapbook state={album.bookState} page={album.currentPage} leftPage={leftPage} rightPage={rightPage} bookmarkPage={bookmarkPage} viewerId={viewerId} selectedId={selection?.elementId} editable={editingElement} revealAll={session.isAdmin} navigationLocked={editingElement} viewMode={viewMode} paperTheme={paperTheme} onBookmark={() => goTo(bookmarkPage)} direction={direction} onPrevious={previous} onNext={next} onSelect={(pageId, elementId) => { if (selection?.elementId !== elementId) setEditingElement(false); setSelection({ pageId, elementId }) }} onLike={(pageId, element) => album.toggleLike(pageId, element.id, viewerId)} onElementPointerDown={beginGesture} />
-      {selected && <aside className="album-owner-tools" aria-label="Editar tu publicación">
-        <div><b>Tu publicación · cara {selected.page.pageNumber}</b><small>{editingElement ? 'Edición activa: la página está bloqueada y sólo se moverá este elemento.' : 'Activa la edición para mover o transformar este elemento.'}</small></div>
-        {!editingElement ? <button type="button" className="album-edit-trigger" onClick={() => setEditingElement(true)}>Editar elemento</button> : <>
+      <Scrapbook state={album.bookState} page={album.currentPage} leftPage={leftPage} rightPage={rightPage} bookmarkPage={bookmarkPage} viewerId={viewerId} selectedId={selection?.elementId} editable={editingElement} revealAll={canInspectAll} canInspectAll={canInspectAll} reactionsByElement={elementReactions.reactions} navigationLocked={editingElement} viewMode={viewMode} paperTheme={paperTheme} onBookmark={() => goTo(bookmarkPage)} direction={direction} onPrevious={previous} onNext={next} onSelect={(pageId, elementId) => { if (selection?.elementId !== elementId) setEditingElement(false); setSelection({ pageId, elementId }) }} onLike={session.user ? (_pageId, element) => void elementReactions.toggle(element.id, session.user!.uid) : undefined} onElementPointerDown={beginGesture} />
+      {selected && <aside className="album-owner-tools album-contribution-details" aria-label="Datos de la aportación">
+        <div><b>{selectedOwned ? 'Tu publicación' : 'Aportación'} · cara {selected.page.pageNumber}</b><small>{editingElement ? 'Edición activa: la página está bloqueada y sólo se moverá este elemento.' : 'Datos de la persona que compartió este recuerdo.'}</small><dl><div><dt>Nombre</dt><dd>{selected.element.author.displayName || 'Anónimo'}</dd></div><div><dt>Edad</dt><dd>{selected.element.author.age ?? 'No indicada'}</dd></div><div><dt>Identificador</dt><dd>{selected.element.author.participantId}</dd></div><div><dt>Publicación</dt><dd>{new Date(selected.element.createdAt).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })}</dd></div><div><dt>Visibilidad</dt><dd>{selected.element.visibility === 'PRIVATE' ? 'Privada' : 'Pública'}</dd></div></dl></div>
+        {selectedOwned && (!editingElement ? <button type="button" className="album-edit-trigger" onClick={() => setEditingElement(true)}>Editar elemento</button> : <>
         <button type="button" onClick={() => patchSelectedLayout({ x: selected.element.layout.x - .03 })} aria-label="Mover a la izquierda">←</button>
         <button type="button" onClick={() => patchSelectedLayout({ y: selected.element.layout.y - .03 })} aria-label="Mover arriba">↑</button>
         <button type="button" onClick={() => patchSelectedLayout({ y: selected.element.layout.y + .03 })} aria-label="Mover abajo">↓</button>
@@ -109,10 +113,12 @@ export function AlbumExperiencePage() {
         <button type="button" onClick={() => patchSelectedLayout({ zIndex: Math.max(...selected.page.elements.map((item) => item.layout.zIndex), 0) + 1 })}>Traer al frente</button>
         <button type="button" onClick={() => setMoveOpen(true)}>Cambiar de cara</button>
         <button type="button" onClick={() => { gesture.current = null; setEditingElement(false) }}>Terminar edición</button>
-        <button type="button" className="is-danger" onClick={() => { if (window.confirm('¿Eliminar definitivamente tu publicación?')) void album.deleteOwnedElement(selected.page.id, selected.element.id, viewerId).then(() => { setEditingElement(false); setSelection(null) }) }}>Eliminar</button></>}
+        <button type="button" className="is-danger" onClick={() => { if (window.confirm('¿Eliminar definitivamente tu publicación?')) void album.deleteOwnedElement(selected.page.id, selected.element.id, viewerId).then(() => { setEditingElement(false); setSelection(null) }) }}>Eliminar</button></>)}
+        {!editingElement && <button type="button" onClick={() => setSelection(null)}>Cerrar</button>}
       </aside>}
       <AlbumControls state={album.bookState} pageNumber={album.pageNumber} pageCount={album.album?.pageCount ?? 100} bookmarkPage={bookmarkPage} onBookmarkPage={setBookmark} presenting={album.isPresenting} paused={album.isPaused} locked={editingElement} viewMode={viewMode} paperTheme={paperTheme} onViewMode={(mode) => { setSelection(null); setViewMode(mode) }} onPaperTheme={setPaperTheme} onPrevious={previous} onNext={next} onIndex={() => setIndexOpen(true)} onPresent={album.startPresentation} onPause={album.pausePresentation} onResume={album.resumePresentation} />
       {album.syncError && <p className="album-sync-error">{album.syncError}</p>}
+      {elementReactions.error && <p className="album-sync-error">{elementReactions.error}</p>}
     </section>
     <PageIndex open={indexOpen} pages={album.album?.pages} pageCount={album.album?.pageCount ?? 100} current={album.pageNumber} ownerId={viewerId} onClose={() => setIndexOpen(false)} onGoTo={goTo} />
     <PageIndex open={moveOpen} pages={album.album?.pages} pageCount={album.album?.pageCount ?? 100} current={selected?.page.pageNumber ?? album.pageNumber} ownerId={viewerId} mode="select" allowCurrentFull title="Mover tu publicación" onClose={() => setMoveOpen(false)} onGoTo={(pageNumber) => { if (!selected || !album.album) return; const target = album.album.pages[pageNumber - 1]; void album.moveOwnedElement(selected.page.id, selected.element.id, target.id, viewerId).then((moved) => { if (moved) { setDirection(pageNumber >= album.pageNumber ? 'next' : 'previous'); album.goTo(pageNumber); setSelection({ pageId: target.id, elementId: selected.element.id }) } }) }} />

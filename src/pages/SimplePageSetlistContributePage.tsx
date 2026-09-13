@@ -7,7 +7,7 @@ import { useGoogleSession } from '../features/access/useGoogleSession'
 import { useParticipationAccess } from '../features/album/hooks/useParticipationAccess'
 import { getSetlistAlbum, readSetlistTracks, setlistAlbumLabels, setlistAlbumOrder, type SetlistTrack } from '../features/album/data/localSetlistCatalog'
 import { resolveSetlistCoverUrl, setlistCatalogRepository } from '../features/album/repositories/SetlistCatalogRepository'
-import { type AlbumElementType, type AuthorIdentity } from '../features/album/domain/types'
+import { type AlbumElementType, type AuthorIdentity, type ContentVisibility } from '../features/album/domain/types'
 import { pageCapacity } from '../features/album/domain/types'
 import { getLocalParticipantId } from '../features/album/domain/participantIdentity'
 import { PageIndex } from '../features/album/components/PageIndex'
@@ -148,6 +148,7 @@ export function SimplePageSetlistContributePage() {
   const [age, setAge] = useState('')
   const [page, setPage] = useState(1)
   const [content, setContent] = useState('')
+  const [visibility, setVisibility] = useState<ContentVisibility>('PUBLIC')
   const [photo, setPhoto] = useState<PhotoDraft | null>(null)
   const [tracks, setTracks] = useState<SetlistTrack[]>(readSetlistTracks)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -165,7 +166,7 @@ export function SimplePageSetlistContributePage() {
   const seededGoogleName = useRef(false)
   const session = useGoogleSession()
   const participation = useParticipationAccess()
-  const scrapbook = useAlbum(true)
+  const scrapbook = useAlbum()
   const isOpen = participation.isOpen
 
   useEffect(() => {
@@ -278,7 +279,7 @@ export function SimplePageSetlistContributePage() {
       const identity = author()
       const firebaseIdToken = photo && session.user ? await session.user.getIdToken() : undefined
       storedPhoto = photo ? await photoStorageRepository.uploadPhoto(photo.file, photo.validation, identity.participantId, firebaseIdToken) : undefined
-      await contributionRepository.submit({ pageNumber: page, type: type as AlbumElementType, content: type === 'STICKER' ? selectedSticker?.title : content, author: identity, media: storedPhoto?.media, styleVariant: type === 'POST_IT' ? postItColor : undefined, stickerId: selectedSticker?.id })
+      await contributionRepository.submit({ pageNumber: page, type: type as AlbumElementType, content: type === 'STICKER' ? selectedSticker?.title : content, author: identity, visibility, media: storedPhoto?.media, styleVariant: type === 'POST_IT' ? postItColor : undefined, stickerId: selectedSticker?.id })
       setMessage(`Aportación enviada a revisión para la página ${page}.`)
       setContent('')
       setPhoto(null)
@@ -293,7 +294,7 @@ export function SimplePageSetlistContributePage() {
     if (selectedTracks.length !== TOP_SIZE) { setMessage('Selecciona exactamente tres canciones antes de enviar.'); return }
     const identity = author()
     try {
-      await contributionRepository.submit({ pageNumber: page, type: 'SETLIST', content: selectionTitle, author: identity, setlist: selectedTracks.map(({ id, title, coverUrl }) => ({ id, title, coverUrl })) })
+      await contributionRepository.submit({ pageNumber: page, type: 'SETLIST', content: selectionTitle, author: identity, visibility, setlist: selectedTracks.map(({ id, title, coverUrl }) => ({ id, title, coverUrl })) })
       setMessage(`Top 3 enviado a revisión para la página ${page}.`)
       setSelectedIds([])
       setPreview(false)
@@ -344,6 +345,11 @@ export function SimplePageSetlistContributePage() {
 
           {step === 4 && <>
             <p className="memory-wizard-kicker">ÚLTIMO PASO · CARA {page}</p>
+            <fieldset className="memory-visibility-picker">
+              <legend>¿Quién podrá ver tu aportación?</legend>
+              <button type="button" className={visibility === 'PUBLIC' ? 'is-selected' : ''} aria-pressed={visibility === 'PUBLIC'} onClick={() => setVisibility('PUBLIC')}><b>Pública</b><span>Todas las personas podrán verla completa.</span></button>
+              <button type="button" className={visibility === 'PRIVATE' ? 'is-selected' : ''} aria-pressed={visibility === 'PRIVATE'} onClick={() => setVisibility('PRIVATE')}><b>Privada</b><span>Solo tú, administración y usuarios especiales verán el contenido.</span></button>
+            </fieldset>
             {type === 'SETLIST' ? <><h2 id="memory-step-4">Elige tus tres canciones</h2><p>Arma tu Top 3 y revisa la vista previa antes de guardarlo en la libreta.</p><section className="top3-launchers" aria-label="Elige tu tipo de Top 3"><button type="button" className="setlist-launcher" onClick={() => openTopSelection('HOSHI')}><b>✦ MI TOP 3 DE HOSHI</b><span>Selecciona 3 canciones de Hoshi</span></button><button type="button" className="setlist-launcher is-all-bratty" onClick={() => openTopSelection('BRATTY')}><b>✦ MI TOP 3 DE TODA LA MÚSICA DE BRATTY</b><span>Selecciona 3 canciones del catálogo completo</span></button></section></> : type === 'PHOTO' ? <><h2 id="memory-step-4">Elige una foto para BRATTY</h2><p>Selecciona una imagen de máximo 5 MB. Podrás sustituirla antes de guardar.</p><label className="memory-photo-input"><span>{photo ? 'Cambiar foto' : 'Seleccionar foto'}</span><input type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" onChange={(event) => void choosePhoto(event)} />{photo && <small>{(photo.validation.fileSize / 1024 / 1024).toFixed(2)} MB · lista para guardar</small>}</label><button type="button" className="memory-save-button" onClick={() => void saveElement()} disabled={!photo}>Guardar recuerdo en la libreta</button></> : type === 'STICKER' ? <><h2 id="memory-step-4">Elige un sticker para BRATTY</h2><p>Selecciona uno aprobado para colocarlo en la libreta o aporta uno nuevo para revisión.</p><StickerPicker selectedId={selectedSticker?.id} onSelect={setSelectedSticker} /><StickerUploader defaultAuthorName={displayName} /><button type="button" className="memory-save-button" onClick={() => void saveElement()} disabled={!selectedSticker}>Colocar sticker en la libreta</button></> : <><h2 id="memory-step-4">¿Qué le quieres escribir a BRATTY?</h2><p>Escribe algo que te gustaría que encontrara al abrir esta página.</p>{type === 'POST_IT' && <fieldset className="postit-color-picker"><legend>Color del post-it</legend><div>{postItColors.map(([value, label]) => <button key={value} type="button" className={`postit-color postit-${value}${postItColor === value ? ' is-selected' : ''}`} aria-label={label} aria-pressed={postItColor === value} title={label} onClick={() => setPostItColor(value)} />)}</div></fieldset>}<label className="memory-wizard-field memory-wizard-message"><span>{type === 'POST_IT' ? 'Tu mensaje' : 'Tu mensaje para BRATTY'}</span><textarea maxLength={280} value={content} onChange={(event) => setContent(event.target.value)} placeholder="Escribe aquí…" /><small>{content.length} / 280</small></label><button type="button" className="memory-save-button" onClick={() => void saveElement()} disabled={!content.trim()}>Guardar recuerdo en la libreta</button></>}
             {message && <p className="memory-wizard-status" role="status">{message}</p>}
           </>}
