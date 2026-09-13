@@ -4,6 +4,11 @@
   "main": "src/index.mjs",
   "compatibility_date": "2026-09-13",
   "workers_dev": true,
+  "preview_urls": false,
+  "observability": {
+    "enabled": true,
+    "logs": { "enabled": true }
+  },
   "vars": {
     "ALLOWED_ORIGINS": "https://brattypolitan-experience.web.app,https://brattypolitan-experience.firebaseapp.com,http://localhost:5173",
     "FIREBASE_PROJECT_ID": "brattypolitan-experience"
