@@ -235,6 +235,7 @@ a:focus-visible,
 .admin-notification-list article.is-reviewing { border-color: rgba(245,220,80,.72); box-shadow: inset 0 0 24px rgba(245,220,80,.06); }
 .admin-notification-preview { width: 72px; height: 72px; display: grid; place-items: center; overflow: hidden; color: #f5dc50; background: #1b1917; font-size: 1.6rem; }
 .admin-notification-preview img { width: 100%; height: 100%; object-fit: cover; }
+.admin-notification-preview.is-sticker img { object-fit: contain; padding: 4px; }
 .admin-notification-copy { min-width: 0; display: grid; gap: 4px; }
 .admin-notification-copy small,.admin-notification-copy time { color: #d9b65d; font: .54rem 'DM Mono',monospace; letter-spacing: .06em; }
 .admin-notification-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
