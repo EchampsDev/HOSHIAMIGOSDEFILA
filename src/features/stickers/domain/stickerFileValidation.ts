@@ -1,6 +1,7 @@
 export const STICKER_MAX_BYTES = 5 * 1024 * 1024
 export const STICKER_MIN_DIMENSION = 32
-export const STICKER_MAX_DIMENSION = 1024
+export const STICKER_MAX_WIDTH = 1300
+export const STICKER_MAX_HEIGHT = 1800
 
 export type ValidatedStickerFile = {
   mimeType: 'image/png' | 'image/webp'
@@ -40,6 +41,6 @@ export async function validateStickerFile(file: File): Promise<ValidatedStickerF
   if (!hasValidSignature(signature, file.type)) throw new Error('La extensión no coincide con el contenido real del archivo.')
   const dimensions = await readDimensions(file)
   if (dimensions.width < STICKER_MIN_DIMENSION || dimensions.height < STICKER_MIN_DIMENSION) throw new Error(`El sticker debe medir al menos ${STICKER_MIN_DIMENSION} × ${STICKER_MIN_DIMENSION} px.`)
-  if (dimensions.width > STICKER_MAX_DIMENSION || dimensions.height > STICKER_MAX_DIMENSION) throw new Error(`El sticker no puede superar ${STICKER_MAX_DIMENSION} × ${STICKER_MAX_DIMENSION} px.`)
+  if (dimensions.width > STICKER_MAX_WIDTH || dimensions.height > STICKER_MAX_HEIGHT) throw new Error(`El sticker no puede superar ${STICKER_MAX_WIDTH} × ${STICKER_MAX_HEIGHT} px.`)
   return { mimeType: file.type as ValidatedStickerFile['mimeType'], extension, fileSize: file.size, originalWidth: dimensions.width, originalHeight: dimensions.height }
 }

@@ -38,7 +38,7 @@ La lectura pública de `/album` está temporalmente bloqueada mediante `albumAcc
 
 `StickerRepository` gobierna metadata y moderación; `StickerStorageRepository` gobierna el archivo binario. Los adaptadores temporales `LocalStickerRepository` y `LocalStickerStorageRepository` son el único punto que usa almacenamiento del navegador. Cuando el plan permita Firebase Storage, el composition root de la feature podrá cambiar a adaptadores Firebase sin reescribir la UI.
 
-Los archivos comunitarios se validan como PNG o WEBP mediante extensión, MIME, firma binaria y decodificación real. El límite cliente actual es 5 MB y 32–1024 px por lado. Una integración real deberá repetir estas validaciones en backend y Storage Rules, generar los nombres internamente y reservar aprobación y eliminación para administración.
+Los archivos comunitarios se validan como PNG o WEBP mediante extensión, MIME, firma binaria y decodificación real. El límite cliente actual es 5 MB, con dimensiones de 32 px como mínimo y 1300 × 1800 px como máximo. Una integración real deberá repetir estas validaciones en backend y Storage Rules, generar los nombres internamente y reservar aprobación y eliminación para administración.
 
 ## Media en Cloudflare R2
 

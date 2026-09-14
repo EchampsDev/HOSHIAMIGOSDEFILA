@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent } from 'react'
 import { createPendingSticker } from '../services/createPendingSticker'
-import { STICKER_MAX_BYTES, STICKER_MAX_DIMENSION } from '../domain/stickerFileValidation'
+import { STICKER_MAX_BYTES, STICKER_MAX_HEIGHT, STICKER_MAX_WIDTH } from '../domain/stickerFileValidation'
 
 export function StickerUploader({ defaultAuthorName }: { defaultAuthorName?: string }) {
   const [file, setFile] = useState<File | null>(null)
@@ -27,7 +27,7 @@ export function StickerUploader({ defaultAuthorName }: { defaultAuthorName?: str
   }
   return <details className="sticker-uploader"><summary>Subir un sticker propio <span aria-hidden="true">＋</span></summary><div className="sticker-uploader-body">
     <p>Conservaremos su transparencia. Se publicará únicamente después de la aprobación del equipo.</p>
-    <label className="sticker-file-drop"><input type="file" accept=".png,.webp,image/png,image/webp" onChange={chooseFile} /><span>{preview ? <img src={preview} alt="Vista previa del sticker" /> : <i aria-hidden="true">✦</i>}<b>{file?.name ?? 'Elegir imagen'}</b><small>PNG o WEBP · máximo {STICKER_MAX_BYTES / 1024 / 1024} MB · hasta {STICKER_MAX_DIMENSION} px</small></span></label>
+    <label className="sticker-file-drop"><input type="file" accept=".png,.webp,image/png,image/webp" onChange={chooseFile} /><span>{preview ? <img src={preview} alt="Vista previa del sticker" /> : <i aria-hidden="true">✦</i>}<b>{file?.name ?? 'Elegir imagen'}</b><small>PNG o WEBP · máximo {STICKER_MAX_BYTES / 1024 / 1024} MB · hasta {STICKER_MAX_WIDTH} × {STICKER_MAX_HEIGHT} px</small></span></label>
     <label>Título<input value={title} maxLength={60} onChange={(event) => setTitle(event.target.value)} placeholder="Ej. Mi estrella para Bratty" /></label>
     <label>Autor, opcional<input value={authorName} maxLength={60} onChange={(event) => setAuthorName(event.target.value)} placeholder="Tu nombre" /></label>
     <button type="button" className="sticker-primary-action" disabled={busy || !file} onClick={() => void submit()}>{busy ? 'Validando y guardando…' : 'Enviar a revisión'}</button>
