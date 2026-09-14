@@ -20,11 +20,7 @@ export function NewsLandingSection() {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [adminError, setAdminError] = useState<string | null>(null)
   useEffect(() => newsRepository.subscribePublished(setItems, () => setError('No fue posible cargar las novedades.')), [])
-  const newestId = items.reduce<string | null>((selectedId, item) => {
-    if (!selectedId) return item.id
-    const selected = items.find((candidate) => candidate.id === selectedId)
-    return Date.parse(item.publishedAt ?? item.createdAt) > Date.parse(selected?.publishedAt ?? selected?.createdAt ?? '') ? item.id : selectedId
-  }, null)
+  const newestId = items[0]?.id ?? null
   const adminAction = async (item: NewsItem, action: 'hide' | 'delete') => {
     if (!session.isAdmin || busyId) return
     if (action === 'delete' && !window.confirm(`¿Eliminar ${item.title}? Se archivará de forma recuperable.`)) return

@@ -37,6 +37,13 @@ const withoutUndefined = <T,>(value: T): T => {
 
 const firestoreValue = <T,>(value: T) => withoutUndefined(value)
 const publicValue = (item: NewsItem) => firestoreValue({ ...item, status: 'published' as const })
+const publicationTime = (item: NewsItem) => {
+  const timestamp = Date.parse(item.publishedAt ?? item.createdAt)
+  return Number.isFinite(timestamp) ? timestamp : 0
+}
+const newestPublishedFirst = (items: NewsItem[]) => [...items].sort((first, second) =>
+  publicationTime(second) - publicationTime(first) || first.order - second.order,
+)
 
 export const newsRepository = {
   usesFirebase: isFirebaseConfigured,
@@ -46,7 +53,9 @@ export const newsRepository = {
   },
   subscribePublished(listener: (items: NewsItem[]) => void, onError: (error: unknown) => void) {
     if (!isFirebaseConfigured) { listener([]); return undefined }
-    return onSnapshot(query(publicCollection(), orderBy('order', 'asc')), (snapshot) => listener(snapshot.docs.map((entry) => normalize(entry.id, entry.data())).filter((item) => item.visible)), onError)
+    return onSnapshot(publicCollection(), (snapshot) => listener(newestPublishedFirst(snapshot.docs
+      .map((entry) => normalize(entry.id, entry.data()))
+      .filter((item) => item.visible))), onError)
   },
   async findPublishedBySlug(slug: string) {
     const result = await getDocs(query(publicCollection(), where('slug', '==', slug), limit(1)))
