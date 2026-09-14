@@ -7,10 +7,14 @@ export async function createPendingSticker(file: File, title: string, authorName
   const stored = await stickerStorageRepository.uploadSticker(file, validation)
   try {
     return await stickerRepository.createSticker({
+      id: stored.id,
       title: title.trim() || 'Sticker de la comunidad',
       authorName: authorName?.trim() || undefined,
       description: 'Aportación comunitaria pendiente de moderación.',
       localAssetRef: stored.localAssetRef,
+      assetUrl: stored.assetUrl,
+      objectKey: stored.objectKey,
+      provider: stored.provider,
       mimeType: stored.mimeType,
       fileSize: stored.fileSize,
       originalWidth: stored.originalWidth,
@@ -18,9 +22,11 @@ export async function createPendingSticker(file: File, title: string, authorName
       safeFileName: stored.safeFileName,
       status: 'PENDING',
       visibility: 'PUBLIC',
+      publicApproved: false,
     })
   } catch (error) {
-    await stickerStorageRepository.deleteStickerAsset(stored.localAssetRef)
+    const assetRef = stored.objectKey ?? stored.localAssetRef
+    if (assetRef) await stickerStorageRepository.deleteStickerAsset(assetRef)
     throw error
   }
 }

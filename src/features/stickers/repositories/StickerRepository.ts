@@ -7,5 +7,5 @@ export interface StickerRepository {
   createSticker(input: NewCommunitySticker): Promise<CommunitySticker>
   updateSticker(id: string, patch: Partial<Omit<CommunitySticker, 'id' | 'createdAt'>>): Promise<CommunitySticker>
   deleteSticker(id: string): Promise<void>
-  subscribe?(listener: () => void): () => void
+  subscribe?(listener: () => void, includePending?: boolean): () => void
 }

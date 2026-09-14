@@ -23,8 +23,8 @@ export function useStickerLibrary(includePending = false) {
 
   useEffect(() => {
     queueMicrotask(() => void refresh())
-    return stickerRepository.subscribe?.(() => void refresh())
-  }, [refresh])
+    return stickerRepository.subscribe?.(() => void refresh(), includePending)
+  }, [includePending, refresh])
 
   const updateStatus = useCallback(async (id: string, status: StickerModerationStatus) => {
     await stickerRepository.updateSticker(id, { status })

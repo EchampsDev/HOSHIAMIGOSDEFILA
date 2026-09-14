@@ -26,7 +26,7 @@ export class LocalStickerStorageRepository implements StickerStorageRepository {
     assets[localAssetRef] = await fileToDataUrl(file)
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(assets)) }
     catch { throw new Error('No hay espacio local suficiente para guardar este sticker.') }
-    return { ...validation, localAssetRef, safeFileName: `sticker-${assetId}.${validation.extension}` }
+    return { ...validation, localAssetRef, provider: 'local', safeFileName: `sticker-${assetId}.${validation.extension}` }
   }
   async getStickerUrl(sticker: CommunitySticker) {
     if (sticker.assetUrl) return sticker.assetUrl

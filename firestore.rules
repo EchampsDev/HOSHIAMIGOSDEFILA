@@ -181,6 +181,43 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Biblioteca comunitaria: el archivo vive en R2 y este documento conserva
+    // únicamente metadata y estado editorial. Sólo APPROVED + PUBLIC es público.
+    match /communityStickers/{stickerId} {
+      allow get, list: if resource.data.publicApproved == true
+        || (signedIn() && resource.data.ownerUid == request.auth.uid)
+        || isAdmin();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasAll(['id', 'ownerUid', 'title', 'assetUrl', 'objectKey', 'provider', 'mimeType', 'fileSize', 'originalWidth', 'originalHeight', 'safeFileName', 'status', 'visibility', 'publicApproved', 'createdAt', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['id', 'ownerUid', 'title', 'authorName', 'description', 'assetUrl', 'objectKey', 'provider', 'mimeType', 'fileSize', 'originalWidth', 'originalHeight', 'displayWidth', 'displayHeight', 'safeFileName', 'status', 'visibility', 'publicApproved', 'createdAt', 'updatedAt'])
+        && request.resource.data.id == stickerId
+        && stickerId.matches('[0-9a-f-]+')
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 60
+        && (!('authorName' in request.resource.data) || (request.resource.data.authorName is string && request.resource.data.authorName.size() <= 60))
+        && (!('description' in request.resource.data) || (request.resource.data.description is string && request.resource.data.description.size() <= 240))
+        && request.resource.data.assetUrl is string && request.resource.data.assetUrl.size() <= 500
+        && request.resource.data.objectKey is string
+        && request.resource.data.objectKey.matches('stickers/' + stickerId + '[.](png|webp)')
+        && request.resource.data.provider == 'r2'
+        && request.resource.data.mimeType in ['image/png', 'image/webp']
+        && request.resource.data.fileSize is int && request.resource.data.fileSize > 0 && request.resource.data.fileSize <= 5242880
+        && request.resource.data.originalWidth is int && request.resource.data.originalWidth >= 32 && request.resource.data.originalWidth <= 1300
+        && request.resource.data.originalHeight is int && request.resource.data.originalHeight >= 32 && request.resource.data.originalHeight <= 1800
+        && request.resource.data.safeFileName is string && request.resource.data.safeFileName.size() <= 160
+        && request.resource.data.status == 'PENDING'
+        && request.resource.data.visibility == 'PUBLIC'
+        && request.resource.data.publicApproved == false
+        && request.resource.data.createdAt is string
+        && request.resource.data.updatedAt is string;
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'publicApproved', 'updatedAt'])
+        && request.resource.data.status in ['APPROVED', 'REJECTED']
+        && request.resource.data.publicApproved == (request.resource.data.status == 'APPROVED' && resource.data.visibility == 'PUBLIC')
+        && request.resource.data.updatedAt is string;
+      allow delete: if isAdmin();
+    }
+
     // Las reacciones se almacenan por usuario para impedir votos anónimos o duplicados.
     match /elementReactions/{reactionId} {
       allow get, list: if true;

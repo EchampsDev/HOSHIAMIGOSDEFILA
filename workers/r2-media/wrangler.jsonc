@@ -34,6 +34,11 @@
       "name": "NEWS_IMAGE_UPLOAD_LIMITER",
       "namespace_id": "2103",
       "simple": { "limit": 30, "period": 60 }
+    },
+    {
+      "name": "STICKER_UPLOAD_LIMITER",
+      "namespace_id": "2104",
+      "simple": { "limit": 10, "period": 60 }
     }
   ]
 }

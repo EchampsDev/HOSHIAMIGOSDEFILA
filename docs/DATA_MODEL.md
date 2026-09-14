@@ -6,6 +6,8 @@ Propuesta Firestore futura: `participants/{participantId}`, `elements/{elementId
 
 Solo los elementos `APPROVED` con consentimiento público podrán llegar a consultas públicas. Un cambio entre `FULL_CONTENT` y `PLACEHOLDER` conserva el mismo `elementId`.
 
+`communityStickers/{stickerId}` conserva metadata, propietario, referencia R2 y moderación; el archivo original vive una sola vez bajo `stickers/{stickerId}.<ext>`. Todo envío nace como `PENDING` con `publicApproved: false`. La aprobación administrativa sincroniza `status: APPROVED` y `publicApproved: true`, que es la única consulta expuesta a la biblioteca pública.
+
 ## Libreta digital
 
 `features/album/domain/types.ts` define `AlbumDocument`, 100 `ScrapbookPage` y `AlbumElement`. Cada hoja usa `paperType: GRID | LINED` y un arreglo de elementos. El layout se guarda como `x`, `y`, `width` y `height` normalizados entre 0 y 1, más rotación, capa, bloqueo y visibilidad. `clampLayout` asegura que un elemento nunca exceda el área de la hoja durante edición o restauración.

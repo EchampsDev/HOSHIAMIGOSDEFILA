@@ -32,6 +32,15 @@ test('rechaza escapes URL malformados sin producir un error interno', async () =
   assert.equal(response.status, 400)
 })
 
+test('exige una sesión Firebase para subir stickers', async () => {
+  const response = await worker.fetch(new Request('https://media.example/v1/stickers', {
+    method: 'POST',
+    headers: { Origin: 'https://brattypolitan-experience.web.app', 'Content-Type': 'image/png' },
+    body: new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]),
+  }), env)
+  assert.equal(response.status, 401)
+})
+
 test('sirve las portadas públicas de sencillos y colaboraciones', async () => {
   for (const collection of ['singles', 'collaborations']) {
     const key = `setlist-covers/${collection}/123e4567-e89b-12d3-a456-426614174000.webp`
@@ -42,6 +51,40 @@ test('sirve las portadas públicas de sencillos y colaboraciones', async () => {
     assert.equal(response.status, 200)
     assert.equal(response.headers.get('Cache-Control'), 'public, max-age=31536000, immutable')
   }
+})
+
+test('un sticker sólo es público después de la aprobación en Firestore', async () => {
+  const key = 'stickers/123e4567-e89b-12d3-a456-426614174003.png'
+  const previousFetch = globalThis.fetch
+  globalThis.fetch = async (url) => String(url).includes('/communityStickers/123e4567-e89b-12d3-a456-426614174003')
+    ? new Response(JSON.stringify({ fields: {
+      objectKey: { stringValue: key },
+      status: { stringValue: 'APPROVED' },
+      visibility: { stringValue: 'PUBLIC' },
+      publicApproved: { booleanValue: true },
+    } }), { status: 200 })
+    : new Response(null, { status: 404 })
+  try {
+    const response = await worker.fetch(new Request(`https://media.example/v1/media/${key}`), {
+      ...env,
+      MEDIA_BUCKET: { get: async () => ({ body: new Uint8Array([137, 80, 78, 71]), httpMetadata: { contentType: 'image/png' }, etag: 'sticker' }) },
+    })
+    assert.equal(response.status, 200)
+    assert.equal(response.headers.get('Cache-Control'), 'public, max-age=31536000, immutable')
+  } finally { globalThis.fetch = previousFetch }
+})
+
+test('mantiene privado un sticker pendiente para visitantes', async () => {
+  const key = 'stickers/123e4567-e89b-12d3-a456-426614174004.webp'
+  const previousFetch = globalThis.fetch
+  globalThis.fetch = async () => new Response(null, { status: 403 })
+  try {
+    const response = await worker.fetch(new Request(`https://media.example/v1/media/${key}`), {
+      ...env,
+      MEDIA_BUCKET: { get: async () => ({ body: new Uint8Array([82, 73, 70, 70]), httpMetadata: { contentType: 'image/webp' }, customMetadata: {} }) },
+    })
+    assert.equal(response.status, 403)
+  } finally { globalThis.fetch = previousFetch }
 })
 
 test('sirve públicamente una foto sólo cuando Firestore confirma su aprobación', async () => {

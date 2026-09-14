@@ -1,6 +1,8 @@
 import { MAX_IMAGE_BYTES, validateImage } from './imageValidation.mjs'
 
 const albums = new Set(['DELUSION', 'TRES', 'TDBN', 'HOSHI', 'SINGLES', 'COLLABORATIONS'])
+const stickerMaxWidth = 1300
+const stickerMaxHeight = 1800
 const firebaseIssuerRoot = 'https://securetoken.google.com/'
 const firebaseJwksUrl = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com'
 let cachedJwks = null
@@ -180,6 +182,32 @@ async function uploadSetlistCover(request, env) {
   return json({ objectKey, readUrl: `${new URL(request.url).origin}/v1/media/${objectKey}`, ...body.validation }, 201)
 }
 
+async function uploadSticker(request, env) {
+  if (!isAllowedOrigin(request, env)) return errorResponse('Origen no autorizado.', 403)
+  let identity
+  try { identity = await optionalIdentity(request, env) } catch (error) { return errorResponse(error.message, 401) }
+  if (!identity) return errorResponse('Inicia sesión con Google para enviar un sticker.', 401)
+  if (!(await applyRateLimit(env.STICKER_UPLOAD_LIMITER, `sticker:${identity.uid}`))) return errorResponse('Alcanzaste el límite temporal de stickers.', 429)
+  let body
+  try { body = await imageBody(request) } catch (error) { return errorResponse(error.message, 400) }
+  if (!['image/png', 'image/webp'].includes(body.validation.mimeType)) return errorResponse('Usa un sticker PNG o WEBP real.', 400)
+  if (body.validation.originalWidth > stickerMaxWidth || body.validation.originalHeight > stickerMaxHeight) return errorResponse(`El sticker no puede superar ${stickerMaxWidth} × ${stickerMaxHeight} px.`, 400)
+  const id = crypto.randomUUID()
+  const objectKey = `stickers/${id}.${body.validation.extension}`
+  const ownerToken = randomToken()
+  await env.MEDIA_BUCKET.put(objectKey, body.bytes, {
+    httpMetadata: { contentType: body.validation.mimeType, cacheControl: 'private, no-store' },
+    customMetadata: {
+      kind: 'community-sticker',
+      ownerUid: identity.uid,
+      ownerTokenHash: await sha256(ownerToken),
+      originalWidth: String(body.validation.originalWidth),
+      originalHeight: String(body.validation.originalHeight),
+    },
+  })
+  return json({ id, objectKey, readUrl: `${new URL(request.url).origin}/v1/media/${objectKey}`, ownerToken, ...body.validation }, 201)
+}
+
 async function uploadNewsImage(request, env) {
   if (!isAllowedOrigin(request, env)) return errorResponse('Origen no autorizado.', 403)
   let identity
@@ -201,13 +229,13 @@ async function uploadNewsImage(request, env) {
 function validObjectKey(pathname) {
   try {
     const key = decodeURIComponent(pathname.replace(/^\/v1\/media\//, ''))
-    return /^(?:photos\/[0-9a-f-]+|setlist-covers\/(?:delusion|tres|tdbn|hoshi|singles|collaborations)\/[0-9a-f-]+|news\/[a-zA-Z0-9_-]{1,100}\/[0-9a-f-]+)\.(?:jpg|png|webp)$/.test(key) ? key : null
+    return /^(?:photos\/[0-9a-f-]+|stickers\/[0-9a-f-]+|setlist-covers\/(?:delusion|tres|tdbn|hoshi|singles|collaborations)\/[0-9a-f-]+|news\/[a-zA-Z0-9_-]{1,100}\/[0-9a-f-]+)\.(?:jpg|png|webp)$/.test(key) ? key : null
   } catch {
     return null
   }
 }
 
-async function canReadPhoto(request, object, env) {
+async function canReadPrivateMedia(request, object, env) {
   const suppliedToken = request.headers.get('X-Media-Token') || ''
   if (suppliedToken && safeEqual(await sha256(suppliedToken), object.customMetadata?.ownerTokenHash || '')) return true
   try {
@@ -228,14 +256,28 @@ async function approvedPhotoVisibility(key, env) {
   return document.fields?.visibility?.stringValue === 'PRIVATE' ? 'PRIVATE' : 'PUBLIC'
 }
 
+async function isApprovedSticker(key, env) {
+  const stickerId = key.match(/^stickers\/([0-9a-f-]+)\./)?.[1]
+  if (!stickerId) return false
+  const response = await fetch(firestoreDocumentUrl(env, `communityStickers/${encodeURIComponent(stickerId)}`))
+  if (!response.ok) return false
+  const document = await response.json()
+  return document.fields?.objectKey?.stringValue === key
+    && document.fields?.status?.stringValue === 'APPROVED'
+    && document.fields?.visibility?.stringValue === 'PUBLIC'
+    && document.fields?.publicApproved?.booleanValue === true
+}
+
 async function serveObject(request, env, key) {
   const object = await env.MEDIA_BUCKET.get(key)
   if (!object) return errorResponse('Archivo no encontrado.', 404)
   const approvedVisibility = key.startsWith('photos/') ? await approvedPhotoVisibility(key, env) : null
-  if (key.startsWith('photos/') && approvedVisibility !== 'PUBLIC' && !(await canReadPhoto(request, object, env))) return errorResponse('No tienes permiso para ver esta fotografía.', 403)
+  const approvedSticker = key.startsWith('stickers/') ? await isApprovedSticker(key, env) : false
+  if (key.startsWith('photos/') && approvedVisibility !== 'PUBLIC' && !(await canReadPrivateMedia(request, object, env))) return errorResponse('No tienes permiso para ver esta fotografía.', 403)
+  if (key.startsWith('stickers/') && !approvedSticker && !(await canReadPrivateMedia(request, object, env))) return errorResponse('Este sticker todavía no es público.', 403)
   const headers = new Headers()
   headers.set('Content-Type', object.httpMetadata?.contentType || 'application/octet-stream')
-  headers.set('Cache-Control', key.startsWith('setlist-covers/') || key.startsWith('news/') || approvedVisibility === 'PUBLIC' ? 'public, max-age=31536000, immutable' : 'private, no-store')
+  headers.set('Cache-Control', key.startsWith('setlist-covers/') || key.startsWith('news/') || approvedVisibility === 'PUBLIC' || approvedSticker ? 'public, max-age=31536000, immutable' : 'private, no-store')
   const etag = object.httpEtag || object.etag
   if (etag) headers.set('ETag', etag)
   return new Response(request.method === 'HEAD' ? null : object.body, { headers })
@@ -246,7 +288,13 @@ async function deleteObject(request, env, key) {
   const object = await env.MEDIA_BUCKET.get(key)
   if (!object) return new Response(null, { status: 204 })
   let allowed = false
-  if (key.startsWith('photos/')) allowed = await canReadPhoto(request, object, env)
+  if (key.startsWith('photos/')) allowed = await canReadPrivateMedia(request, object, env)
+  else if (key.startsWith('stickers/')) {
+    let identity
+    try { identity = await optionalIdentity(request, env) } catch { identity = null }
+    allowed = await isAdministrator(identity, env)
+      || (!(await isApprovedSticker(key, env)) && await canReadPrivateMedia(request, object, env))
+  }
   else {
     try { allowed = await isAdministrator(await optionalIdentity(request, env), env) } catch { allowed = false }
   }
@@ -262,6 +310,7 @@ export default {
     if (request.method === 'OPTIONS') response = isAllowedOrigin(request, env) ? new Response(null, { status: 204 }) : errorResponse('Origen no autorizado.', 403)
     else if (request.method === 'GET' && url.pathname === '/health') response = json({ ok: true, bucket: 'private' })
     else if (request.method === 'POST' && url.pathname === '/v1/photos') response = await uploadPhoto(request, env)
+    else if (request.method === 'POST' && url.pathname === '/v1/stickers') response = await uploadSticker(request, env)
     else if (request.method === 'POST' && url.pathname === '/v1/setlist-covers') response = await uploadSetlistCover(request, env)
     else if (request.method === 'POST' && url.pathname === '/v1/news-images') response = await uploadNewsImage(request, env)
     else if ((request.method === 'GET' || request.method === 'HEAD') && url.pathname.startsWith('/v1/media/')) {
