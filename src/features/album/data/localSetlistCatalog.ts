@@ -1,4 +1,4 @@
-export const setlistAlbumOrder = ['DELUSION', 'TRES', 'TDBN', 'HOSHI'] as const
+export const setlistAlbumOrder = ['DELUSION', 'TRES', 'TDBN', 'HOSHI', 'SINGLES', 'COLLABORATIONS'] as const
 export type SetlistAlbum = typeof setlistAlbumOrder[number]
 export type SetlistTrack = { id: string; title: string; coverUrl?: string; coverObjectKey?: string; album?: SetlistAlbum | 'OTHER'; createdAt: string }
 
@@ -7,7 +7,11 @@ export const setlistAlbumLabels: Record<SetlistAlbum, string> = {
   TRES: 'TRES',
   TDBN: 'tdbn',
   HOSHI: 'HOSHI',
+  SINGLES: 'Sencillos',
+  COLLABORATIONS: 'Colaboraciones',
 }
+
+export const dynamicSetlistCollections = new Set<SetlistAlbum>(['SINGLES', 'COLLABORATIONS'])
 
 const KEY = 'brattypolitan.setlist-catalog.v1'
 const copy = <T,>(value: T) => JSON.parse(JSON.stringify(value)) as T
@@ -18,10 +22,21 @@ const legacyHoshiTitles = new Set([
 const normalizeTitle = (title: string) => title.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
 
 export function getSetlistAlbum(track: SetlistTrack): SetlistAlbum | 'OTHER' {
+  if (track.album === 'SINGLES' || track.album === 'COLLABORATIONS') return track.album
   const coverName = track.coverUrl?.split(/[/?#]/).filter(Boolean).at(-1)?.replace(/\.[^.]+$/, '').toUpperCase()
   if (coverName === 'DELUSION' || coverName === 'TRES' || coverName === 'TDBN' || coverName === 'HOSHI') return coverName
   if (track.album && track.album !== 'OTHER') return track.album
   return legacyHoshiTitles.has(normalizeTitle(track.title)) ? 'HOSHI' : 'OTHER'
+}
+
+export function getSetlistGroupCovers(album: SetlistAlbum, tracks: SetlistTrack[]) {
+  const withCover = tracks.filter((track) => Boolean(track.coverUrl))
+  if (!dynamicSetlistCollections.has(album)) return withCover.slice(0, 1)
+  return withCover.sort((first, second) => {
+    const firstTime = Date.parse(first.createdAt)
+    const secondTime = Date.parse(second.createdAt)
+    return (Number.isFinite(secondTime) ? secondTime : 0) - (Number.isFinite(firstTime) ? firstTime : 0)
+  }).slice(0, 4)
 }
 
 export function isHoshiTrack(track: SetlistTrack) {

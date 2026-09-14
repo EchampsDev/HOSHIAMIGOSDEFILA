@@ -1,6 +1,6 @@
 import { MAX_IMAGE_BYTES, validateImage } from './imageValidation.mjs'
 
-const albums = new Set(['DELUSION', 'TRES', 'TDBN', 'HOSHI'])
+const albums = new Set(['DELUSION', 'TRES', 'TDBN', 'HOSHI', 'SINGLES', 'COLLABORATIONS'])
 const firebaseIssuerRoot = 'https://securetoken.google.com/'
 const firebaseJwksUrl = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com'
 let cachedJwks = null
@@ -201,7 +201,7 @@ async function uploadNewsImage(request, env) {
 function validObjectKey(pathname) {
   try {
     const key = decodeURIComponent(pathname.replace(/^\/v1\/media\//, ''))
-    return /^(?:photos\/[0-9a-f-]+|setlist-covers\/(?:delusion|tres|tdbn|hoshi)\/[0-9a-f-]+|news\/[a-zA-Z0-9_-]{1,100}\/[0-9a-f-]+)\.(?:jpg|png|webp)$/.test(key) ? key : null
+    return /^(?:photos\/[0-9a-f-]+|setlist-covers\/(?:delusion|tres|tdbn|hoshi|singles|collaborations)\/[0-9a-f-]+|news\/[a-zA-Z0-9_-]{1,100}\/[0-9a-f-]+)\.(?:jpg|png|webp)$/.test(key) ? key : null
   } catch {
     return null
   }

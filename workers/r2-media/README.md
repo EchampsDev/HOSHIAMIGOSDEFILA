@@ -16,7 +16,7 @@ Desde esta carpeta, despliega el Worker y define `VITE_R2_MEDIA_API_URL` en el e
 ## Contratos
 
 - `POST /v1/photos`: acepta una foto cuando la participación está abierta; admite identidad anónima limitada o token Firebase.
-- `POST /v1/setlist-covers`: requiere token Firebase y rol administrador.
+- `POST /v1/setlist-covers`: requiere token Firebase y rol administrador; acepta los cuatro álbumes, `SINGLES` y `COLLABORATIONS`.
 - `GET /v1/media/setlist-covers/...`: lectura pública con CORS.
 - `GET /v1/media/photos/...`: mientras la aportación está pendiente requiere token privado de propietario o sesión administradora; después de aprobarla permite lectura pública verificando `approvedMedia/{id}`.
 - `DELETE /v1/media/...`: propietario para su foto o administración para cualquier activo.

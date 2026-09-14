@@ -32,6 +32,18 @@ test('rechaza escapes URL malformados sin producir un error interno', async () =
   assert.equal(response.status, 400)
 })
 
+test('sirve las portadas públicas de sencillos y colaboraciones', async () => {
+  for (const collection of ['singles', 'collaborations']) {
+    const key = `setlist-covers/${collection}/123e4567-e89b-12d3-a456-426614174000.webp`
+    const response = await worker.fetch(new Request(`https://media.example/v1/media/${key}`), {
+      ...env,
+      MEDIA_BUCKET: { get: async () => ({ body: new Uint8Array([82, 73, 70, 70]), httpMetadata: { contentType: 'image/webp' }, etag: collection }) },
+    })
+    assert.equal(response.status, 200)
+    assert.equal(response.headers.get('Cache-Control'), 'public, max-age=31536000, immutable')
+  }
+})
+
 test('sirve públicamente una foto sólo cuando Firestore confirma su aprobación', async () => {
   const key = 'photos/123e4567-e89b-12d3-a456-426614174000.jpg'
   const previousFetch = globalThis.fetch

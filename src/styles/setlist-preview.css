@@ -132,6 +132,10 @@
 .setlist-album-toggle:hover,.setlist-album-toggle:focus-visible { background: linear-gradient(90deg,rgba(245,220,80,.08),rgba(70,5,15,.72)); outline: 0; }
 .setlist-album-art { position: relative; width: 88px; aspect-ratio: 1; display: grid; place-items: center; overflow: hidden; color: #f5dc50; border: 1px solid rgba(255,255,255,.24); background: #151515; font-size: 1.5rem; }
 .setlist-album-art img { width: 100%; height: 100%; object-fit: cover; }
+.setlist-album-art.is-mosaic { grid-template-columns: repeat(2,minmax(0,1fr)); grid-template-rows: repeat(2,minmax(0,1fr)); gap: 1px; background: #000; }
+.setlist-album-art.is-mosaic img { min-width: 0; min-height: 0; }
+.setlist-album-art.is-mosaic.mosaic-2 { grid-template-rows: 1fr; }
+.setlist-album-art.is-mosaic.mosaic-3 img:last-child { grid-column: 1 / -1; }
 .setlist-album-meta { min-width: 0; display: grid; gap: 9px; }
 .setlist-album-meta b { color: #f5dc50; font: 700 clamp(.9rem,2vw,1.12rem) 'DM Mono',monospace; letter-spacing: .13em; text-transform: uppercase; }
 .setlist-album-meta small { color: rgba(255,255,255,.56); font: .58rem 'DM Mono',monospace; text-transform: uppercase; }
