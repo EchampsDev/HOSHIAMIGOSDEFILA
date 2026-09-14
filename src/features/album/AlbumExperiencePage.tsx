@@ -9,6 +9,7 @@ import { getLocalParticipantId } from './domain/participantIdentity'
 import { clampLayout, isElementOwner, type AlbumElement, type ElementLayout } from './domain/types'
 import { useAlbum } from './hooks/useAlbum'
 import { useElementReactions } from '../reactions/hooks/useElementReactions'
+import { AlbumElementPreview } from './components/AlbumElementPreview'
 
 type Selection = { pageId: string; elementId: string }
 type Gesture = { pageId: string; elementId: string; mode: 'move' | 'resize' | 'rotate'; startX: number; startY: number; width: number; height: number; layout: ElementLayout; latest: ElementLayout; node: HTMLElement }
@@ -28,6 +29,7 @@ export function AlbumExperiencePage() {
   const [moveOpen, setMoveOpen] = useState(false)
   const [selection, setSelection] = useState<Selection | null>(null)
   const [editingElement, setEditingElement] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
   const [direction, setDirection] = useState<'next' | 'previous'>('next')
   const [bookmarkPage, setBookmarkPage] = useState(() => Number(localStorage.getItem('brattypolitan.album-bookmark-page')) || 1)
   const gesture = useRef<Gesture | null>(null)
@@ -38,6 +40,14 @@ export function AlbumExperiencePage() {
   }, [albumDocument, goToAlbum])
   useEffect(() => { localStorage.setItem('brattypolitan.album-view', viewMode) }, [viewMode])
   useEffect(() => { localStorage.setItem('brattypolitan.album-paper-theme', paperTheme) }, [paperTheme])
+  useEffect(() => {
+    if (!previewOpen) return
+    const previousOverflow = document.body.style.overflow
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setPreviewOpen(false) }
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', closeOnEscape)
+    return () => { document.body.style.overflow = previousOverflow; window.removeEventListener('keydown', closeOnEscape) }
+  }, [previewOpen])
   useEffect(() => {
     const move = (event: PointerEvent) => {
       const active = gesture.current
@@ -98,9 +108,11 @@ export function AlbumExperiencePage() {
   return <main className="album-experience">
     <header className="album-header"><Link to="/">BRATTYPOLITAN <ExperienceWord /></Link><p>LIBRETA DIGITAL · VOLUMEN 01</p></header>
     <section className={`album-reader${editingElement ? ' is-editing' : ''}`}>
-      <Scrapbook state={album.bookState} page={album.currentPage} leftPage={leftPage} rightPage={rightPage} bookmarkPage={bookmarkPage} viewerId={viewerId} selectedId={selection?.elementId} editable={editingElement} revealAll={canInspectAll} canInspectAll={canInspectAll} reactionsByElement={elementReactions.reactions} navigationLocked={editingElement} viewMode={viewMode} paperTheme={paperTheme} onBookmark={() => goTo(bookmarkPage)} direction={direction} onPrevious={previous} onNext={next} onSelect={(pageId, elementId) => { if (selection?.elementId !== elementId) setEditingElement(false); setSelection({ pageId, elementId }) }} onLike={session.user ? (_pageId, element) => void elementReactions.toggle(element.id, session.user!.uid) : undefined} onElementPointerDown={beginGesture} />
+      <Scrapbook state={album.bookState} page={album.currentPage} leftPage={leftPage} rightPage={rightPage} bookmarkPage={bookmarkPage} viewerId={viewerId} selectedId={selection?.elementId} editable={editingElement} revealAll={canInspectAll} canInspectAll={canInspectAll} reactionsByElement={elementReactions.reactions} navigationLocked={editingElement} viewMode={viewMode} paperTheme={paperTheme} onBookmark={() => goTo(bookmarkPage)} direction={direction} onPrevious={previous} onNext={next} onSelect={(pageId, elementId) => { if (selection?.elementId !== elementId) setEditingElement(false); setPreviewOpen(false); setSelection({ pageId, elementId }) }} onLike={session.user ? (_pageId, element) => void elementReactions.toggle(element.id, session.user!.uid) : undefined} onElementPointerDown={beginGesture} />
       {selected && <aside className="album-owner-tools album-contribution-details" aria-label="Datos de la aportación">
-        <div><b>{selectedOwned ? 'Tu publicación' : 'Aportación'} · cara {selected.page.pageNumber}</b><small>{editingElement ? 'Edición activa: la página está bloqueada y sólo se moverá este elemento.' : 'Datos de la persona que compartió este recuerdo.'}</small><dl><div><dt>Nombre</dt><dd>{selected.element.author.displayName || 'Anónimo'}</dd></div><div><dt>Edad</dt><dd>{selected.element.author.age ?? 'No indicada'}</dd></div><div><dt>Identificador</dt><dd>{selected.element.author.participantId}</dd></div><div><dt>Publicación</dt><dd>{new Date(selected.element.createdAt).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })}</dd></div><div><dt>Visibilidad</dt><dd>{selected.element.visibility === 'PRIVATE' ? 'Privada' : 'Pública'}</dd></div></dl></div>
+        <div className="album-contribution-information"><b>{selectedOwned ? 'Tu publicación' : 'Aportación'} · cara {selected.page.pageNumber}</b><small>{editingElement ? 'Edición activa: la página está bloqueada y sólo se moverá este elemento.' : 'Datos de la persona que compartió este recuerdo.'}</small><dl><div><dt>Nombre</dt><dd>{selected.element.author.displayName || 'Anónimo'}</dd></div><div><dt>Edad</dt><dd>{selected.element.author.age ?? 'No indicada'}</dd></div><div><dt>Identificador</dt><dd>{selected.element.author.participantId}</dd></div><div><dt>Publicación</dt><dd>{new Date(selected.element.createdAt).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })}</dd></div><div><dt>Visibilidad</dt><dd>{selected.element.visibility === 'PRIVATE' ? 'Privada' : 'Pública'}</dd></div></dl></div>
+        <button type="button" className="album-contribution-preview" onClick={() => setPreviewOpen(true)} aria-label="Ampliar aportación en pantalla completa"><AlbumElementPreview element={selected.element} /><span>Ver en pantalla completa</span></button>
+        <div className="album-contribution-actions">
         {selectedOwned && (!editingElement ? <button type="button" className="album-edit-trigger" onClick={() => setEditingElement(true)}>Editar elemento</button> : <>
         <button type="button" onClick={() => patchSelectedLayout({ x: selected.element.layout.x - .03 })} aria-label="Mover a la izquierda">←</button>
         <button type="button" onClick={() => patchSelectedLayout({ y: selected.element.layout.y - .03 })} aria-label="Mover arriba">↑</button>
@@ -115,6 +127,7 @@ export function AlbumExperiencePage() {
         <button type="button" onClick={() => { gesture.current = null; setEditingElement(false) }}>Terminar edición</button>
         <button type="button" className="is-danger" onClick={() => { if (window.confirm('¿Eliminar definitivamente tu publicación?')) void album.deleteOwnedElement(selected.page.id, selected.element.id, viewerId).then(() => { setEditingElement(false); setSelection(null) }) }}>Eliminar</button></>)}
         {!editingElement && <button type="button" onClick={() => setSelection(null)}>Cerrar</button>}
+        </div>
       </aside>}
       <AlbumControls state={album.bookState} pageNumber={album.pageNumber} pageCount={album.album?.pageCount ?? 100} bookmarkPage={bookmarkPage} onBookmarkPage={setBookmark} presenting={album.isPresenting} paused={album.isPaused} locked={editingElement} viewMode={viewMode} paperTheme={paperTheme} onViewMode={(mode) => { setSelection(null); setViewMode(mode) }} onPaperTheme={setPaperTheme} onPrevious={previous} onNext={next} onIndex={() => setIndexOpen(true)} onPresent={album.startPresentation} onPause={album.pausePresentation} onResume={album.resumePresentation} />
       {album.syncError && <p className="album-sync-error">{album.syncError}</p>}
@@ -122,6 +135,7 @@ export function AlbumExperiencePage() {
     </section>
     <PageIndex open={indexOpen} pages={album.album?.pages} pageCount={album.album?.pageCount ?? 100} current={album.pageNumber} ownerId={viewerId} onClose={() => setIndexOpen(false)} onGoTo={goTo} />
     <PageIndex open={moveOpen} pages={album.album?.pages} pageCount={album.album?.pageCount ?? 100} current={selected?.page.pageNumber ?? album.pageNumber} ownerId={viewerId} mode="select" allowCurrentFull title="Mover tu publicación" onClose={() => setMoveOpen(false)} onGoTo={(pageNumber) => { if (!selected || !album.album) return; const target = album.album.pages[pageNumber - 1]; void album.moveOwnedElement(selected.page.id, selected.element.id, target.id, viewerId).then((moved) => { if (moved) { setDirection(pageNumber >= album.pageNumber ? 'next' : 'previous'); album.goTo(pageNumber); setSelection({ pageId: target.id, elementId: selected.element.id }) } }) }} />
+    {selected && previewOpen && <div className="album-contribution-lightbox" role="dialog" aria-modal="true" aria-label="Aportación en pantalla completa" onClick={() => setPreviewOpen(false)}><button type="button" autoFocus aria-label="Cerrar pantalla completa" onClick={() => setPreviewOpen(false)}>×</button><div onClick={(event) => event.stopPropagation()}><AlbumElementPreview element={selected.element} expanded /></div></div>}
     <p className="album-reader-note">Cada cara es independiente · máximo cuatro elementos por cara.</p>
   </main>
 }

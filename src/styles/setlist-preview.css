@@ -54,6 +54,7 @@
 .site-shell:has(.contribution) .memory-wizard-field input,.site-shell:has(.contribution) .memory-wizard-field textarea { min-height: 64px; padding: 16px 18px; border-color: rgba(245,220,80,.48); background: rgba(0,0,0,.58); font-size: 1.1rem; }
 .site-shell:has(.contribution) .memory-wizard-field input:focus,.site-shell:has(.contribution) .memory-wizard-field textarea:focus { border-color: #f5dc50; outline: 2px solid rgba(245,220,80,.18); outline-offset: 2px; }
 .site-shell:has(.contribution) .memory-wizard-message textarea { min-height: 170px; resize: vertical; line-height: 1.5; }
+.site-shell:has(.contribution) .memory-photo-caption textarea { min-height: 112px; }
 .memory-wizard-message > small { justify-self: end; color: rgba(255,255,255,.48); font: .62rem 'DM Mono',monospace; }
 .memory-type-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 11px; }
 .contribution-form .memory-type-grid button { width: 100%; min-height: 112px; justify-self: stretch; display: grid; grid-template-columns: 48px minmax(0,1fr); align-items: center; gap: 14px; padding: 16px; color: #fff; border: 1px solid rgba(255,255,255,.22); background: rgba(3,5,10,.62); text-align: left; transition: transform .22s ease,border-color .22s ease,background .22s ease,box-shadow .22s ease; }
