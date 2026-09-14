@@ -1,4 +1,4 @@
-export const STICKER_MAX_BYTES = 1024 * 1024
+export const STICKER_MAX_BYTES = 5 * 1024 * 1024
 export const STICKER_MIN_DIMENSION = 32
 export const STICKER_MAX_DIMENSION = 1024
 
@@ -35,7 +35,7 @@ async function readDimensions(file: File) {
 export async function validateStickerFile(file: File): Promise<ValidatedStickerFile> {
   const extension = file.name.split('.').pop()?.toLowerCase()
   if (!allowedMimeTypes.has(file.type) || (extension !== 'png' && extension !== 'webp')) throw new Error('Usa un archivo PNG o WEBP real.')
-  if (!file.size || file.size > STICKER_MAX_BYTES) throw new Error('El sticker debe pesar como máximo 1 MB.')
+  if (!file.size || file.size > STICKER_MAX_BYTES) throw new Error('El sticker debe pesar como máximo 5 MB.')
   const signature = new Uint8Array(await file.slice(0, 12).arrayBuffer())
   if (!hasValidSignature(signature, file.type)) throw new Error('La extensión no coincide con el contenido real del archivo.')
   const dimensions = await readDimensions(file)
