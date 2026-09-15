@@ -59,8 +59,10 @@ span.cover-page-edge { position: absolute !important; z-index: 0 !important; top
 .album-page-title { position: absolute; top: 6%; left: 8%; margin: 0; color: rgba(62,48,34,.55); font-family: 'DM Mono', monospace; font-size: .58rem; letter-spacing: .14em; }
 .album-element { position: absolute; min-width: 0; overflow: visible; padding: 5% 6%; display: grid; align-content: center; gap: 7px; border: 1px solid rgba(62,43,28,.23); background: rgba(255,250,235,.76); box-shadow: 3px 5px 10px rgba(64,43,27,.17); transform-origin: center; user-select: none; }
 .album-element-type { color: rgba(50,38,27,.52); font-family: 'DM Mono', monospace; font-size: clamp(.35rem, 1.4vw, .57rem); letter-spacing: .09em; }
-.album-element-content { white-space: pre-line; font-size: clamp(.58rem, 2.4vw, 1.1rem); line-height: 1.14; }
+.album-element-content { min-width: 0; max-width: 100%; max-height: 100%; overflow: hidden; overflow-wrap: anywhere; white-space: pre-line; font-size: clamp(.58rem, 2.4vw, 1.1rem); line-height: 1.14; }
 .type-post_it { background: #f6d875; border: 0; }
+.type-post_it .album-element-content,.type-text .album-element-content,.type-handwritten_note .album-element-content { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:4; line-clamp:4; text-overflow:ellipsis; }
+.type-text .album-element-content,.type-handwritten_note .album-element-content { -webkit-line-clamp:5; line-clamp:5; }
 .type-post_it.postit-green { background: #8fd878; }.type-post_it.postit-blue { background: #83b8ee; }.type-post_it.postit-purple { background: #b493e8; }.type-post_it.postit-pink { background: #f49ab7; }.type-post_it.postit-red { background: #e85e63; }.type-post_it.postit-brown { background: #b67a51; }.type-post_it.postit-violet { background: #8c67d6; }.type-post_it.postit-white { background: #fffdf3; }.type-post_it.postit-black { color: #fff; background: #171719; }.type-post_it.postit-gray { background: #a9adb4; }.type-post_it.postit-dark-green { color: #fff; background: #255d4a; }.type-post_it.postit-royal-blue { color: #fff; background: #2457bf; }.type-post_it.postit-cyan { background: #59d7e3; }.type-post_it.postit-pride { background: linear-gradient(140deg,#e95760 0 17%,#f39d4b 17% 33%,#f4d452 33% 49%,#65bd73 49% 65%,#5c91da 65% 81%,#9a6cc8 81%); }
 .type-placeholder { border-style: dashed; background: rgba(240,232,211,.54); }
 .type-sticker { color: #fff7e8; border: 0; background: #dd3148; border-radius: 50%; text-align: center; }
@@ -136,6 +138,8 @@ span.cover-page-edge { position: absolute !important; z-index: 0 !important; top
 .album-contribution-details dl div { min-width: 0; padding: 7px; border: 1px solid rgba(247,237,223,.14); background: rgba(0,0,0,.2); }
 .album-contribution-details dt { color: #d9b65d; font: .48rem 'DM Mono',monospace; letter-spacing: .05em; text-transform: uppercase; }
 .album-contribution-details dd { margin: 3px 0 0; overflow-wrap: anywhere; font-size: .66rem; }
+.album-contribution-details dl div.is-wide { grid-column:1 / -1; }
+.album-contribution-details dl div.is-wide dd { white-space:pre-wrap; line-height:1.45; }
 .album-contribution-preview { min-height: 220px !important; position: relative; overflow: hidden; padding: 0 !important; border-color: rgba(232,185,92,.65) !important; background: #080706 !important; }
 .album-contribution-preview > span { position: absolute; z-index: 3; right: 8px; bottom: 8px; padding: 6px 8px; color: #fff; background: rgba(0,0,0,.76); font: .48rem 'DM Mono',monospace; letter-spacing: .05em; text-transform: uppercase; }
 .album-contribution-actions { grid-column: 1 / -1; display: flex !important; flex: none !important; flex-wrap: wrap; gap: 7px !important; }

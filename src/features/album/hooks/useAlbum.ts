@@ -71,10 +71,10 @@ export function useAlbum(localOnly = false, spreadMode = false) {
     element.content = title
     savePage({ ...currentPage, elements: [...currentPage.elements, element], updatedAt: new Date().toISOString() })
   }, [currentPage, savePage])
-  const updateElementOnPage = useCallback((pageId: string, elementId: string, patch: Partial<Omit<AlbumElement, 'id' | 'pageId'>>, actorId?: string) => {
+  const updateElementOnPage = useCallback((pageId: string, elementId: string, patch: Partial<Omit<AlbumElement, 'id' | 'pageId'>>, actorId?: string, canManageAll = false) => {
     const page = album?.pages.find((item) => item.id === pageId)
     const existing = page?.elements.find((element) => element.id === elementId)
-    if (!page || !existing || (actorId && !isElementOwner(existing, actorId))) return false
+    if (!page || !existing || (actorId && !canManageAll && !isElementOwner(existing, actorId))) return false
     const elements = page.elements.map((element) => element.id !== elementId ? element : { ...element, ...patch, layout: patch.layout ? clampLayout(patch.layout as ElementLayout) : element.layout, updatedAt: new Date().toISOString() })
     savePage({ ...page, elements, updatedAt: new Date().toISOString() })
     return true
