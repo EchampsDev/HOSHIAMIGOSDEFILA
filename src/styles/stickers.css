@@ -71,7 +71,7 @@
 .album-sticker-editor > button:disabled { opacity: .4; }
 
 .album-element.type-sticker:has(.album-sticker-image) { padding: 0; border: 0; background: transparent; box-shadow: none; overflow: visible; }
-.album-sticker-image { display: block; width: 100%; height: 100%; object-fit: contain; user-select: none; filter: drop-shadow(0 .3rem .35rem rgba(0, 0, 0, .28)); }
+.album-sticker-image { display: block; width: 100%; height: 100%; object-fit: contain; user-select: none; filter: none; }
 .album-element.type-sticker:has(.album-sticker-image) .album-element-author { transform: translateY(100%); background: rgba(255, 251, 237, .85); }
 
 @media (min-width: 680px) {

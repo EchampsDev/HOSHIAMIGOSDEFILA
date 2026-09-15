@@ -6,7 +6,7 @@ import { AlbumControls, type ReaderPaperTheme, type ReaderViewMode } from './com
 import { PageIndex } from './components/PageIndex'
 import { Scrapbook } from './components/Scrapbook'
 import { getLocalParticipantId } from './domain/participantIdentity'
-import { clampLayout, isElementOwner, type AlbumElement, type ElementLayout } from './domain/types'
+import { clampLayout, isElementOwner, resizeLayoutProportionally, scaleLayoutProportionally, type AlbumElement, type ElementLayout } from './domain/types'
 import { useAlbum } from './hooks/useAlbum'
 import { useElementReactions } from '../reactions/hooks/useElementReactions'
 import { AlbumElementPreview } from './components/AlbumElementPreview'
@@ -30,6 +30,7 @@ export function AlbumExperiencePage() {
   const [selection, setSelection] = useState<Selection | null>(null)
   const [editingElement, setEditingElement] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
+  const [interactionHint, setInteractionHint] = useState(true)
   const [direction, setDirection] = useState<'next' | 'previous'>('next')
   const [bookmarkPage, setBookmarkPage] = useState(() => Number(localStorage.getItem('brattypolitan.album-bookmark-page')) || 1)
   const gesture = useRef<Gesture | null>(null)
@@ -40,6 +41,10 @@ export function AlbumExperiencePage() {
   }, [albumDocument, goToAlbum])
   useEffect(() => { localStorage.setItem('brattypolitan.album-view', viewMode) }, [viewMode])
   useEffect(() => { localStorage.setItem('brattypolitan.album-paper-theme', paperTheme) }, [paperTheme])
+  useEffect(() => {
+    const timer = window.setTimeout(() => setInteractionHint(false), 4_600)
+    return () => window.clearTimeout(timer)
+  }, [])
   useEffect(() => {
     if (!previewOpen) return
     const previousOverflow = document.body.style.overflow
@@ -59,7 +64,9 @@ export function AlbumExperiencePage() {
         ? clampLayout({ ...active.layout, x: active.layout.x + deltaX, y: active.layout.y + deltaY })
         : active.mode === 'rotate'
           ? { ...active.layout, rotation: Math.round(active.layout.rotation + deltaX * 180) }
-          : clampLayout({ ...active.layout, width: active.layout.width + deltaX, height: active.layout.height + deltaY })
+          : active.node.classList.contains('type-setlist')
+            ? resizeLayoutProportionally(active.layout, deltaX, deltaY, .2, .1)
+            : clampLayout({ ...active.layout, width: active.layout.width + deltaX, height: active.layout.height + deltaY })
       active.latest = layout
       active.node.style.left = `${layout.x * 100}%`
       active.node.style.top = `${layout.y * 100}%`
@@ -95,6 +102,13 @@ export function AlbumExperiencePage() {
     if (!selected) return
     album.updateElementOnPage(selected.page.id, selected.element.id, { layout: clampLayout({ ...selected.element.layout, ...patch }) }, viewerId)
   }
+  const scaleSelected = (scale: number) => {
+    if (!selected) return
+    const layout = selected.element.type === 'SETLIST'
+      ? scaleLayoutProportionally(selected.element.layout, scale, .2, .1)
+      : scaleLayoutProportionally(selected.element.layout, scale)
+    album.updateElementOnPage(selected.page.id, selected.element.id, { layout }, viewerId)
+  }
   const beginGesture = (event: ReactPointerEvent<HTMLDivElement>, pageId: string, element: AlbumElement, mode: Gesture['mode']) => {
     if (element.layout.locked) return
     const paper = event.currentTarget.closest('.album-paper')?.getBoundingClientRect()
@@ -108,6 +122,7 @@ export function AlbumExperiencePage() {
   return <main className="album-experience">
     <header className="album-header"><Link to="/">BRATTYPOLITAN <ExperienceWord /></Link><p>LIBRETA DIGITAL · VOLUMEN 01</p></header>
     <section className={`album-reader${editingElement ? ' is-editing' : ''}`}>
+      {interactionHint && <p className="album-interaction-hint" role="status">Pulsa una aportación para ver más información.</p>}
       <Scrapbook state={album.bookState} page={album.currentPage} leftPage={leftPage} rightPage={rightPage} bookmarkPage={bookmarkPage} viewerId={viewerId} selectedId={selection?.elementId} editable={editingElement} revealAll={canInspectAll} canInspectAll={canInspectAll} reactionsByElement={elementReactions.reactions} navigationLocked={editingElement} viewMode={viewMode} paperTheme={paperTheme} onBookmark={() => goTo(bookmarkPage)} direction={direction} onPrevious={previous} onNext={next} onSelect={(pageId, elementId) => { if (selection?.elementId !== elementId) setEditingElement(false); setPreviewOpen(false); setSelection({ pageId, elementId }) }} onLike={session.user ? (_pageId, element) => void elementReactions.toggle(element.id, session.user!.uid) : undefined} onElementPointerDown={beginGesture} />
       {selected && <aside className="album-owner-tools album-contribution-details" aria-label="Datos de la aportación">
         <div className="album-contribution-information"><b>{selectedOwned ? 'Tu publicación' : 'Aportación'} · cara {selected.page.pageNumber}</b><small>{editingElement ? 'Edición activa: la página está bloqueada y sólo se moverá este elemento.' : 'Datos de la persona que compartió este recuerdo.'}</small><dl><div><dt>Nombre</dt><dd>{selected.element.author.displayName || 'Anónimo'}</dd></div><div><dt>Edad</dt><dd>{selected.element.author.age ?? 'No indicada'}</dd></div><div><dt>Identificador</dt><dd>{selected.element.author.participantId}</dd></div><div><dt>Publicación</dt><dd>{new Date(selected.element.createdAt).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })}</dd></div><div><dt>Visibilidad</dt><dd>{selected.element.visibility === 'PRIVATE' ? 'Privada' : 'Pública'}</dd></div></dl></div>
@@ -118,8 +133,8 @@ export function AlbumExperiencePage() {
         <button type="button" onClick={() => patchSelectedLayout({ y: selected.element.layout.y - .03 })} aria-label="Mover arriba">↑</button>
         <button type="button" onClick={() => patchSelectedLayout({ y: selected.element.layout.y + .03 })} aria-label="Mover abajo">↓</button>
         <button type="button" onClick={() => patchSelectedLayout({ x: selected.element.layout.x + .03 })} aria-label="Mover a la derecha">→</button>
-        <button type="button" onClick={() => patchSelectedLayout({ width: selected.element.layout.width - .04, height: selected.element.layout.height - .04 })}>− Tamaño</button>
-        <button type="button" onClick={() => patchSelectedLayout({ width: selected.element.layout.width + .04, height: selected.element.layout.height + .04 })}>+ Tamaño</button>
+        <button type="button" onClick={() => scaleSelected(.88)}>− Tamaño</button>
+        <button type="button" onClick={() => scaleSelected(1.12)}>+ Tamaño</button>
         <button type="button" onClick={() => patchSelectedLayout({ rotation: selected.element.layout.rotation - 5 })}>↶ Rotar</button>
         <button type="button" onClick={() => patchSelectedLayout({ rotation: selected.element.layout.rotation + 5 })}>↷ Rotar</button>
         <button type="button" onClick={() => patchSelectedLayout({ zIndex: Math.max(...selected.page.elements.map((item) => item.layout.zIndex), 0) + 1 })}>Traer al frente</button>

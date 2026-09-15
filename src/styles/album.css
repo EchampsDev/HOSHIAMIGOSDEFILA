@@ -146,7 +146,7 @@ span.cover-page-edge { position: absolute !important; z-index: 0 !important; top
 .album-contribution-artwork-photo { width: 100%; height: 100%; min-height: 0; object-fit: contain; background: #090909; }
 .album-contribution-artwork.type-photo > p { width: 100%; max-width: none; max-height: 4.35em; padding: 8px 10px; box-sizing: border-box; color: #3d3027; background: #fffaf0; font-size: .76rem; }
 .album-contribution-artwork.type-sticker { border-radius: 0; background: radial-gradient(circle,rgba(213,45,69,.2),transparent 62%),#0b0908; }
-.album-contribution-artwork-sticker { width: min(72%,260px); max-height: 72%; object-fit: contain; filter: drop-shadow(0 12px 22px rgba(0,0,0,.4)); }
+.album-contribution-artwork-sticker { width: min(72%,260px); max-height: 72%; object-fit: contain; filter: none; }
 .album-contribution-artwork.type-post_it { color: #30251d; }
 .album-contribution-artwork.type-text,.album-contribution-artwork.type-handwritten_note { color: #3c2e24; background: repeating-linear-gradient(to bottom,#fffaf0 0 31px,#d9d0bf 32px); }
 .album-contribution-artwork.type-setlist { display: grid; color: #fff; background: radial-gradient(circle at 50% 20%,#193b7a,#081126 72%); }
@@ -273,8 +273,9 @@ span.cover-page-edge { position: absolute !important; z-index: 0 !important; top
 .scrapbook-theme-black .blank-paper { background:#08090c; }
 
 .scrapbook-single { position:relative; width:min(96vw,680px,calc(82svh * .72)); aspect-ratio:.72; isolation:isolate; filter:drop-shadow(18px 24px 24px rgba(0,0,0,.48)); }
-.scrapbook-single::before { content:''; position:absolute; z-index:-2; inset:-10px -12px -14px; border-radius:8px; background:linear-gradient(130deg,#1014a4,#2729ef 52%,#080c70); box-shadow:0 24px 50px rgba(0,0,0,.52); }
-.scrapbook-single::after { content:''; position:absolute; z-index:-1; inset:4px -8px -9px 4px; background:repeating-linear-gradient(to bottom,#f5ead1 0 1px,#c6b99e 1px 2px,#efe2c5 2px 4px); }
+.scrapbook-single::before { content:''; position:absolute; z-index:-2; inset:-10px -12px -14px; border-radius:8px; background:linear-gradient(130deg,#8c0813,#e42135 52%,#65040c); box-shadow:0 24px 50px rgba(0,0,0,.52); }
+.scrapbook-single::after { content:''; position:absolute; z-index:-1; inset:4px -8px -9px 4px; background:repeating-linear-gradient(to bottom,#fff 0 1px,#d7d4ce 1px 2px,#f8f7f3 2px 4px); }
+.scrapbook-theme-cream.scrapbook-single .album-paper { background-color:#fff; box-shadow:inset 0 0 24px rgba(72,60,48,.08); }
 .scrapbook-sheet--single { width:100%; height:100%; overflow:visible; }
 .scrapbook-sheet--single .album-paper { z-index:2; overflow:hidden; }
 .single-page-zone { position:absolute; z-index:14; top:50%; display:grid; place-items:center; width:34px; aspect-ratio:1; color:#fff; border:1px solid rgba(255,255,255,.36); border-radius:50%; background:rgba(4,6,18,.58); opacity:.55; font:700 .8rem 'DM Mono',monospace; transform:translateY(-50%); pointer-events:none; }
@@ -345,7 +346,7 @@ span.cover-page-edge { position: absolute !important; z-index: 0 !important; top
 /* Marcador exterior y estrella fija de la pasta */
 .cover-four-point-star,
 .cover-four-point-star.is-active { animation:none !important; transition:none !important; transform:none !important; }
-.scrapbook-sheet > .album-page-bookmark { z-index:5; top:4%; bottom:-8%; width:6.5%; height:auto; padding-top:4%; }
+.scrapbook-sheet > .album-page-bookmark { z-index:5; top:4%; bottom:-3%; width:6.5%; height:auto; padding-top:4%; }
 .scrapbook-sheet--left > .album-page-bookmark { right:auto; left:5%; }
 .scrapbook-sheet--right > .album-page-bookmark,
 .scrapbook-sheet--single > .album-page-bookmark { right:5%; left:auto; }
@@ -361,11 +362,12 @@ span.cover-page-edge { position: absolute !important; z-index: 0 !important; top
 .scrapbook-sheet > .album-page-bookmark i { position:absolute; z-index:2; right:0; bottom:1.5%; left:0; text-align:center; }
 .scrapbook-spread { --bookmark-width:3.25%; }
 .scrapbook-single,.scrapbook-cover { --bookmark-width:6.5%; }
-.album-bookmark-tail { position:absolute; z-index:10; top:calc(100% - 1px); bottom:auto; width:var(--bookmark-width); height:5%; display:grid; place-items:center; box-sizing:border-box; color:#fff; background:linear-gradient(90deg,#003dca,#1477ff 50%,#003da6); box-shadow:3px 4px 7px rgba(0,0,0,.38); pointer-events:none; }
+.album-bookmark-tail { position:absolute; z-index:10; top:calc(100% - 1px); bottom:auto; width:var(--bookmark-width); height:4%; display:grid; place-items:center; box-sizing:border-box; color:#fff; background:linear-gradient(90deg,#003dca,#1477ff 50%,#003da6); box-shadow:3px 4px 7px rgba(0,0,0,.38); pointer-events:none; }
 .album-bookmark-tail::after { content:''; position:absolute; right:0; bottom:0; left:0; height:34%; background:inherit; clip-path:polygon(0 0,100% 0,100% 100%,50% 69%,0 100%); filter:brightness(.9); }
 .album-bookmark-tail i { position:relative; z-index:2; align-self:center; padding-bottom:8%; font:700 clamp(.42rem,1.25vw,.62rem) 'DM Mono',monospace; font-style:normal; }
 .scrapbook-spread > .album-bookmark-tail.marker-left { left:2.5%; }
 .scrapbook-spread > .album-bookmark-tail.marker-right { right:2.5%; }
+.scrapbook-spread > .album-bookmark-tail { top:94%; }
 .scrapbook-single > .album-bookmark-tail.marker-left { left:5%; }
 .scrapbook-single > .album-bookmark-tail.marker-right { right:5%; }
 .cover-bookmark.marker-left { right:auto; left:7%; }
@@ -402,7 +404,7 @@ span.cover-page-edge { position: absolute !important; z-index: 0 !important; top
 .scrapbook-cover.front-cover::before,
 .front-cover > .spiral-binding,
 .front-cover > .cover-page-edge { display:none; }
-.front-cover .cover-bookmark { top:97%; bottom:auto; width:2.75%; height:5%; display:grid; }
+.front-cover .cover-bookmark { top:96%; bottom:auto; width:2.75%; height:4%; display:grid; }
 .front-cover .cover-bookmark.marker-left { right:auto; left:32.5%; }
 .front-cover .cover-bookmark.marker-right { right:32.5%; left:auto; }
 .front-cover .cover-kicker,
@@ -478,6 +480,8 @@ span.cover-page-edge { position: absolute !important; z-index: 0 !important; top
 }
 .scrapbook-spread .open-cover-panel::before { display:none; }
 .scrapbook-spread .open-cover-panel .cover-four-point-star { filter:drop-shadow(0 0 2px #fff0d2) drop-shadow(0 0 9px rgba(78,0,0,.8)); }
+.scrapbook-spread .open-cover-panel .cover-hoshi-message { width:100%; max-width:100%; }
+.scrapbook-spread .open-cover-panel .cover-hoshi-message b { max-width:100%; font-size:clamp(.62rem,2.8vw,1.35rem); line-height:1.05; white-space:nowrap; }
 .scrapbook-spread .open-cover-panel small { color:rgba(255,248,230,.8); }
 .scrapbook-theme-black.scrapbook-spread .album-paper { background-color:rgba(8,9,12,.9); }
 
@@ -488,4 +492,20 @@ span.cover-page-edge { position: absolute !important; z-index: 0 !important; top
   .front-cover .cover-hoshi-message b { font-size:clamp(.62rem,3.2vw,1rem); }
   .scrapbook-spread .album-page-title { top:4%; left:6%; }
   .scrapbook-spread .album-page-number { right:5%; bottom:3%; }
+}
+
+/* Interacción limpia y escalado proporcional de aportaciones. */
+.album-reader { position:relative; }
+.album-interaction-hint { position:absolute; z-index:30; top:-24px; left:50%; width:max-content; max-width:min(90vw,520px); margin:0; padding:5px 9px; color:rgba(255,248,234,.82); border:1px solid rgba(232,189,85,.28); background:rgba(10,8,7,.72); font:.55rem 'DM Mono',monospace; letter-spacing:.04em; text-align:center; pointer-events:none; transform:translateX(-50%); animation:album-interaction-hint 4.5s ease both; }
+@keyframes album-interaction-hint { 0% { opacity:0; transform:translate(-50%,-5px); } 10%,72% { opacity:1; transform:translate(-50%,0); } 100% { opacity:0; transform:translate(-50%,-3px); } }
+
+.album-element.type-setlist { container-type:size; }
+.album-element.type-setlist .album-setlist-tracks { height:84cqh; grid-template-columns:1fr; grid-template-rows:repeat(3,minmax(0,1fr)); gap:2cqh; }
+.album-element.type-setlist .album-setlist-track { grid-template-columns:18cqh 11cqh minmax(0,1fr); min-height:0; gap:2cqh; padding:1.4cqh 2cqh; font-size:min(5.4cqh,4.2cqw); line-height:1; }
+.album-element.type-setlist .album-setlist-track i { width:18cqh; height:18cqh; }
+.album-element.type-setlist .album-setlist-track em { overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.album-element.type-setlist .album-element-author { height:12cqh; margin-top:2cqh; overflow:hidden; font-size:min(4.2cqh,3.3cqw); line-height:1.1; white-space:nowrap; text-overflow:ellipsis; }
+
+@media (prefers-reduced-motion:reduce) {
+  .album-interaction-hint { animation:none; }
 }

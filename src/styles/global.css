@@ -236,6 +236,14 @@ a:focus-visible,
 .admin-notification-preview { width: 72px; height: 72px; display: grid; place-items: center; overflow: hidden; color: #f5dc50; background: #1b1917; font-size: 1.6rem; }
 .admin-notification-preview img { width: 100%; height: 100%; object-fit: cover; }
 .admin-notification-preview.is-sticker img { object-fit: contain; padding: 4px; }
+.admin-notification-preview .album-contribution-artwork { width: 100%; height: 100%; min-height: 0; gap: 0; padding: 4px; }
+.admin-notification-preview .album-contribution-artwork-label { display: none; }
+.admin-notification-preview .album-contribution-artwork > p { max-width: 100%; max-height: 100%; overflow: hidden; font-size: .48rem; line-height: 1.15; }
+.admin-notification-preview .album-contribution-artwork.type-photo { grid-template-rows: 1fr; padding: 0; }
+.admin-notification-preview .album-contribution-artwork.type-photo > p { display: none; }
+.admin-notification-preview .album-contribution-artwork-sticker { width: 90%; max-height: 90%; }
+.admin-notification-preview .album-contribution-artwork ol { width: 100%; gap: 2px; padding: 0; }
+.admin-notification-preview .album-contribution-artwork li { grid-template-columns: 12px 1fr; gap: 2px; padding: 2px; font-size: .38rem; }
 .admin-notification-copy { min-width: 0; display: grid; gap: 4px; }
 .admin-notification-copy small,.admin-notification-copy time { color: #d9b65d; font: .54rem 'DM Mono',monospace; letter-spacing: .06em; }
 .admin-notification-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -248,6 +256,7 @@ a:focus-visible,
 .admin-notification-review { grid-column: 1 / -1; display: grid; gap: 12px; padding-top: 12px; border-top: 1px solid #34302c; }
 .admin-notification-review-media { min-height: 150px; max-height: 280px; display: grid; place-items: center; overflow: hidden; color: #f8efe3; background: #080808; }
 .admin-notification-review-media img { width: 100%; height: 100%; object-fit: contain; }
+.admin-notification-review-media .album-contribution-artwork { min-height: 220px; }
 .admin-notification-review dl { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin: 0; }
 .admin-notification-review dl div { min-width: 0; padding: 8px; border: 1px solid #302c28; }
 .admin-notification-review dt { color: #d9b65d; font: .5rem 'DM Mono',monospace; letter-spacing: .06em; text-transform: uppercase; }

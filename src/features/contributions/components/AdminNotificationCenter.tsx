@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useGoogleSession } from '../../access/useGoogleSession'
-import { PhotoArtwork } from '../../media/components/PhotoArtwork'
+import { AlbumElementPreview } from '../../album/components/AlbumElementPreview'
+import type { AlbumElement } from '../../album/domain/types'
 import { StickerArtwork } from '../../stickers/components/StickerArtwork'
 import type { CommunitySticker } from '../../stickers/domain/types'
 import { useStickerLibrary } from '../../stickers/hooks/useStickerLibrary'
@@ -13,6 +14,21 @@ const contributionKey = (id: string) => `contribution:${id}`
 const stickerKey = (id: string) => `sticker:${id}`
 const shortDate = (value: string) => new Date(value).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })
 const longDate = (value: string) => new Date(value).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })
+const contributionPreview = (item: ContributionRecord): AlbumElement => ({
+  id: item.id,
+  pageId: `page-${item.pageNumber}`,
+  type: item.type,
+  author: item.author,
+  content: item.content,
+  media: item.media,
+  setlist: item.setlist,
+  styleVariant: item.styleVariant,
+  stickerId: item.stickerId,
+  visibility: item.visibility,
+  layout: { x: 0, y: 0, width: 1, height: 1, rotation: 0, zIndex: 1, locked: true, hidden: false },
+  createdAt: item.createdAt,
+  updatedAt: item.updatedAt,
+})
 
 export function AdminNotificationCenter() {
   const session = useGoogleSession()
@@ -74,10 +90,11 @@ export function AdminNotificationCenter() {
         {items.map((item) => {
           const key = contributionKey(item.id)
           const reviewing = reviewingKey === key
+          const preview = contributionPreview(item)
           return <article key={key} className={reviewing ? 'is-reviewing' : ''}>
-            <div className="admin-notification-preview">{item.type === 'PHOTO' ? <PhotoArtwork media={item.media} alt="Fotografía pendiente" /> : <span>{item.type === 'SETLIST' ? '♫' : item.type === 'STICKER' ? '✦' : 'Aa'}</span>}</div>
+            <div className={`admin-notification-preview is-${item.type.toLowerCase()}`}><AlbumElementPreview element={preview} /></div>
             <div className="admin-notification-copy"><small>{labels[item.type]} · CARA {item.pageNumber} · {item.visibility === 'PRIVATE' ? 'PRIVADA' : 'PÚBLICA'}</small><strong>{item.author.displayName || 'Participante anónimo'}</strong><p>{item.type === 'SETLIST' ? item.setlist?.map((track) => track.title).join(' · ') : item.content || 'Sin texto adicional'}</p><time dateTime={item.createdAt}>{shortDate(item.createdAt)}</time></div>
-            {reviewing && <section className="admin-notification-review"><div className="admin-notification-review-media">{item.type === 'PHOTO' ? <PhotoArtwork media={item.media} alt="Fotografía enviada para revisión" /> : <span>{item.content || labels[item.type]}</span>}</div><dl><div><dt>Nombre</dt><dd>{item.author.displayName || 'Anónimo'}</dd></div><div><dt>Edad</dt><dd>{item.author.age ?? 'No indicada'}</dd></div><div><dt>Identificador</dt><dd>{item.participantId}</dd></div><div><dt>Destino</dt><dd>Cara {item.pageNumber}</dd></div><div><dt>Visibilidad</dt><dd>{item.visibility === 'PRIVATE' ? 'Privada' : 'Pública'}</dd></div><div><dt>Enviada</dt><dd>{longDate(item.createdAt)}</dd></div></dl></section>}
+            {reviewing && <section className="admin-notification-review"><div className="admin-notification-review-media"><AlbumElementPreview element={preview} /></div><dl><div><dt>Nombre</dt><dd>{item.author.displayName || 'Anónimo'}</dd></div><div><dt>Edad</dt><dd>{item.author.age ?? 'No indicada'}</dd></div><div><dt>Identificador</dt><dd>{item.participantId}</dd></div><div><dt>Destino</dt><dd>Cara {item.pageNumber}</dd></div><div><dt>Visibilidad</dt><dd>{item.visibility === 'PRIVATE' ? 'Privada' : 'Pública'}</dd></div><div><dt>Enviada</dt><dd>{longDate(item.createdAt)}</dd></div></dl></section>}
             <div className="admin-notification-actions"><button type="button" className="is-review" onClick={() => setReviewingKey((current) => current === key ? null : key)}>{reviewing ? 'Cerrar revisión' : 'Revisar elemento'}</button>{reviewing && <><button type="button" disabled={workingKey === key} onClick={() => void moderateContribution(item, 'approve')}>Aceptar publicación</button><button type="button" disabled={workingKey === key} onClick={() => void moderateContribution(item, 'reject')}>Rechazar</button></>}</div>
           </article>
         })}

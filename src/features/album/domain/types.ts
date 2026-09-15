@@ -100,6 +100,20 @@ export function clampLayout(layout: ElementLayout): ElementLayout {
   return { ...layout, width, height, x: clamp(layout.x, 0, 1 - width), y: clamp(layout.y, 0, 1 - height) }
 }
 
+export function scaleLayoutProportionally(layout: ElementLayout, requestedScale: number, minWidth = .06, minHeight = .04): ElementLayout {
+  const minimumScale = Math.max(minWidth / layout.width, minHeight / layout.height)
+  const maximumScale = Math.min(1 / layout.width, 1 / layout.height)
+  const scale = clamp(requestedScale, minimumScale, maximumScale)
+  return clampLayout({ ...layout, width: layout.width * scale, height: layout.height * scale })
+}
+
+export function resizeLayoutProportionally(layout: ElementLayout, deltaX: number, deltaY: number, minWidth = .06, minHeight = .04): ElementLayout {
+  const horizontalScale = (layout.width + deltaX) / layout.width
+  const verticalScale = (layout.height + deltaY) / layout.height
+  const scale = Math.abs(horizontalScale - 1) >= Math.abs(verticalScale - 1) ? horizontalScale : verticalScale
+  return scaleLayoutProportionally(layout, scale, minWidth, minHeight)
+}
+
 export function createElement(pageId: string, type: AlbumElementType, sequence: number, author: AuthorIdentity = { participantId: 'developer-local' }): AlbumElement {
   const now = new Date().toISOString()
   const contentByType: Partial<Record<AlbumElementType, string>> = {
