@@ -2,7 +2,7 @@ import { collection, deleteDoc, doc, getDoc, onSnapshot, setDoc } from 'firebase
 import { firestore } from '../../../infrastructure/firebase/client'
 import type { ElementReactionRepository, ElementReactions } from './ElementReactionRepository'
 
-type ReactionRecord = { elementId: string; userId: string; createdAt: string }
+type ReactionRecord = { elementId: string; userId: string; displayName?: string; createdAt: string }
 const reactionId = (elementId: string, userId: string) => `${elementId}_${userId}`
 
 export class FirestoreElementReactionRepository implements ElementReactionRepository {
@@ -16,16 +16,16 @@ export class FirestoreElementReactionRepository implements ElementReactionReposi
       const reactions: ElementReactions = {}
       snapshot.docs.forEach((entry) => {
         const value = entry.data() as ReactionRecord
-        reactions[value.elementId] = [...(reactions[value.elementId] ?? []), value.userId]
+        reactions[value.elementId] = [...(reactions[value.elementId] ?? []), { userId: value.userId, displayName: value.displayName?.trim() || 'Anónimo' }]
       })
       listener(reactions)
     }, (error) => onError?.(error))
   }
 
-  async toggle(elementId: string, userId: string) {
+  async toggle(elementId: string, userId: string, displayName: string) {
     this.ensureDatabase()
     const reference = doc(this.database!, 'elementReactions', reactionId(elementId, userId))
     if ((await getDoc(reference)).exists()) await deleteDoc(reference)
-    else await setDoc(reference, { elementId, userId, createdAt: new Date().toISOString() })
+    else await setDoc(reference, { elementId, userId, displayName: displayName.trim() || 'Anónimo', createdAt: new Date().toISOString() })
   }
 }

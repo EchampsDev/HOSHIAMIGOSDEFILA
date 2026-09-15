@@ -7,8 +7,8 @@ export function useElementReactions() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => elementReactionRepository.subscribe(setReactions, () => setError('No fue posible actualizar las reacciones.')), [])
-  const toggle = useCallback(async (elementId: string, userId: string) => {
-    try { await elementReactionRepository.toggle(elementId, userId); setError(null) }
+  const toggle = useCallback(async (elementId: string, userId: string, displayName: string) => {
+    try { await elementReactionRepository.toggle(elementId, userId, displayName); setError(null) }
     catch { setError('No fue posible guardar tu reacción.') }
   }, [])
 

@@ -222,10 +222,13 @@ service cloud.firestore {
     match /elementReactions/{reactionId} {
       allow get, list: if true;
       allow create: if signedIn()
-        && request.resource.data.keys().hasOnly(['elementId', 'userId', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['elementId', 'userId', 'displayName', 'createdAt'])
         && request.resource.data.elementId is string
         && request.resource.data.elementId.size() <= 160
         && request.resource.data.userId == request.auth.uid
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() > 0
+        && request.resource.data.displayName.size() <= 100
         && reactionId == request.resource.data.elementId + '_' + request.auth.uid
         && request.resource.data.createdAt is string;
       allow update: if false;
