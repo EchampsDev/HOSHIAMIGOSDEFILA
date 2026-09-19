@@ -40,14 +40,27 @@ export function AppChrome({ children }: PropsWithChildren) {
   useEffect(() => {
     if (!isExploreOpen) return
     const scrollY = window.scrollY
-    const previous = { position: document.body.style.position, top: document.body.style.top, width: document.body.style.width, overflow: document.body.style.overflow }
-    document.body.style.position = 'fixed'
-    document.body.style.top = `-${scrollY}px`
-    document.body.style.width = '100%'
+    const root = document.documentElement
+    const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+    const previous = { rootOverflow: root.style.overflow, bodyOverflow: document.body.style.overflow, bodyTouchAction: document.body.style.touchAction, viewportHeight: root.style.getPropertyValue('--explore-viewport-height'), themeColor: themeColor?.content }
+    const syncViewportHeight = () => root.style.setProperty('--explore-viewport-height', `${window.visualViewport?.height ?? window.innerHeight}px`)
+    syncViewportHeight()
+    root.style.overflow = 'hidden'
     document.body.style.overflow = 'hidden'
+    document.body.style.touchAction = 'none'
+    themeColor?.setAttribute('content', '#3128d4')
+    window.visualViewport?.addEventListener('resize', syncViewportHeight)
+    window.visualViewport?.addEventListener('scroll', syncViewportHeight)
     return () => {
-      Object.assign(document.body.style, previous)
-      window.scrollTo({ top: scrollY, behavior: 'instant' })
+      window.visualViewport?.removeEventListener('resize', syncViewportHeight)
+      window.visualViewport?.removeEventListener('scroll', syncViewportHeight)
+      root.style.overflow = previous.rootOverflow
+      document.body.style.overflow = previous.bodyOverflow
+      document.body.style.touchAction = previous.bodyTouchAction
+      if (previous.viewportHeight) root.style.setProperty('--explore-viewport-height', previous.viewportHeight)
+      else root.style.removeProperty('--explore-viewport-height')
+      if (themeColor && previous.themeColor) themeColor.setAttribute('content', previous.themeColor)
+      window.requestAnimationFrame(() => window.scrollTo({ top: scrollY, behavior: 'instant' }))
     }
   }, [isExploreOpen])
 
