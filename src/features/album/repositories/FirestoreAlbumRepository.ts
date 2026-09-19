@@ -20,7 +20,7 @@ export class FirestoreAlbumRepository implements AlbumRepository {
     return this.mergePages(snapshot.docs.map((item) => item.data() as ScrapbookPage))
   }
   async getPage(pageId: string) { return (await this.getAlbum()).pages.find((page) => page.id === pageId) ?? null }
-  async savePage(page: ScrapbookPage) { if (pageCapacity(page).used > 4) throw new Error('Una cara no puede contener más de cuatro elementos.'); this.ensureDatabase(); await setDoc(doc(this.database!, 'pages', page.id), copy(page)) }
+  async savePage(page: ScrapbookPage) { const capacity = pageCapacity(page); if (capacity.used > 4 || capacity.stickersUsed > 10) throw new Error('Una cara admite cuatro recuerdos principales y diez stickers.'); this.ensureDatabase(); await setDoc(doc(this.database!, 'pages', page.id), copy(page)) }
   async saveElement(element: AlbumElement) {
     const page = await this.getPage(element.pageId)
     if (page) await this.savePage({ ...page, elements: page.elements.map((item) => item.id === element.id ? copy(element) : item), updatedAt: new Date().toISOString() })

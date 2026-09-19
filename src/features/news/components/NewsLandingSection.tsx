@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { newsRepository } from '../repositories/NewsRepository'
 import type { NewsItem } from '../domain/types'
@@ -19,6 +19,7 @@ export function NewsLandingSection() {
   const [error, setError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [adminError, setAdminError] = useState<string | null>(null)
+  const feedRef = useRef<HTMLDivElement>(null)
   useEffect(() => newsRepository.subscribePublished(setItems, () => setError('No fue posible cargar las novedades.')), [])
   const newestId = items[0]?.id ?? null
   const adminAction = async (item: NewsItem, action: 'hide' | 'delete') => {
@@ -34,7 +35,7 @@ export function NewsLandingSection() {
   return <section className="landing-chapter chapter-news" data-scroll-reveal aria-labelledby="news-section-title">
     <p className="chapter-label" id="news-section-title">04 — NOVEDADES DE BRATTY!!</p>
     {adminError && <p className="news-admin-inline-error" role="alert">{adminError}</p>}
-    {error ? <p className="news-empty">Próximamente compartiremos nuevas historias y actualizaciones de BRATTY.</p> : items.length ? <><p className="news-published-count" aria-live="polite">{items.length} {items.length === 1 ? 'entrada publicada' : 'entradas publicadas'}</p><div className="news-feed">{items.map((item) => <article className={`news-card${item.id === newestId ? ' is-new' : ''}`} key={item.id}>
+    {error ? <p className="news-empty">Próximamente compartiremos nuevas historias y actualizaciones de BRATTY.</p> : items.length ? <><div className="news-feed-heading"><p className="news-published-count" aria-live="polite">{items.length} {items.length === 1 ? 'entrada publicada' : 'entradas publicadas'}</p>{items.length > 1 && <div className="news-feed-controls"><button type="button" aria-label="Noticia anterior" onClick={() => feedRef.current?.scrollBy({ left: -feedRef.current.clientWidth, behavior: 'smooth' })}>←</button><button type="button" aria-label="Noticia siguiente" onClick={() => feedRef.current?.scrollBy({ left: feedRef.current.clientWidth, behavior: 'smooth' })}>→</button></div>}</div><div className="news-feed" ref={feedRef} role="region" aria-label="Noticias publicadas, desliza horizontalmente">{items.map((item) => <article className={`news-card${item.id === newestId ? ' is-new' : ''}`} key={item.id}>
       {item.id === newestId && <span className="news-card-new-badge">NUEVA ✦</span>}
       <div className="news-card-media"><NewsCarousel images={item.images} fallbackAlt={item.carouselAlt || item.title} />
         {session.isAdmin && <nav className="news-card-admin" aria-label={`Administrar ${item.title}`}>

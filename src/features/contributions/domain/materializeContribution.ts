@@ -21,6 +21,9 @@ function placeElement(element: AlbumElement, existing: AlbumElement[]) {
 export function materializeContribution(contribution: ContributionRecord, page: ScrapbookPage): AlbumElement {
   const element = createElement(page.id, contribution.type, page.elements.length + 1, contribution.author)
   Object.assign(element, {
+    id: `element-${contribution.id}`,
+    contributionId: contribution.id,
+    createdAt: contribution.createdAt,
     content: contribution.content ?? element.content,
     media: contribution.media,
     setlist: contribution.setlist,

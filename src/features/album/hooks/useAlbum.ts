@@ -4,7 +4,6 @@ import { LocalAlbumRepository } from '../repositories/LocalAlbumRepository'
 import { FirestoreAlbumRepository } from '../repositories/FirestoreAlbumRepository'
 import type { AlbumRepository } from '../repositories/AlbumRepository'
 import { isFirebaseConfigured } from '../../../infrastructure/firebase/client'
-import { photoStorageRepository } from '../../media/repositories'
 
 export function useAlbum(localOnly = false, spreadMode = false) {
   const repository = useMemo<AlbumRepository>(() => !localOnly && isFirebaseConfigured ? new FirestoreAlbumRepository() : new LocalAlbumRepository(), [localOnly])
@@ -61,11 +60,11 @@ export function useAlbum(localOnly = false, spreadMode = false) {
   }, [bookState, isPaused, isPresenting, next])
   const setPaper = useCallback((paperType: PaperType) => { if (currentPage) savePage({ ...currentPage, paperType, updatedAt: new Date().toISOString() }) }, [currentPage, savePage])
   const addElement = useCallback((type: AlbumElementType, author?: AuthorIdentity) => {
-    if (!currentPage || pageCapacity(currentPage).isFull) { setSyncError('Esta cara ya contiene cuatro elementos. Elige otra hoja.'); return }
+    if (!currentPage || (type === 'STICKER' ? pageCapacity(currentPage).stickersFull : pageCapacity(currentPage).isFull)) { setSyncError('Esta cara ya alcanzó el límite para ese tipo de aportación.'); return }
     savePage({ ...currentPage, elements: [...currentPage.elements, createElement(currentPage.id, type, currentPage.elements.length + 1, author)], updatedAt: new Date().toISOString() })
   }, [currentPage, savePage])
   const addSticker = useCallback((stickerId: string, title: string, author?: AuthorIdentity) => {
-    if (!currentPage || pageCapacity(currentPage).isFull) { setSyncError('Esta cara ya contiene cuatro elementos. Elige otra hoja.'); return }
+    if (!currentPage || pageCapacity(currentPage).stickersFull) { setSyncError('Esta cara ya contiene diez stickers. Elige otra hoja.'); return }
     const element = createElement(currentPage.id, 'STICKER', currentPage.elements.length + 1, author)
     element.stickerId = stickerId
     element.content = title
@@ -81,24 +80,13 @@ export function useAlbum(localOnly = false, spreadMode = false) {
   }, [album, savePage])
   const updateElement = useCallback((elementId: string, patch: Partial<Omit<AlbumElement, 'id' | 'pageId'>>) => currentPage ? updateElementOnPage(currentPage.id, elementId, patch) : false, [currentPage, updateElementOnPage])
   const deleteElement = useCallback((elementId: string) => { if (currentPage) savePage({ ...currentPage, elements: currentPage.elements.filter((element) => element.id !== elementId), updatedAt: new Date().toISOString() }) }, [currentPage, savePage])
-  const deleteOwnedElement = useCallback(async (pageId: string, elementId: string, actorId: string) => {
-    const page = album?.pages.find((item) => item.id === pageId)
-    const element = page?.elements.find((item) => item.id === elementId)
-    if (!page || !element || !isElementOwner(element, actorId)) return false
-    const deleted = await persistPages([{ ...page, elements: page.elements.filter((item) => item.id !== elementId), updatedAt: new Date().toISOString() }])
-    if (deleted && element.type === 'PHOTO' && element.media?.provider === 'r2') {
-      try { await photoStorageRepository.deletePhoto(element.media) }
-      catch { setSyncError('La publicación se eliminó, pero no fue posible limpiar su fotografía de R2.') }
-    }
-    return deleted
-  }, [album, persistPages])
   const moveOwnedElement = useCallback(async (sourcePageId: string, elementId: string, targetPageId: string, actorId: string) => {
     const source = album?.pages.find((page) => page.id === sourcePageId)
     const target = album?.pages.find((page) => page.id === targetPageId)
     const element = source?.elements.find((item) => item.id === elementId)
     if (!source || !target || !element || !isElementOwner(element, actorId)) return false
     if (source.id === target.id) return true
-    if (pageCapacity(target).isFull) { setSyncError('Esa cara ya está llena.'); return false }
+    if (element.type === 'STICKER' ? pageCapacity(target).stickersFull : pageCapacity(target).isFull) { setSyncError('Esa cara ya alcanzó el límite para ese tipo de aportación.'); return false }
     const now = new Date().toISOString()
     return persistPages([
       { ...source, elements: source.elements.filter((item) => item.id !== elementId), updatedAt: now },
@@ -113,5 +101,5 @@ export function useAlbum(localOnly = false, spreadMode = false) {
     return updateElementOnPage(pageId, elementId, { likedBy: likedBy.includes(actorId) ? likedBy.filter((id) => id !== actorId) : [...likedBy, actorId] })
   }, [album, updateElementOnPage])
 
-  return { album, currentPage, bookState, pageNumber, isPresenting, isPaused, syncError, usesFirebase: !localOnly && isFirebaseConfigured, open, next, previous, goTo, setPaper, addElement, addSticker, updateElement, updateElementOnPage, deleteElement, deleteOwnedElement, moveOwnedElement, toggleLike, startPresentation: () => { if (bookState !== 'PAGE') open(); setIsPresenting(true); setIsPaused(false) }, pausePresentation: () => setIsPaused(true), resumePresentation: () => setIsPaused(false), stopPresentation: () => { setIsPresenting(false); setIsPaused(false) } }
+  return { album, currentPage, bookState, pageNumber, isPresenting, isPaused, syncError, usesFirebase: !localOnly && isFirebaseConfigured, open, next, previous, goTo, setPaper, addElement, addSticker, updateElement, updateElementOnPage, deleteElement, moveOwnedElement, toggleLike, startPresentation: () => { if (bookState !== 'PAGE') open(); setIsPresenting(true); setIsPaused(false) }, pausePresentation: () => setIsPaused(true), resumePresentation: () => setIsPaused(false), stopPresentation: () => { setIsPresenting(false); setIsPaused(false) } }
 }

@@ -15,6 +15,7 @@
 - **M11 — Archive:** digitalización y enriquecimiento del scrapbook físico.
 - **M12 — Sticker Library (base local):** biblioteca visual, descargas, carga validada, moderación básica e instancias reutilizables en la libreta. ✅
 - **M12.1 — Sticker Library compartida:** metadata en Firestore, archivos privados en Cloudflare R2 y publicación posterior a moderación. ✅
+- **M12.2 — Colecciones de stickers:** grupos desplegables, catálogo público y organización administrativa. ✅
 - **M13 — Moderación, privacidad y reacciones:** bandeja global, revisión previa, visibilidad por aportación, consulta admin/especial y reacciones autenticadas. ✅
 - **M13.1 — Media editorial R2:** las imágenes nuevas de noticias se almacenan en R2 y el archivo histórico conserva sus proveedores actuales. ✅
 

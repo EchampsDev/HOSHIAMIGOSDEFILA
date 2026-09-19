@@ -388,8 +388,10 @@
 
 
 .landing-scroll-cue {
+  position: relative;
+  z-index: 3;
   width: fit-content;
-  margin: 10px auto 0;
+  margin: auto auto max(16px,env(safe-area-inset-bottom));
   display: grid;
   justify-items: center;
   gap: 8px;
@@ -398,6 +400,11 @@
   letter-spacing: .14em;
   text-decoration: none;
 }
+.landing-scroll-cue.is-idle { animation:scroll-cue-arrive .5s ease-out both,scroll-cue-pulse 2.4s ease-in-out .5s infinite; }
+.landing-scroll-cue span { padding:7px 12px; border:1px solid rgba(255,227,77,.55); background:rgba(6,6,12,.72); box-shadow:0 0 15px rgba(255,227,77,.17); }
+@keyframes scroll-cue-arrive { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+@keyframes scroll-cue-pulse { 50% { filter:drop-shadow(0 0 9px rgba(255,227,77,.58)); transform:translateY(3px); } }
+@media (prefers-reduced-motion:reduce) { .landing-scroll-cue.is-idle { animation:none; } }
 
 .landing-scroll-cue i {
   width: 1px;

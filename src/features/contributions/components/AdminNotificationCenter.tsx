@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useGoogleSession } from '../../access/useGoogleSession'
 import { AlbumElementPreview } from '../../album/components/AlbumElementPreview'
+import { useAlbum } from '../../album/hooks/useAlbum'
+import { useParticipationAccess } from '../../album/hooks/useParticipationAccess'
+import { availableSlots, pendingCountsFromItems, recommendedPageNumber } from '../domain/pageAvailability'
 import type { AlbumElement } from '../../album/domain/types'
 import { StickerArtwork } from '../../stickers/components/StickerArtwork'
 import type { CommunitySticker } from '../../stickers/domain/types'
@@ -33,12 +36,20 @@ const contributionPreview = (item: ContributionRecord): AlbumElement => ({
 export function AdminNotificationCenter() {
   const session = useGoogleSession()
   const stickerLibrary = useStickerLibrary(true)
+  const album = useAlbum()
+  const participation = useParticipationAccess()
   const [items, setItems] = useState<ContributionRecord[]>([])
   const [open, setOpen] = useState(false)
   const [reviewingKey, setReviewingKey] = useState<string | null>(null)
   const [workingKey, setWorkingKey] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [moveTargets, setMoveTargets] = useState<Record<string, number>>({})
   const totalPending = items.length + stickerLibrary.pending.length
+  const pendingForReview = pendingCountsFromItems(items)
+  const suggestPage = (item: ContributionRecord) => {
+    const pages = album.album?.pages ?? []
+    return recommendedPageNumber(pages, pendingForReview, item.type, item.pageNumber) ?? item.pageNumber
+  }
 
   useEffect(() => contributionRepository.subscribePending(setItems, () => setMessage('No fue posible consultar las aportaciones pendientes.')), [])
   useEffect(() => {
@@ -69,12 +80,36 @@ export function AdminNotificationCenter() {
     } catch (error) { setMessage(error instanceof Error ? error.message : 'No fue posible moderar el sticker.') }
     finally { setWorkingKey(null) }
   }
+  const moveContribution = async (item: ContributionRecord) => {
+    if (!session.user || workingKey) return
+    const target = moveTargets[item.id] ?? suggestPage(item)
+    if (target === item.pageNumber) { setMessage('Elige otra cara para mover la aportación.'); return }
+    setWorkingKey(contributionKey(item.id)); setMessage(null)
+    try { await contributionRepository.movePending(item.id, target, session.user.uid); setMoveTargets((current) => { const next = { ...current }; delete next[item.id]; return next }) }
+    catch (error) { setMessage(error instanceof Error ? error.message : 'No fue posible mover la aportación.') }
+    finally { setWorkingKey(null) }
+  }
+  const deleteContribution = async (item: ContributionRecord) => {
+    if (!session.isAdmin || !session.user || workingKey || !window.confirm('¿Eliminar esta aportación pendiente? Quedará en la papelera administrativa.')) return
+    setWorkingKey(contributionKey(item.id)); setMessage(null)
+    try { await contributionRepository.deletePending(item.id, session.user.uid); setReviewingKey(null) }
+    catch (error) { setMessage(error instanceof Error ? error.message : 'No fue posible eliminar la aportación.') }
+    finally { setWorkingKey(null) }
+  }
+  const reconcileAvailability = async () => {
+    if (!session.isAdmin || participation.isOpen || participation.error || workingKey || !window.confirm('Se reconstruirán únicamente los conteos de caras a partir de las aportaciones pendientes. Confirma que la participación permanece cerrada.')) return
+    setWorkingKey('availability'); setMessage(null)
+    try { await contributionRepository.reconcileAvailability(); setMessage('Cupos pendientes conciliados con las aportaciones existentes.') }
+    catch (error) { setMessage(error instanceof Error ? error.message : 'No fue posible conciliar los cupos.') }
+    finally { setWorkingKey(null) }
+  }
 
   const panel = <div className={`admin-notification-layer${open ? ' is-open' : ''}`} aria-hidden={!open}>
     <button type="button" className="admin-notification-backdrop" tabIndex={open ? 0 : -1} aria-label="Cerrar centro de notificaciones" onClick={() => setOpen(false)} />
     <aside id="admin-notification-center" className="admin-notification-panel" role="dialog" aria-modal="true" aria-label="Solicitudes pendientes">
       <header><div><p>MODERACIÓN · ENTRADA</p><h2>Aportaciones</h2></div><button type="button" onClick={() => setOpen(false)} aria-label="Cerrar">×</button></header>
       <div className="admin-notification-summary"><strong>{totalPending}</strong><span>{totalPending === 1 ? 'pendiente por revisar' : 'pendientes por revisar'}</span></div>
+      <div className="admin-notification-maintenance"><button type="button" disabled={participation.isOpen || Boolean(participation.error) || Boolean(workingKey)} onClick={() => void reconcileAvailability()}>Reconstruir cupos de pendientes</button><small>{participation.isOpen ? 'Cierra primero la participación para evitar envíos durante la conciliación.' : 'Sólo actualiza conteos; no modifica recuerdos.'}</small></div>
       {(message || stickerLibrary.error) && <p className="admin-notification-message" role="alert">{message || stickerLibrary.error}</p>}
       <div className="admin-notification-list">
         {stickerLibrary.pending.map((sticker) => {
@@ -95,7 +130,8 @@ export function AdminNotificationCenter() {
             <div className={`admin-notification-preview is-${item.type.toLowerCase()}`}><AlbumElementPreview element={preview} /></div>
             <div className="admin-notification-copy"><small>{labels[item.type]} · CARA {item.pageNumber} · {item.visibility === 'PRIVATE' ? 'PRIVADA' : 'PÚBLICA'}</small><strong>{item.author.displayName || 'Participante anónimo'}</strong><p>{item.type === 'SETLIST' ? item.setlist?.map((track) => track.title).join(' · ') : item.content || 'Sin texto adicional'}</p><time dateTime={item.createdAt}>{shortDate(item.createdAt)}</time></div>
             {reviewing && <section className="admin-notification-review"><div className="admin-notification-review-media"><AlbumElementPreview element={preview} /></div><dl><div><dt>Nombre</dt><dd>{item.author.displayName || 'Anónimo'}</dd></div><div><dt>Edad</dt><dd>{item.author.age ?? 'No indicada'}</dd></div><div><dt>Identificador</dt><dd>{item.participantId}</dd></div><div><dt>Destino</dt><dd>Cara {item.pageNumber}</dd></div><div><dt>Visibilidad</dt><dd>{item.visibility === 'PRIVATE' ? 'Privada' : 'Pública'}</dd></div><div><dt>Enviada</dt><dd>{longDate(item.createdAt)}</dd></div></dl></section>}
-            <div className="admin-notification-actions"><button type="button" className="is-review" onClick={() => setReviewingKey((current) => current === key ? null : key)}>{reviewing ? 'Cerrar revisión' : 'Revisar elemento'}</button>{reviewing && <><button type="button" disabled={workingKey === key} onClick={() => void moderateContribution(item, 'approve')}>Aceptar publicación</button><button type="button" disabled={workingKey === key} onClick={() => void moderateContribution(item, 'reject')}>Rechazar</button></>}</div>
+            {reviewing && <div className="admin-notification-move"><label>Destino sugerido<select value={moveTargets[item.id] ?? suggestPage(item)} onChange={(event) => setMoveTargets((current) => ({ ...current, [item.id]: Number(event.target.value) }))}>{album.album?.pages.filter((page) => { return page.pageNumber === item.pageNumber || availableSlots(page, pendingForReview, item.type) > 0 }).map((page) => <option key={page.id} value={page.pageNumber}>Cara {page.pageNumber}{page.pageNumber === suggestPage(item) ? ' · recomendada' : ''}</option>)}</select></label><button type="button" disabled={Boolean(workingKey) || (moveTargets[item.id] ?? suggestPage(item)) === item.pageNumber} onClick={() => void moveContribution(item)}>Mover a otra cara</button></div>}
+            <div className="admin-notification-actions"><button type="button" className="is-review" onClick={() => setReviewingKey((current) => current === key ? null : key)}>{reviewing ? 'Cerrar revisión' : 'Revisar elemento'}</button>{reviewing && <><button type="button" disabled={workingKey === key} onClick={() => void moderateContribution(item, 'approve')}>Aceptar publicación</button><button type="button" disabled={workingKey === key} onClick={() => void moderateContribution(item, 'reject')}>Rechazar</button><button type="button" className="is-danger" disabled={Boolean(workingKey)} onClick={() => void deleteContribution(item)}>Eliminar aportación</button></>}</div>
           </article>
         })}
         {!totalPending && <p className="admin-notification-empty">Todo está al día.<br /><span>No hay aportaciones ni stickers pendientes.</span></p>}

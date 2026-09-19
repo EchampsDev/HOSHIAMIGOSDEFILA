@@ -32,13 +32,14 @@ function forgetToken(objectKey: string) {
 export class CloudflareR2PhotoStorageRepository implements PhotoStorageRepository {
   readonly provider = 'r2' as const
 
-  async uploadPhoto(file: File, validation: ValidatedPhotoFile, participantId: string, firebaseIdToken?: string) {
+  async uploadPhoto(file: File, validation: ValidatedPhotoFile, participantId: string, firebaseIdToken?: string, uploadId?: string, uploadToken?: string) {
     const response = await r2Request('/v1/photos', {
       method: 'POST',
       body: file,
       headers: {
         'Content-Type': validation.mimeType,
         'X-Participant-Id': participantId,
+        ...(uploadId && uploadToken ? { 'X-Upload-Id': uploadId, 'X-Upload-Token': uploadToken } : {}),
         ...(firebaseIdToken ? { Authorization: `Bearer ${firebaseIdToken}` } : {}),
       },
     })

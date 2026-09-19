@@ -10,6 +10,7 @@ const publicAreas = [
   { to: '/album', eyebrow: 'LECTURA', title: 'Libreta digital', copy: 'Consulta el archivo colectivo y sus recuerdos.' },
   { to: '/about', eyebrow: 'CONTEXTO', title: 'El proyecto', copy: 'Conoce la intención y el origen de la experiencia.' },
   { to: '/contribute', eyebrow: 'PARTICIPACIÓN', title: 'Dejar un recuerdo', copy: 'Escríbele o deja algo bonito a Bratty.' },
+  { to: '/coleccion', eyebrow: 'ARCHIVO VISUAL', title: 'Colección', copy: 'Explora los stickers por grupos, autoría e historia.' },
 ]
 
 export function Layout({ children }: PropsWithChildren) {
@@ -36,6 +37,19 @@ export function AppChrome({ children }: PropsWithChildren) {
     window.addEventListener('scroll', syncHeader, { passive: true })
     return () => window.removeEventListener('scroll', syncHeader)
   }, [])
+  useEffect(() => {
+    if (!isExploreOpen) return
+    const scrollY = window.scrollY
+    const previous = { position: document.body.style.position, top: document.body.style.top, width: document.body.style.width, overflow: document.body.style.overflow }
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${scrollY}px`
+    document.body.style.width = '100%'
+    document.body.style.overflow = 'hidden'
+    return () => {
+      Object.assign(document.body.style, previous)
+      window.scrollTo({ top: scrollY, behavior: 'instant' })
+    }
+  }, [isExploreOpen])
 
   return <div className="site-shell">
     <header className={`topbar${isCompact ? ' is-compact' : ''}`}>

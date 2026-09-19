@@ -34,9 +34,9 @@ La lectura pública de `/album` está temporalmente bloqueada mediante `albumAcc
 
 ## Sticker Library
 
-`src/features/stickers` encapsula la biblioteca comunitaria. El dominio, la validación, los contratos de repositorio, los servicios y los componentes visuales no dependen de las páginas que los consumen. `/contribute`, `/explorar` y el editor de la libreta componen esos componentes sin acceder directamente a `localStorage` ni a Firebase.
+`src/features/stickers` encapsula la biblioteca comunitaria. El dominio, la validación, los contratos de repositorio, los servicios y los componentes visuales no dependen de las páginas que los consumen. `/contribute`, `/explorar`, `/coleccion` y el editor de la libreta componen esos componentes sin acceder directamente a `localStorage` ni a Firebase.
 
-`StickerRepository` gobierna metadata y moderación; `StickerStorageRepository` gobierna el archivo binario. En producción, `FirestoreStickerRepository` persiste la metadata en `communityStickers` y `CloudflareR2StickerStorageRepository` guarda los binarios bajo `stickers/`. Los adaptadores locales permanecen como fallback de desarrollo, sin acoplar la UI a ningún proveedor.
+`StickerRepository` gobierna metadata y moderación; `StickerStorageRepository` gobierna el archivo binario; `StickerCatalogRepository` administra grupos, orden y asignaciones sin modificar el activo original. En producción, `FirestoreStickerRepository` persiste la metadata en `communityStickers`, `FirestoreStickerCatalogRepository` conserva la organización en `stickerLibrary/catalog` y `CloudflareR2StickerStorageRepository` guarda los binarios bajo `stickers/`. Los adaptadores locales permanecen como fallback de desarrollo, sin acoplar la UI a ningún proveedor.
 
 Los archivos comunitarios se validan en cliente y nuevamente en el Worker como PNG o WEBP mediante MIME, firma binaria y decodificación real. El límite es 5 MB, con dimensiones de 32 px como mínimo y 1300 × 1800 px como máximo. R2 genera las rutas internamente; Firestore exige propiedad autenticada y estado inicial `PENDING`, mientras que sólo administración puede aprobar o rechazar.
 

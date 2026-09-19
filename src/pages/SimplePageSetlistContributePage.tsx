@@ -8,7 +8,6 @@ import { useParticipationAccess } from '../features/album/hooks/useParticipation
 import { getSetlistAlbum, getSetlistGroupCovers, readSetlistTracks, setlistAlbumLabels, setlistAlbumOrder, type SetlistTrack } from '../features/album/data/localSetlistCatalog'
 import { resolveSetlistCoverUrl, setlistCatalogRepository } from '../features/album/repositories/SetlistCatalogRepository'
 import { type AlbumElementType, type AuthorIdentity, type ContentVisibility } from '../features/album/domain/types'
-import { pageCapacity } from '../features/album/domain/types'
 import { getLocalParticipantId } from '../features/album/domain/participantIdentity'
 import { PageIndex } from '../features/album/components/PageIndex'
 import { useAlbum } from '../features/album/hooks/useAlbum'
@@ -18,6 +17,9 @@ import { StickerUploader } from '../features/stickers/components/StickerUploader
 import { validatePhotoFile, type ValidatedPhotoFile } from '../features/media/domain/photoValidation'
 import { photoStorageRepository } from '../features/media/repositories'
 import { contributionRepository } from '../features/contributions/repositories'
+import { availableSlots, recommendedPageNumber } from '../features/contributions/domain/pageAvailability'
+import { usePageAvailability } from '../features/contributions/hooks/usePageAvailability'
+import { ContributionConfirmation } from '../features/contributions/components/ContributionConfirmation'
 
 const TOP_SIZE = 3
 const WIZARD_TOTAL = 5
@@ -158,15 +160,22 @@ export function SimplePageSetlistContributePage() {
   const [expanded, setExpanded] = useState(false)
   const [preview, setPreview] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [submitPhase, setSubmitPhase] = useState<'idle' | 'uploading' | 'saving' | 'sent' | 'error'>('idle')
+  const submitLock = useRef(false)
+  const submissionId = useRef<string | null>(null)
+  const uploadToken = useRef<string | null>(null)
+  const uploadedPhoto = useRef<Awaited<ReturnType<typeof photoStorageRepository.uploadPhoto>> | null>(null)
   const [selectedSticker, setSelectedSticker] = useState<CommunitySticker | null>(null)
   const [pageSelectorOpen, setPageSelectorOpen] = useState(false)
   const [step, setStep] = useState(0)
   const [stepDirection, setStepDirection] = useState<'forward' | 'back'>('forward')
   const wizardPanelRef = useRef<HTMLElement>(null)
+  const manuallySelectedPage = useRef(false)
   const seededGoogleName = useRef(false)
   const session = useGoogleSession()
   const participation = useParticipationAccess()
   const scrapbook = useAlbum()
+  const availability = usePageAvailability()
   const isOpen = participation.isOpen
 
   useEffect(() => {
@@ -205,7 +214,25 @@ export function SimplePageSetlistContributePage() {
     ? resolveSetlistCoverUrl(lastSelectedTrack.coverUrl) ?? defaultSelectionBackground
     : defaultSelectionBackground
   const selectionPanelStyle = { '--top3-selection-background': `url("${selectionBackground.replace(/["\\]/g, '\\$&')}")` } as CSSProperties
-  const selectedPageCapacity = scrapbook.album ? pageCapacity(scrapbook.album.pages[page - 1]) : null
+  const openSpaces = scrapbook.album ? availableSlots(scrapbook.album.pages[page - 1], availability.pending, type as AlbumElementType) : null
+  const pageIsFull = openSpaces !== null && openSpaces < 1
+  const recommendedPage = scrapbook.album ? recommendedPageNumber(scrapbook.album.pages, availability.pending, type as AlbumElementType) : null
+  useEffect(() => {
+    if (!manuallySelectedPage.current && recommendedPage && page !== recommendedPage) setPage(recommendedPage)
+  }, [page, recommendedPage])
+  const submissionBusy = submitPhase === 'uploading' || submitPhase === 'saving'
+  const startAnother = () => {
+    submissionId.current = null
+    uploadToken.current = null
+    uploadedPhoto.current = null
+    setSubmitPhase('idle')
+    setMessage(null)
+    setContent('')
+    setPhoto(null)
+    setSelectedSticker(null)
+    setSelectedIds([])
+    moveToStep(2)
+  }
 
   const moveToStep = (next: number) => {
     const bounded = Math.max(0, Math.min(WIZARD_TOTAL - 1, next))
@@ -215,6 +242,7 @@ export function SimplePageSetlistContributePage() {
   }
   const chooseContributionType = (nextType: ContributionType) => {
     setType(nextType)
+    manuallySelectedPage.current = false
     setExpanded(false)
     setPreview(false)
     setMessage(null)
@@ -240,7 +268,14 @@ export function SimplePageSetlistContributePage() {
     const file = event.target.files?.[0]
     if (!file) return
     event.target.value = ''
-    try { setPhoto({ file, validation: await validatePhotoFile(file) }); setMessage(null) }
+    try {
+      setPhoto({ file, validation: await validatePhotoFile(file) })
+      submissionId.current = null
+      uploadToken.current = null
+      uploadedPhoto.current = null
+      setSubmitPhase('idle')
+      setMessage(null)
+    }
     catch (error) { setPhoto(null); setMessage(error instanceof Error ? error.message : 'No fue posible validar la foto.') }
   }
   const saveImage = async () => {
@@ -270,36 +305,50 @@ export function SimplePageSetlistContributePage() {
     } catch (error) { if ((error as DOMException).name !== 'AbortError') setMessage('No fue posible compartir la vista previa.') }
   }
   const saveElement = async () => {
+    if (submitLock.current || submitPhase === 'sent') return
     if (!session.user) { setMessage('Accede con Google para enviar tu aportación a revisión.'); return }
     if (type === 'PHOTO' && !photo) { setMessage('Selecciona una foto de máximo 5 MB.'); return }
     if (type === 'STICKER' && !selectedSticker) { setMessage('Elige un sticker aprobado de la biblioteca.'); return }
     if (type !== 'PHOTO' && type !== 'STICKER' && !content.trim()) { setMessage('Escribe o selecciona el contenido de tu recuerdo.'); return }
-    let storedPhoto: Awaited<ReturnType<typeof photoStorageRepository.uploadPhoto>> | undefined
+    submitLock.current = true
+    submissionId.current ??= crypto.randomUUID()
+    uploadToken.current ??= `${crypto.randomUUID()}${crypto.randomUUID()}`
     try {
       const identity = author()
       const firebaseIdToken = photo && session.user ? await session.user.getIdToken() : undefined
-      storedPhoto = photo ? await photoStorageRepository.uploadPhoto(photo.file, photo.validation, identity.participantId, firebaseIdToken) : undefined
-      await contributionRepository.submit({ pageNumber: page, type: type as AlbumElementType, content: type === 'STICKER' ? selectedSticker?.title : content, author: identity, visibility, media: storedPhoto?.media, styleVariant: type === 'POST_IT' ? postItColor : undefined, stickerId: selectedSticker?.id })
+      if (photo && !uploadedPhoto.current) {
+        setSubmitPhase('uploading')
+        uploadedPhoto.current = await photoStorageRepository.uploadPhoto(photo.file, photo.validation, identity.participantId, firebaseIdToken, submissionId.current, uploadToken.current)
+      }
+      setSubmitPhase('saving')
+      await contributionRepository.submit({ id: submissionId.current, pageNumber: page, type: type as AlbumElementType, content: type === 'STICKER' ? selectedSticker?.title : content, author: identity, visibility, media: uploadedPhoto.current?.media, styleVariant: type === 'POST_IT' ? postItColor : undefined, stickerId: selectedSticker?.id })
       setMessage(`Aportación enviada a revisión para la página ${page}.`)
+      setSubmitPhase('sent')
       setContent('')
       setPhoto(null)
       setSelectedSticker(null)
     } catch (error) {
-      if (storedPhoto) void photoStorageRepository.deletePhoto(storedPhoto.media)
+      setSubmitPhase('error')
       setMessage(error instanceof Error ? error.message : 'No fue posible guardar el recuerdo localmente.')
-    }
+    } finally { submitLock.current = false }
   }
   const sendTop = async () => {
+    if (submitLock.current || submitPhase === 'sent') return
     if (!session.user) { setMessage('Accede con Google para enviar tu Top 3 a revisión.'); return }
     if (selectedTracks.length !== TOP_SIZE) { setMessage('Selecciona exactamente tres canciones antes de enviar.'); return }
     const identity = author()
+    submitLock.current = true
+    submissionId.current ??= crypto.randomUUID()
     try {
-      await contributionRepository.submit({ pageNumber: page, type: 'SETLIST', content: selectionTitle, author: identity, visibility, setlist: selectedTracks.map(({ id, title, coverUrl }) => ({ id, title, coverUrl })) })
+      setSubmitPhase('saving')
+      await contributionRepository.submit({ id: submissionId.current, pageNumber: page, type: 'SETLIST', content: selectionTitle, author: identity, visibility, setlist: selectedTracks.map(({ id, title, coverUrl }) => ({ id, title, coverUrl })) })
       setMessage(`Top 3 enviado a revisión para la página ${page}.`)
+      setSubmitPhase('sent')
       setSelectedIds([])
       setPreview(false)
       setExpanded(false)
-    } catch (error) { setMessage(error instanceof Error ? error.message : 'No fue posible guardar el Top 3 localmente.') }
+    } catch (error) { setSubmitPhase('error'); setMessage(error instanceof Error ? error.message : 'No fue posible guardar el Top 3 localmente.') }
+    finally { submitLock.current = false }
   }
 
   return <Layout>
@@ -339,31 +388,32 @@ export function SimplePageSetlistContributePage() {
           {step === 3 && <>
             <p className="memory-wizard-kicker">BUSCA UN ESPACIO</p>
             <h2 id="memory-step-3">¿En qué cara irá tu recuerdo?</h2>
-            <p>Cada cara admite hasta cuatro recuerdos. Puedes revisar la hoja antes de continuar.</p>
-            <section className={`memory-page-picker memory-page-picker--wizard${selectedPageCapacity?.isFull ? ' is-full' : ''}`}><strong>Cara {page}</strong><small>{selectedPageCapacity ? selectedPageCapacity.isFull ? 'Esta cara ya está llena. Elige otra para continuar.' : `${selectedPageCapacity.remaining} de 4 espacios disponibles.` : 'Consultando espacios disponibles…'}</small><div><button type="button" onClick={() => setPageSelectorOpen(true)}>Elegir otra cara</button><button type="button" className="memory-page-open" onClick={() => window.location.assign(`/album?page=${page}`)}>Ver cara</button></div></section>
+            <p>{type === 'STICKER' ? 'Cada cara admite hasta diez stickers, contados aparte de los demás recuerdos.' : 'Cada cara admite hasta cuatro recuerdos principales.'} Puedes revisar la hoja antes de continuar.</p>
+            <section className={`memory-page-picker memory-page-picker--wizard${pageIsFull ? ' is-full' : ''}`}><strong>Cara {page}</strong><small>{openSpaces !== null ? pageIsFull ? 'Esta cara ya está llena para este tipo de recuerdo. Elige otra para continuar.' : `${openSpaces} ${type === 'STICKER' ? 'de 10 lugares para stickers' : 'de 4 lugares para recuerdos'} disponibles.` : 'Consultando espacios disponibles…'}</small><div><button type="button" onClick={() => setPageSelectorOpen(true)}>Elegir otra cara</button><button type="button" className="memory-page-open" onClick={() => window.location.assign(`/album?page=${page}`)}>Ver cara</button></div></section>
           </>}
 
-          {step === 4 && <>
+          {step === 4 && (submitPhase === 'sent' ? <div className="memory-wizard-sent"><ContributionConfirmation message={message ?? 'Aportación enviada a revisión.'} /><button type="button" onClick={startAnother}>Dejar otro recuerdo</button></div> : <>
             <p className="memory-wizard-kicker">ÚLTIMO PASO · CARA {page}</p>
             <fieldset className="memory-visibility-picker">
               <legend>¿Quién podrá ver tu aportación?</legend>
               <button type="button" className={visibility === 'PUBLIC' ? 'is-selected' : ''} aria-pressed={visibility === 'PUBLIC'} onClick={() => setVisibility('PUBLIC')}><b>Pública</b><span>Todas las personas podrán verla completa.</span></button>
               <button type="button" className={visibility === 'PRIVATE' ? 'is-selected' : ''} aria-pressed={visibility === 'PRIVATE'} onClick={() => setVisibility('PRIVATE')}><b>Privada</b><span>Solo tú, administración y usuarios especiales verán el contenido.</span></button>
             </fieldset>
-            {type === 'SETLIST' ? <><h2 id="memory-step-4">Elige tus tres canciones</h2><p>Arma tu Top 3 y revisa la vista previa antes de guardarlo en la libreta.</p><section className="top3-launchers" aria-label="Elige tu tipo de Top 3"><button type="button" className="setlist-launcher" onClick={() => openTopSelection('HOSHI')}><b>✦ MI TOP 3 DE HOSHI</b><span>Selecciona 3 canciones de Hoshi</span></button><button type="button" className="setlist-launcher is-all-bratty" onClick={() => openTopSelection('BRATTY')}><b>✦ MI TOP 3 DE TODA LA MÚSICA DE BRATTY</b><span>Selecciona 3 canciones del catálogo completo</span></button></section></> : type === 'PHOTO' ? <><h2 id="memory-step-4">Elige una foto para BRATTY</h2><p>Selecciona una imagen de máximo 5 MB y, si quieres, cuéntanos brevemente qué significa para ti.</p><label className="memory-photo-input"><span>{photo ? 'Cambiar foto' : 'Seleccionar foto'}</span><input type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" onChange={(event) => void choosePhoto(event)} />{photo && <small>{(photo.validation.fileSize / 1024 / 1024).toFixed(2)} MB · lista para guardar</small>}</label><label className="memory-wizard-field memory-wizard-message memory-photo-caption"><span>Texto sobre la foto <small>opcional</small></span><textarea maxLength={180} value={content} onChange={(event) => setContent(event.target.value)} placeholder="Cuéntanos algo sobre este momento…" /><small>{content.length} / 180</small></label><button type="button" className="memory-save-button" onClick={() => void saveElement()} disabled={!photo}>Guardar recuerdo en la libreta</button></> : type === 'STICKER' ? <><h2 id="memory-step-4">Elige un sticker para BRATTY</h2><p>Selecciona uno aprobado para colocarlo en la libreta o aporta uno nuevo para revisión.</p><StickerPicker selectedId={selectedSticker?.id} onSelect={setSelectedSticker} /><StickerUploader defaultAuthorName={displayName} /><button type="button" className="memory-save-button" onClick={() => void saveElement()} disabled={!selectedSticker}>Colocar sticker en la libreta</button></> : <><h2 id="memory-step-4">¿Qué le quieres escribir a BRATTY?</h2><p>Escribe algo que te gustaría que encontrara al abrir esta página.</p>{type === 'POST_IT' && <fieldset className="postit-color-picker"><legend>Color del post-it</legend><div>{postItColors.map(([value, label]) => <button key={value} type="button" className={`postit-color postit-${value}${postItColor === value ? ' is-selected' : ''}`} aria-label={label} aria-pressed={postItColor === value} title={label} onClick={() => setPostItColor(value)} />)}</div></fieldset>}<label className="memory-wizard-field memory-wizard-message"><span>{type === 'POST_IT' ? 'Tu mensaje' : 'Tu mensaje para BRATTY'}</span><textarea maxLength={280} value={content} onChange={(event) => setContent(event.target.value)} placeholder="Escribe aquí…" /><small>{content.length} / 280</small></label><button type="button" className="memory-save-button" onClick={() => void saveElement()} disabled={!content.trim()}>Guardar recuerdo en la libreta</button></>}
+            {type === 'SETLIST' ? <><h2 id="memory-step-4">Elige tus tres canciones</h2><p>Arma tu Top 3 y revisa la vista previa antes de guardarlo en la libreta.</p><section className="top3-launchers" aria-label="Elige tu tipo de Top 3"><button type="button" className="setlist-launcher" onClick={() => openTopSelection('HOSHI')}><b>✦ MI TOP 3 DE HOSHI</b><span>Selecciona 3 canciones de Hoshi</span></button><button type="button" className="setlist-launcher is-all-bratty" onClick={() => openTopSelection('BRATTY')}><b>✦ MI TOP 3 DE TODA LA MÚSICA DE BRATTY</b><span>Selecciona 3 canciones del catálogo completo</span></button></section></> : type === 'PHOTO' ? <><h2 id="memory-step-4">Elige una foto para BRATTY</h2><p>Selecciona una imagen de máximo 5 MB y, si quieres, cuéntanos brevemente qué significa para ti.</p><label className="memory-photo-input"><span>{photo ? 'Cambiar foto' : 'Seleccionar foto'}</span><input type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" onChange={(event) => void choosePhoto(event)} />{photo && <small>{(photo.validation.fileSize / 1024 / 1024).toFixed(2)} MB · lista para guardar</small>}</label><label className="memory-wizard-field memory-wizard-message memory-photo-caption"><span>Texto debajo de la foto <small>opcional</small></span><textarea maxLength={180} value={content} onChange={(event) => setContent(event.target.value)} placeholder="Cuéntanos algo sobre este momento…" /><small>{content.length} / 180</small></label><button type="button" className="memory-save-button" onClick={() => void saveElement()} disabled={submissionBusy || !photo}>{submitPhase === 'uploading' ? 'Subiendo…' : submitPhase === 'saving' ? 'Guardando…' : 'Guardar recuerdo en la libreta'}</button></> : type === 'STICKER' ? <><h2 id="memory-step-4">Elige un sticker para BRATTY</h2><p>Selecciona uno aprobado para colocarlo en la libreta o aporta uno nuevo para revisión.</p><StickerPicker selectedId={selectedSticker?.id} onSelect={setSelectedSticker} /><StickerUploader defaultAuthorName={displayName} /><button type="button" className="memory-save-button" onClick={() => void saveElement()} disabled={submissionBusy || !selectedSticker}>{submitPhase === 'saving' ? 'Guardando…' : 'Colocar sticker en la libreta'}</button></> : <><h2 id="memory-step-4">¿Qué le quieres escribir a BRATTY?</h2><p>Escribe algo que te gustaría que encontrara al abrir esta página.</p>{type === 'POST_IT' && <fieldset className="postit-color-picker"><legend>Color del post-it</legend><div>{postItColors.map(([value, label]) => <button key={value} type="button" className={`postit-color postit-${value}${postItColor === value ? ' is-selected' : ''}`} aria-label={label} aria-pressed={postItColor === value} title={label} onClick={() => setPostItColor(value)} />)}</div></fieldset>}<label className="memory-wizard-field memory-wizard-message"><span>{type === 'POST_IT' ? 'Tu mensaje' : 'Tu mensaje para BRATTY'}</span><textarea maxLength={280} value={content} onChange={(event) => setContent(event.target.value)} placeholder="Escribe aquí…" /><small>{content.length} / 280</small></label><button type="button" className="memory-save-button" onClick={() => void saveElement()} disabled={submissionBusy || !content.trim()}>{submitPhase === 'saving' ? 'Guardando…' : 'Guardar recuerdo en la libreta'}</button></>}
+            {submissionBusy && <p className="memory-wizard-status" role="status">{submitPhase === 'uploading' ? 'Subiendo…' : 'Guardando…'}</p>}
             {message && <p className="memory-wizard-status" role="status">{message}</p>}
-          </>}
+          </>)}
         </section>
 
         <footer className="memory-wizard-actions">
-          {step > 0 ? <button type="button" className="memory-wizard-back" onClick={() => moveToStep(step - 1)}>← Anterior</button> : <span />}
-          {step < WIZARD_TOTAL - 1 && <button type="button" className="memory-wizard-next" onClick={() => moveToStep(step + 1)} disabled={step === 3 && Boolean(selectedPageCapacity?.isFull)}>Continuar <span aria-hidden="true">→</span></button>}
+          {step > 0 ? <button type="button" className="memory-wizard-back" disabled={submissionBusy || submitPhase === 'sent'} onClick={() => moveToStep(step - 1)}>← Anterior</button> : <span />}
+          {step < WIZARD_TOTAL - 1 && <button type="button" className="memory-wizard-next" onClick={() => moveToStep(step + 1)} disabled={step === 3 && pageIsFull}>Continuar <span aria-hidden="true">→</span></button>}
         </footer>
       </div>}
     </section>
-    <PageIndex open={pageSelectorOpen} pages={scrapbook.album?.pages} pageCount={scrapbook.album?.pageCount ?? 100} current={page} ownerId={session.user?.uid ?? getLocalParticipantId()} mode="select" title="Elige una cara con espacio" onClose={() => setPageSelectorOpen(false)} onGoTo={setPage} />
+    <PageIndex open={pageSelectorOpen} pages={scrapbook.album?.pages} pageCount={scrapbook.album?.pageCount ?? 100} current={page} ownerId={session.user?.uid ?? getLocalParticipantId()} mode="select" contributionType={type === 'STICKER' ? 'STICKER' : 'MAIN'} pending={availability.pending} title="Elige una cara con espacio" onClose={() => setPageSelectorOpen(false)} onGoTo={(selected) => { manuallySelectedPage.current = true; setPage(selected) }} />
     {expanded && <section className="setlist-modal" aria-label={selectionTitle}><div className="setlist-modal-panel" style={selectionPanelStyle}>{preview ? <>
-      <p className="eyebrow">VISTA PREVIA</p><h2>Tu selección</h2><div className="setlist-preview-card"><header><span>BRATTYPOLITAN <ExperienceWord /></span><strong>{selectionTitle}</strong><small>{displayName || 'PARTICIPANTE ANÓNIMO'} · PÁGINA {page}</small></header><ol>{selectedTracks.map((track, index) => <li key={track.id}><span className="setlist-preview-album-blur" style={track.coverUrl ? { backgroundImage: `url(${resolveSetlistCoverUrl(track.coverUrl)})` } : undefined} aria-hidden="true" />{track.coverUrl ? <img src={resolveSetlistCoverUrl(track.coverUrl)} alt="" /> : <span className="setlist-preview-cover-placeholder">{String(index + 1).padStart(2, '0')}</span>}<b>{track.title}</b></li>)}</ol></div><footer className="setlist-preview-actions"><button type="button" onClick={() => void saveImage()}>Descargar imagen</button><button type="button" onClick={() => void shareImage()}>Compartir imagen</button><button type="button" className="setlist-send" onClick={() => void sendTop()}>Guardar en la libreta</button></footer><button type="button" className="setlist-back" onClick={() => setPreview(false)}>← Volver a editar</button>
+      <p className="eyebrow">VISTA PREVIA</p><h2>Tu selección</h2><div className="setlist-preview-card"><header><span>BRATTYPOLITAN <ExperienceWord /></span><strong>{selectionTitle}</strong><small>{displayName || 'PARTICIPANTE ANÓNIMO'} · PÁGINA {page}</small></header><ol>{selectedTracks.map((track, index) => <li key={track.id}><span className="setlist-preview-album-blur" style={track.coverUrl ? { backgroundImage: `url(${resolveSetlistCoverUrl(track.coverUrl)})` } : undefined} aria-hidden="true" />{track.coverUrl ? <img src={resolveSetlistCoverUrl(track.coverUrl)} alt="" /> : <span className="setlist-preview-cover-placeholder">{String(index + 1).padStart(2, '0')}</span>}<b>{track.title}</b></li>)}</ol></div><footer className="setlist-preview-actions"><button type="button" onClick={() => void saveImage()}>Descargar imagen</button><button type="button" onClick={() => void shareImage()}>Compartir imagen</button><button type="button" className="setlist-send" disabled={submissionBusy} onClick={() => void sendTop()}>{submitPhase === 'saving' ? 'Guardando…' : 'Guardar en la libreta'}</button></footer><button type="button" className="setlist-back" onClick={() => setPreview(false)}>← Volver a editar</button>
     </> : <>
       <p className="eyebrow">TOP 3 · PÁGINA {page}</p><h2>{selectionTitle}</h2><output className="setlist-count">{selectedIds.length} / {TOP_SIZE} seleccionadas</output>
       {availableTracks.length ? <><label className="setlist-search"><span>Buscar una canción</span><input type="search" value={trackSearch} onChange={(event) => setTrackSearch(event.target.value)} placeholder={activeTop === 'HOSHI' ? 'Busca dentro de HOSHI…' : 'Busca en toda la música de Bratty…'} autoComplete="off" /><small role="status" aria-live="polite">{visibleResultCount} {visibleResultCount === 1 ? 'resultado' : 'resultados'}</small></label>

@@ -12,7 +12,7 @@ import type { CommunitySticker } from '../../stickers/domain/types'
 import { StickerPicker } from '../../stickers/components/StickerPicker'
 import { StickerModerationPanel } from '../../stickers/components/StickerModerationPanel'
 
-type Gesture = { id: string; type: AlbumElementType; mode: 'move' | 'resize' | 'rotate'; startX: number; startY: number; layout: ElementLayout }
+type Gesture = { id: string; type: AlbumElementType; mode: 'move' | 'resize' | 'resize-x' | 'resize-y' | 'rotate'; startX: number; startY: number; layout: ElementLayout }
 const ELEMENTS: { type: AlbumElementType; label: string }[] = [{ type: 'PHOTO', label: 'Foto' }, { type: 'POST_IT', label: 'Post-it' }, { type: 'TEXT', label: 'Texto libre' }, { type: 'HANDWRITTEN_NOTE', label: 'Nota manuscrita' }, { type: 'PLACEHOLDER', label: 'Placeholder' }, { type: 'DRAWING', label: 'Dibujo' }]
 
 function AlbumPublicAccessControl() {
@@ -49,14 +49,14 @@ function AlbumEditorWorkspace() {
   const gesture = useRef<Gesture | null>(null)
   const selected = album.currentPage?.elements.find((element) => element.id === selectedId) ?? null
   const updateSelected = (patch: Partial<AlbumElement>) => { if (selected) album.updateElement(selected.id, patch) }
-  const pointerDown = (event: ReactPointerEvent<HTMLElement>, element: AlbumElement, mode: 'move' | 'resize' | 'rotate') => { if (element.layout.locked) return; event.preventDefault(); gesture.current = { id: element.id, type: element.type, mode, startX: event.clientX, startY: event.clientY, layout: element.layout }; event.currentTarget.setPointerCapture(event.pointerId) }
+  const pointerDown = (event: ReactPointerEvent<HTMLElement>, element: AlbumElement, mode: Gesture['mode']) => { if (element.layout.locked) return; event.preventDefault(); gesture.current = { id: element.id, type: element.type, mode, startX: event.clientX, startY: event.clientY, layout: element.layout }; event.currentTarget.setPointerCapture(event.pointerId) }
   const pointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     const active = gesture.current
     const bounds = stageRef.current?.getBoundingClientRect()
     if (!active || !bounds) return
     const deltaX = (event.clientX - active.startX) / bounds.width
     const deltaY = (event.clientY - active.startY) / bounds.height
-    const layout = active.mode === 'move' ? clampLayout({ ...active.layout, x: active.layout.x + deltaX, y: active.layout.y + deltaY }) : active.mode === 'rotate' ? { ...active.layout, rotation: Math.round((active.layout.rotation + deltaX * 180) * 2) / 2 } : active.type === 'SETLIST' ? resizeLayoutProportionally(active.layout, deltaX, deltaY, .2, .1) : clampLayout({ ...active.layout, width: active.layout.width + deltaX, height: active.layout.height + deltaY })
+    const layout = active.mode === 'move' ? clampLayout({ ...active.layout, x: active.layout.x + deltaX, y: active.layout.y + deltaY }) : active.mode === 'rotate' ? { ...active.layout, rotation: Math.round((active.layout.rotation + deltaX * 180) * 2) / 2 } : active.mode === 'resize-x' ? clampLayout({ ...active.layout, width: active.layout.width + deltaX }) : active.mode === 'resize-y' ? clampLayout({ ...active.layout, height: active.layout.height + deltaY }) : active.type === 'SETLIST' ? resizeLayoutProportionally(active.layout, deltaX, deltaY, .12, .08) : clampLayout({ ...active.layout, width: active.layout.width + deltaX, height: active.layout.height + deltaY })
     album.updateElement(active.id, { layout })
   }
   const page = album.currentPage

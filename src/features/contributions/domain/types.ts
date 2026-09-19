@@ -1,6 +1,6 @@
 import type { AlbumElementType, AuthorIdentity, ContentVisibility, MediaMetadata, SetlistEntry } from '../../album/domain/types'
 
-export type ContributionStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+export type ContributionStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'DELETED'
 
 export type ContributionInput = {
   id?: string
@@ -23,4 +23,8 @@ export type ContributionRecord = ContributionInput & {
   updatedAt: string
   reviewedAt?: string
   reviewedBy?: string
+  deletedAt?: string
+  deletedBy?: string
+  movedAt?: string
+  movedBy?: string
 }

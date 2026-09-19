@@ -15,7 +15,7 @@ const requestOrigin = (request) => request.headers.get('Origin') || ''
 const isAllowedOrigin = (request, env) => allowedOrigins(env).has(requestOrigin(request))
 const corsHeaders = (request, env) => isAllowedOrigin(request, env) ? {
   'Access-Control-Allow-Origin': requestOrigin(request),
-  'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Album, X-Media-Token, X-News-Id, X-Participant-Id',
+  'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Album, X-Media-Token, X-News-Id, X-Participant-Id, X-Upload-Id, X-Upload-Token',
   'Access-Control-Allow-Methods': 'GET, HEAD, POST, DELETE, OPTIONS',
   'Access-Control-Expose-Headers': 'ETag',
   'Access-Control-Max-Age': '3600',
@@ -142,13 +142,26 @@ async function uploadPhoto(request, env) {
   if (!identity && !(await isParticipationOpen(env))) return errorResponse('La recepción de recuerdos está cerrada.', 403)
   const participantId = (request.headers.get('X-Participant-Id') || '').trim()
   if (!participantId || participantId.length > 160 || !/^[a-zA-Z0-9._:-]+$/.test(participantId)) return errorResponse('Identidad de participación inválida.', 400)
+  const uploadId = (request.headers.get('X-Upload-Id') || '').trim()
+  const uploadToken = (request.headers.get('X-Upload-Token') || '').trim()
+  if (uploadId && (!/^[0-9a-f-]{36}$/.test(uploadId) || uploadToken.length < 32 || uploadToken.length > 160)) return errorResponse('Identificador de subida inválido.', 400)
+  if (uploadId && !identity) return errorResponse('Inicia sesión para reintentar la subida.', 401)
+  if (uploadId) {
+    for (const extension of ['jpg', 'png', 'webp']) {
+      const objectKey = `photos/${uploadId}.${extension}`
+      const existing = await env.MEDIA_BUCKET.head(objectKey)
+      if (!existing) continue
+      if (existing.customMetadata?.ownerUid !== identity.uid || !safeEqual(existing.customMetadata?.ownerTokenHash, await sha256(uploadToken))) return errorResponse('Esta subida ya pertenece a otra solicitud.', 409)
+      return json({ objectKey, readUrl: `${new URL(request.url).origin}/v1/media/${objectKey}`, ownerToken: uploadToken, mimeType: existing.httpMetadata?.contentType, fileSize: existing.size, originalWidth: Number(existing.customMetadata?.originalWidth), originalHeight: Number(existing.customMetadata?.originalHeight) })
+    }
+  }
   const actorKey = identity?.uid || request.headers.get('CF-Connecting-IP') || participantId
   if (!(await applyRateLimit(env.PHOTO_UPLOAD_LIMITER, `photo:${actorKey}`))) return errorResponse('Alcanzaste el límite temporal de fotografías.', 429)
   let body
   try { body = await imageBody(request) } catch (error) { return errorResponse(error.message, 400) }
-  const id = crypto.randomUUID()
+  const id = uploadId || crypto.randomUUID()
   const objectKey = `photos/${id}.${body.validation.extension}`
-  const ownerToken = randomToken()
+  const ownerToken = uploadId ? uploadToken : randomToken()
   await env.MEDIA_BUCKET.put(objectKey, body.bytes, {
     httpMetadata: { contentType: body.validation.mimeType, cacheControl: 'private, no-store' },
     customMetadata: {

@@ -44,6 +44,8 @@ El contrato `AlbumRepository` separa lectura/escritura de la UI. La implementaci
 
 `CommunitySticker` es el activo reutilizable y conserva título, autor opcional, descripción, referencia del archivo, MIME, peso, dimensiones originales, nombre de descarga seguro, visibilidad (`PUBLIC | SPECIAL_ONLY | PRIVATE`) y moderación (`PENDING | APPROVED | REJECTED`). La consulta pública devuelve únicamente `PUBLIC + APPROVED`.
 
+`stickerLibrary/catalog` conserva una lista ordenada de grupos y un mapa `stickerId → groupId`. Esta capa permite clasificar stickers base y comunitarios sin reescribir su metadata ni duplicar el archivo. Los stickers aportados por usuarios sin asignación explícita se muestran en “Aportaciones de la comunidad”; los demás quedan en “Sin clasificar”. La lectura es pública y sólo administración puede modificar la organización.
+
 Una colocación en la libreta no duplica el archivo. `AlbumElement` de tipo `STICKER` guarda `stickerId`; su `id`, `pageId` y `layout` existente forman la instancia. El layout normalizado conserva `x`, `y`, `width`, `height`, `rotation`, `zIndex`, `locked` y `hidden`, y `clampLayout` la mantiene dentro de la hoja.
 
 La persistencia futura puede usar `stickers/{stickerId}` para metadata en Firestore y una ruta generada en Storage para el activo. La referencia de cada instancia apunta al mismo `stickerId`, aunque el sticker se reutilice en varias páginas.

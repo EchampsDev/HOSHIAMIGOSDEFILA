@@ -23,6 +23,7 @@
 .sticker-card-meta { display: grid; gap: .25rem; padding: .8rem; }
 .sticker-card-meta strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sticker-card-meta small { color: #88827d; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sticker-card-meta p { min-height: 2.7em; margin: .25rem 0 0; overflow: hidden; color: #aaa5a0; font-size: .78rem; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .sticker-card-actions { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid #282523; }
 .sticker-card-actions button { min-height: 2.75rem; border: 0; border-right: 1px solid #282523; background: transparent; color: #d8d2cc; font: .69rem monospace; text-transform: uppercase; cursor: pointer; }
 .sticker-card-actions button:last-child { border-right: 0; color: #d9b65d; }
@@ -32,13 +33,28 @@
 
 .sticker-picker { margin: 1.25rem 0; padding: 1rem; border: 1px solid #36312d; background: rgba(0, 0, 0, .28); }
 .sticker-picker .sticker-grid { max-height: 26rem; padding: .15rem; overflow-y: auto; }
+.sticker-groups { display: grid; gap: .8rem; }
+.sticker-group { border: 1px solid #39332d; background: rgba(4, 4, 4, .48); }
+.sticker-group > summary { display: flex; align-items: center; justify-content: space-between; min-height: 4.2rem; padding: .8rem 1rem; cursor: pointer; list-style: none; }
+.sticker-group > summary::-webkit-details-marker { display: none; }
+.sticker-group > summary span { display: grid; gap: .2rem; }
+.sticker-group > summary b { color: #f3efe9; font-size: 1rem; letter-spacing: .04em; text-transform: uppercase; }
+.sticker-group > summary small { color: #a79f98; font: .67rem monospace; text-transform: uppercase; }
+.sticker-group > summary i { color: #d9b65d; font: normal 1.35rem monospace; transition: transform .2s ease; }
+.sticker-group[open] > summary { border-bottom: 1px solid #39332d; }
+.sticker-group[open] > summary i { transform: rotate(45deg); }
+.sticker-group-content { padding: .85rem; }
+.sticker-picker .sticker-groups { max-height: 30rem; overflow-y: auto; }
+.sticker-picker .sticker-group-content { padding: .6rem; }
+.sticker-picker .sticker-grid { max-height: none; overflow: visible; }
 .sticker-uploader { margin: 1rem 0; border: 1px solid #39332d; background: rgba(10, 10, 10, .72); }
 .sticker-uploader summary { display: flex; justify-content: space-between; padding: 1rem; color: #d9b65d; cursor: pointer; font: .78rem monospace; text-transform: uppercase; }
 .sticker-uploader summary::marker { content: ''; }
 .sticker-uploader-body { display: grid; gap: 1rem; padding: 0 1rem 1rem; }
 .sticker-uploader-body > p { margin: 0; color: #aaa39d; }
 .sticker-uploader-body label:not(.sticker-file-drop) { display: grid; gap: .4rem; color: #c7b986; font: .72rem monospace; text-transform: uppercase; }
-.sticker-uploader-body input:not([type=file]) { min-height: 3rem; padding: .7rem; border: 1px solid #514a44; background: #090909; color: white; }
+.sticker-uploader-body input:not([type=file]), .sticker-uploader-body textarea { min-height: 3rem; padding: .7rem; border: 1px solid #514a44; background: #090909; color: white; font: inherit; }
+.sticker-uploader-body textarea { min-height: 6rem; resize: vertical; text-transform: none; }
 .sticker-file-drop { position: relative; display: block; border: 1px dashed #625a52; background: #12100f; cursor: pointer; }
 .sticker-file-drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .sticker-file-drop > span { display: grid; justify-items: center; gap: .4rem; min-height: 10rem; padding: 1rem; text-align: center; }
@@ -74,11 +90,50 @@
 .album-sticker-image { display: block; width: 100%; height: 100%; object-fit: contain; user-select: none; filter: none; }
 .album-element.type-sticker:has(.album-sticker-image) .album-element-author { transform: translateY(100%); background: rgba(255, 251, 237, .85); }
 
+.sticker-collection-page { width: min(1180px, calc(100% - 2rem)); margin: 0 auto; padding: clamp(8rem, 14vw, 11rem) 0 5rem; color: #f3efe9; }
+.sticker-collection-page > header { max-width: 48rem; }
+.sticker-collection-page > header h1 { margin: .25rem 0 .75rem; font-size: clamp(3.4rem, 12vw, 8rem); line-height: .82; letter-spacing: -.075em; text-transform: uppercase; }
+.sticker-collection-page > header > p:last-child { max-width: 40rem; color: #aaa5a0; font-size: 1rem; line-height: 1.55; }
+.sticker-collection-page .community-sticker-library { margin-top: clamp(2rem, 6vw, 4rem); }
+
+.sticker-manager-page { width: min(1160px, calc(100% - 2rem)); margin: 0 auto; padding: clamp(7rem, 13vw, 10rem) 0 5rem; color: #eee; }
+.sticker-manager-page > nav { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: 2rem; }
+.sticker-manager-page > nav a { color: #d9b65d; font: .72rem monospace; text-transform: uppercase; }
+.sticker-collection-manager > header { padding-bottom: 2rem; border-bottom: 1px solid #37322d; }
+.sticker-collection-manager > header h1 { margin: .3rem 0 .75rem; font-size: clamp(2.7rem, 9vw, 6rem); line-height: .88; letter-spacing: -.065em; }
+.sticker-collection-manager > header > p:last-child { max-width: 42rem; color: #aaa5a0; line-height: 1.5; }
+.sticker-manager-groups, .sticker-manager-assignments { margin-top: 2.2rem; padding: 1rem; border: 1px solid #3d3731; background: rgba(8, 8, 8, .75); }
+.sticker-manager-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.sticker-manager-heading h2 { margin: 0; font-size: 1.5rem; }
+.sticker-manager-heading span { color: #d9b65d; font: .68rem monospace; text-transform: uppercase; }
+.sticker-manager-add { display: grid; gap: .7rem; margin-bottom: 1rem; }
+.sticker-manager-add label, .sticker-manager-group-list label, .sticker-assignment-list label { display: grid; gap: .35rem; color: #c7b986; font: .68rem monospace; text-transform: uppercase; }
+.sticker-manager-add input, .sticker-manager-group-list input, .sticker-assignment-list select { width: 100%; min-height: 2.8rem; padding: .65rem; border: 1px solid #514a44; background: #090909; color: #fff; }
+.sticker-manager-add button, .sticker-manager-group-list button { min-height: 2.8rem; padding: .65rem .9rem; border: 1px solid #6c6259; background: #111; color: #eee; cursor: pointer; }
+.sticker-manager-add button { border-color: #d9b65d; background: #d9b65d; color: #080808; font-weight: 700; }
+.sticker-manager-add button:disabled, .sticker-manager-group-list button:disabled { opacity: .4; cursor: not-allowed; }
+.sticker-manager-group-list { display: grid; gap: .65rem; }
+.sticker-manager-group-list article { display: grid; gap: .65rem; padding: .8rem; border: 1px solid #302c28; }
+.sticker-manager-group-list article > div { display: grid; grid-template-columns: auto auto 1fr; gap: .45rem; }
+.sticker-manager-group-list button.is-danger { justify-self: end; color: #ff7182; border-color: #7a3540; }
+.sticker-assignment-list { display: grid; gap: .65rem; }
+.sticker-assignment-list article { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr); gap: .8rem; align-items: center; padding: .75rem; border: 1px solid #302c28; }
+.sticker-assignment-list article > img, .sticker-assignment-list article > span { width: 4.5rem; height: 4.5rem; object-fit: contain; }
+.sticker-assignment-list article > div { min-width: 0; display: grid; gap: .25rem; }
+.sticker-assignment-list article strong, .sticker-assignment-list article small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sticker-assignment-list article small { color: #948d86; }
+.sticker-assignment-list article label { grid-column: 1 / -1; }
+.sticker-manager-status { color: #d9b65d; }
+
 @media (min-width: 680px) {
   .community-sticker-library > header { grid-template-columns: minmax(0, 1.25fr) minmax(15rem, .75fr); align-items: end; }
   .sticker-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .sticker-picker .sticker-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .sticker-moderation-grid article { grid-template-columns: 5rem minmax(12rem, 1fr) auto auto; }
+  .sticker-manager-add { grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
+  .sticker-manager-group-list article { grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
+  .sticker-assignment-list article { grid-template-columns: 5rem minmax(12rem, 1fr) minmax(13rem, .7fr); }
+  .sticker-assignment-list article label { grid-column: auto; }
 }
 
 @media (min-width: 1040px) { .community-sticker-library .sticker-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }

@@ -4,7 +4,7 @@ import { SpiralBinding } from './SpiralBinding'
 import type { ReaderPaperTheme, ReaderViewMode } from './AlbumControls'
 import type { ElementReactions } from '../../reactions/repositories/ElementReactionRepository'
 
-type GestureMode = 'move' | 'resize' | 'rotate'
+type GestureMode = 'move' | 'resize' | 'resize-x' | 'resize-y' | 'rotate'
 type Props = { state: BookState; page: ScrapbookPage | null; leftPage?: ScrapbookPage | null; rightPage?: ScrapbookPage | null; bookmarkPage: number; viewerId?: string | null; selectedId?: string | null; editable?: boolean; canEditAll?: boolean; revealAll?: boolean; canInspectAll?: boolean; reactionsByElement?: ElementReactions; navigationLocked?: boolean; viewMode: ReaderViewMode; paperTheme: ReaderPaperTheme; onBookmark: () => void; onPrevious: () => void; onNext: () => void; onSelect?: (pageId: string, id: string) => void; onLike?: (pageId: string, element: AlbumElement) => void; onElementPointerDown?: (event: React.PointerEvent<HTMLDivElement>, pageId: string, element: AlbumElement, mode: GestureMode) => void; direction: 'next' | 'previous' }
 
 export function ScrapbookCoverArtwork({ bookmarkPage, onBookmark }: { bookmarkPage: number; onBookmark?: () => void }) {

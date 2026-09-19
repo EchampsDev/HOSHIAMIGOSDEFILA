@@ -2,7 +2,7 @@ import type { CommunitySticker } from '../domain/types'
 import { validateStickerFile } from '../domain/stickerFileValidation'
 import { stickerRepository, stickerStorageRepository } from '../repositories'
 
-export async function createPendingSticker(file: File, title: string, authorName?: string): Promise<CommunitySticker> {
+export async function createPendingSticker(file: File, title: string, authorName?: string, description?: string): Promise<CommunitySticker> {
   const validation = await validateStickerFile(file)
   const stored = await stickerStorageRepository.uploadSticker(file, validation)
   try {
@@ -10,7 +10,7 @@ export async function createPendingSticker(file: File, title: string, authorName
       id: stored.id,
       title: title.trim() || 'Sticker de la comunidad',
       authorName: authorName?.trim() || undefined,
-      description: 'Aportación comunitaria pendiente de moderación.',
+      description: description?.trim() || 'Aportación de la comunidad.',
       localAssetRef: stored.localAssetRef,
       assetUrl: stored.assetUrl,
       objectKey: stored.objectKey,

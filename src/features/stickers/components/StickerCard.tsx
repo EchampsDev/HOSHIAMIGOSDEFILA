@@ -10,7 +10,7 @@ export function StickerCard({ sticker, selected = false, onSelect, onDetail, onD
       {source ? <img src={source} alt={sticker.title} /> : <span aria-hidden="true">✦</span>}
       {selected && <i aria-hidden="true">✓</i>}
     </button>
-    <div className="sticker-card-meta"><strong>{sticker.title}</strong>{sticker.authorName && <small>por {sticker.authorName}</small>}</div>
+    <div className="sticker-card-meta"><strong>{sticker.title}</strong><small>por {sticker.authorName?.trim() || 'Autor anónimo'}</small>{!compact && <p>{sticker.description?.trim() || 'Sin descripción.'}</p>}</div>
     {!compact && <div className="sticker-card-actions"><button type="button" onClick={() => onDetail?.(sticker)}>Detalles</button><button type="button" onClick={() => onDownload?.(sticker)}>Descargar</button></div>}
   </article>
 }

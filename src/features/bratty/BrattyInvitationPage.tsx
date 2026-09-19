@@ -2,6 +2,7 @@ import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { BrattypolitanExperienceLockup } from '../../components/BrattypolitanWordmark'
 import { FourPointMark } from '../../components/FourPointMark'
 import { useGoogleSession } from '../access/useGoogleSession'
+import { StarfieldBackground } from '../landing/components/StarfieldBackground'
 import { useBrattyExperience } from './hooks/useBrattyExperience'
 import { brattyVideoRepository } from './repositories/BrattyVideoRepository'
 
@@ -34,10 +35,10 @@ export function BrattyInvitationPage() {
     finally { setBusy(false) }
   }
 
-  if (experience.loading) return <main className="bratty-invitation bratty-invitation--loading" aria-busy="true"><FourPointMark /><p>Preparando tu invitación…</p></main>
-  if (!experience.settings.invitationActive) return <main className="bratty-invitation bratty-invitation--paused"><section><FourPointMark /><p className="eyebrow">UN MENSAJE PARA BRATTY</p><h1>Esto se está consolidando.</h1><p>Los fans te tenemos una pequeña sorpresa. Vuelve aquí el <strong>25 de septiembre</strong>.</p></section></main>
+  if (experience.loading) return <><StarfieldBackground /><main className="bratty-invitation bratty-invitation--loading" aria-busy="true"><FourPointMark /><p>Preparando tu invitación…</p></main></>
+  if (!experience.settings.invitationActive) return <><StarfieldBackground /><main className="bratty-invitation bratty-invitation--paused"><section><FourPointMark /><p className="eyebrow">UN MENSAJE PARA BRATTY</p><h1>Esto se está consolidando.</h1><p>Los fans te tenemos una pequeña sorpresa. Vuelve aquí el <strong>25 de septiembre</strong>.</p></section></main></>
 
-  return <main className="bratty-invitation">
+  return <><StarfieldBackground /><main className="bratty-invitation">
     <header><BrattypolitanExperienceLockup /><span>ACCESO ESPECIAL · BRATTY</span></header>
     <section className="bratty-invitation-intro"><FourPointMark /><p className="eyebrow">HOLA, BRATTY</p><h1>Esta libreta también quiere guardar tu voz.</h1><p>Durante la fila, tus fans construirán una libreta física y digital con mensajes, dibujos y recuerdos para ti. Queremos invitarte a participar dejando un video con lo que tú quieras decir, compartir o aportar.</p><p>Cuando el equipo active la sorpresa, este mensaje será lo primero que verán antes de abrir la libreta.</p></section>
     {!session.user ? <section className="bratty-access-card"><span>01</span><h2>Confirma tu acceso</h2><p>Este espacio está reservado. Accede con la cuenta que el equipo haya marcado como usuario especial.</p><button type="button" onClick={() => void session.signIn()}>Acceder con Google</button>{session.error && <p role="alert">{session.error}</p>}</section>
@@ -48,5 +49,5 @@ export function BrattyInvitationPage() {
           {status && <p className="bratty-upload-status" role="status">{status}</p>}<button type="button" className="bratty-signout" onClick={() => void session.signOut()}>Cerrar sesión</button>
         </section>}
     <footer><FourPointMark /><span>Gracias por ser la razón de este recuerdo.</span><FourPointMark /></footer>
-  </main>
+  </main></>
 }

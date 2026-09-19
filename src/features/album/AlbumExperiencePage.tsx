@@ -10,9 +10,10 @@ import { clampLayout, isElementOwner, resizeLayoutProportionally, scaleLayoutPro
 import { useAlbum } from './hooks/useAlbum'
 import { useElementReactions } from '../reactions/hooks/useElementReactions'
 import { AlbumElementPreview } from './components/AlbumElementPreview'
+import { contributionRepository } from '../contributions/repositories'
 
 type Selection = { pageId: string; elementId: string }
-type Gesture = { pageId: string; elementId: string; mode: 'move' | 'resize' | 'rotate'; startX: number; startY: number; width: number; height: number; layout: ElementLayout; latest: ElementLayout; node: HTMLElement }
+type Gesture = { pageId: string; elementId: string; mode: 'move' | 'resize' | 'resize-x' | 'resize-y' | 'rotate'; startX: number; startY: number; width: number; height: number; layout: ElementLayout; latest: ElementLayout; node: HTMLElement }
 
 export function AlbumExperiencePage() {
   const [viewMode, setViewMode] = useState<ReaderViewMode>(() => localStorage.getItem('brattypolitan.album-view') === 'SINGLE' ? 'SINGLE' : 'BOOK')
@@ -64,9 +65,13 @@ export function AlbumExperiencePage() {
         ? clampLayout({ ...active.layout, x: active.layout.x + deltaX, y: active.layout.y + deltaY })
         : active.mode === 'rotate'
           ? { ...active.layout, rotation: Math.round(active.layout.rotation + deltaX * 180) }
-          : active.node.classList.contains('type-setlist')
-            ? resizeLayoutProportionally(active.layout, deltaX, deltaY, .2, .1)
-            : clampLayout({ ...active.layout, width: active.layout.width + deltaX, height: active.layout.height + deltaY })
+          : active.mode === 'resize-x'
+            ? clampLayout({ ...active.layout, width: active.layout.width + deltaX })
+            : active.mode === 'resize-y'
+              ? clampLayout({ ...active.layout, height: active.layout.height + deltaY })
+              : active.node.classList.contains('type-setlist')
+                ? resizeLayoutProportionally(active.layout, deltaX, deltaY, .12, .08)
+                : clampLayout({ ...active.layout, width: active.layout.width + deltaX, height: active.layout.height + deltaY })
       active.latest = layout
       active.node.style.left = `${layout.x * 100}%`
       active.node.style.top = `${layout.y * 100}%`
@@ -93,7 +98,7 @@ export function AlbumExperiencePage() {
   }, [album.album, selection])
   const selectedOwned = Boolean(selected && isElementOwner(selected.element, viewerId))
   const selectedCanAdjust = Boolean(selected && (selectedOwned || session.isAdmin))
-  const selectedWrittenContent = selected && ['POST_IT', 'TEXT', 'HANDWRITTEN_NOTE'].includes(selected.element.type) ? selected.element.content?.trim() : ''
+  const selectedWrittenContent = selected && ['PHOTO', 'POST_IT', 'TEXT', 'HANDWRITTEN_NOTE'].includes(selected.element.type) && !selected.element.content?.startsWith('data:image/') ? selected.element.content?.trim() : ''
   const selectedReactions = selected ? elementReactions.reactions[selected.element.id] ?? [] : []
   const next = () => { if (editingElement) return; setSelection(null); setDirection('next'); album.next() }
   const previous = () => { if (editingElement) return; setSelection(null); setDirection('previous'); album.previous() }
@@ -143,7 +148,8 @@ export function AlbumExperiencePage() {
         <button type="button" onClick={() => patchSelectedLayout({ zIndex: Math.max(...selected.page.elements.map((item) => item.layout.zIndex), 0) + 1 })}>Traer al frente</button>
         {selectedOwned && <button type="button" onClick={() => setMoveOpen(true)}>Cambiar de cara</button>}
         <button type="button" onClick={() => { gesture.current = null; setEditingElement(false) }}>Terminar edición</button>
-        {selectedOwned && <button type="button" className="is-danger" onClick={() => { if (window.confirm('¿Eliminar definitivamente tu publicación?')) void album.deleteOwnedElement(selected.page.id, selected.element.id, viewerId).then(() => { setEditingElement(false); setSelection(null) }) }}>Eliminar</button>}</>)}
+        </>)}
+        {session.isAdmin && <button type="button" className="is-danger" onClick={() => { if (!session.user || !window.confirm('¿Eliminar esta aportación? Quedará oculta en la papelera administrativa.')) return; void contributionRepository.deletePublished(selected.page.id, selected.element.id, session.user.uid).then(() => { setEditingElement(false); setSelection(null) }).catch(() => window.alert('No fue posible eliminar la aportación.')) }}>Eliminar aportación</button>}
         {!editingElement && <button type="button" onClick={() => setSelection(null)}>Cerrar</button>}
         </div>
       </aside>}

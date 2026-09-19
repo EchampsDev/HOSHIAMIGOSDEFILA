@@ -13,7 +13,7 @@ export type ResolvedPhotoAsset = {
 
 export interface PhotoStorageRepository {
   readonly provider: 'local' | 'r2'
-  uploadPhoto(file: File, validation: ValidatedPhotoFile, participantId: string, firebaseIdToken?: string): Promise<StoredPhotoAsset>
+  uploadPhoto(file: File, validation: ValidatedPhotoFile, participantId: string, firebaseIdToken?: string, uploadId?: string, uploadToken?: string): Promise<StoredPhotoAsset>
   resolvePhoto(media: MediaMetadata, firebaseIdToken?: string): Promise<ResolvedPhotoAsset | null>
   deletePhoto(media: MediaMetadata, firebaseIdToken?: string): Promise<void>
 }

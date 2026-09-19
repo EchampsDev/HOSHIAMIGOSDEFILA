@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FourPointMark } from '../components/FourPointMark'
 import { useGoogleSession } from '../features/access/useGoogleSession'
@@ -15,10 +15,26 @@ import { BrattypolitanExperienceLockup } from '../components/BrattypolitanWordma
 
 export function HomePage() {
   const landingRef = useRef<HTMLDivElement>(null)
+  const heroRef = useRef<HTMLElement>(null)
+  const [showScrollCue, setShowScrollCue] = useState(false)
   const albumAccess = usePublicAlbumAccess()
   const album = useAlbum()
   const session = useGoogleSession()
   useScrollReveal(landingRef)
+  useEffect(() => {
+    let timer: number
+    const restart = () => {
+      setShowScrollCue(false)
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => {
+        const bounds = heroRef.current?.getBoundingClientRect()
+        if (bounds && bounds.top < window.innerHeight && bounds.bottom > 0) setShowScrollCue(true)
+      }, 5_000)
+    }
+    restart()
+    for (const name of ['scroll', 'wheel', 'pointerdown', 'touchstart', 'keydown']) window.addEventListener(name, restart, { passive: true })
+    return () => { window.clearTimeout(timer); for (const name of ['scroll', 'wheel', 'pointerdown', 'touchstart', 'keydown']) window.removeEventListener(name, restart) }
+  }, [])
   const entryCount = useMemo(() => album.album?.pages.flatMap((page) => page.elements).filter((element) => element.author.participantId !== 'developer-local').length ?? 0, [album.album])
 
   return <Layout>
@@ -26,7 +42,7 @@ export function HomePage() {
     <div className="landing-flow" ref={landingRef}>
       <OpeningStar />
 
-      <section className="hero">
+      <section className="hero" ref={heroRef}>
         <div className="hero-copy reveal-title" data-scroll-reveal>
           <p className="eyebrow">FAN page dedicada a Bratty y experiencia web</p>
           <h1><BrattypolitanExperienceLockup stacked /></h1>
@@ -35,7 +51,7 @@ export function HomePage() {
           <ConstellationHero />
         </div>
         <p className="lede reveal-lede" data-scroll-reveal>Un álbum construido por las personas<br />que estuvieron aquí.</p>
-        <a className="landing-scroll-cue" href="#participa" aria-label="Bajar a la sección para participar"><span>DESLIZA PARA DESCUBRIR</span><i aria-hidden="true" /></a>
+        {showScrollCue && <a className="landing-scroll-cue is-idle" href="#participa" aria-label="Bajar a la sección para participar"><span>DESLIZA PARA DESCUBRIR</span><i aria-hidden="true" /></a>}
       </section>
 
       <section className="landing-chapter chapter-encounter" data-scroll-reveal>

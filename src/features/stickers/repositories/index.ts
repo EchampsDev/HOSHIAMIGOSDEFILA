@@ -6,8 +6,14 @@ import { LocalStickerRepository } from './LocalStickerRepository'
 import { LocalStickerStorageRepository } from './LocalStickerStorageRepository'
 import type { StickerRepository } from './StickerRepository'
 import type { StickerStorageRepository } from './StickerStorageRepository'
+import { FirestoreStickerCatalogRepository } from './FirestoreStickerCatalogRepository'
+import { LocalStickerCatalogRepository } from './LocalStickerCatalogRepository'
+import type { StickerCatalogRepository } from './StickerCatalogRepository'
 
 export const stickerRepository: StickerRepository = isFirebaseConfigured ? new FirestoreStickerRepository() : new LocalStickerRepository()
 export const stickerStorageRepository: StickerStorageRepository = isFirebaseConfigured && isR2MediaConfigured
   ? new CloudflareR2StickerStorageRepository()
   : new LocalStickerStorageRepository()
+export const stickerCatalogRepository: StickerCatalogRepository = isFirebaseConfigured
+  ? new FirestoreStickerCatalogRepository()
+  : new LocalStickerCatalogRepository()
