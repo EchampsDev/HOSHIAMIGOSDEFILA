@@ -509,7 +509,7 @@ span.cover-page-edge { position: absolute !important; z-index: 0 !important; top
 @keyframes album-interaction-hint { 0% { opacity:0; transform:translate(-50%,-5px); } 10%,72% { opacity:1; transform:translate(-50%,0); } 100% { opacity:0; transform:translate(-50%,-3px); } }
 
 .album-element.type-setlist { container-type:size; }
-.album-element.type-photo { display:grid; grid-template-rows:minmax(0,1fr); gap:0; min-height:0; padding:3%; border-color:#fffaf0; background:#fffaf0; }
+.album-element.type-photo { display:grid; grid-template-rows:minmax(0,1fr); gap:0; min-height:0; padding:3%; border-color:#fffaf0; background:#fffaf0; box-shadow:none; }
 .album-element.type-photo:has(> .album-element-content) { grid-template-rows:minmax(0,1fr) minmax(0,auto); }
 .album-element.type-photo > .album-element-type { display:none; }
 .album-element.type-photo > .album-photo-image,.album-element.type-photo > .album-photo-frame { position:relative; inset:auto; width:100%; height:100%; min-height:0; object-fit:cover; }
