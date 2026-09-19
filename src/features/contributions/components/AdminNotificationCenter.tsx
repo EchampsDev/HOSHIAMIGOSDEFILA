@@ -99,7 +99,7 @@ export function AdminNotificationCenter() {
   const reconcileAvailability = async () => {
     if (!session.isAdmin || participation.isOpen || participation.error || workingKey || !window.confirm('Se reconstruirán únicamente los conteos de caras a partir de las aportaciones pendientes. Confirma que la participación permanece cerrada.')) return
     setWorkingKey('availability'); setMessage(null)
-    try { await contributionRepository.reconcileAvailability(); setMessage('Cupos pendientes conciliados con las aportaciones existentes.') }
+    try { await contributionRepository.reconcileAvailability(); setMessage('Disponibilidad actualizada a partir de las solicitudes pendientes.') }
     catch (error) { setMessage(error instanceof Error ? error.message : 'No fue posible conciliar los cupos.') }
     finally { setWorkingKey(null) }
   }
@@ -109,7 +109,10 @@ export function AdminNotificationCenter() {
     <aside id="admin-notification-center" className="admin-notification-panel" role="dialog" aria-modal="true" aria-label="Solicitudes pendientes">
       <header><div><p>MODERACIÓN · ENTRADA</p><h2>Aportaciones</h2></div><button type="button" onClick={() => setOpen(false)} aria-label="Cerrar">×</button></header>
       <div className="admin-notification-summary"><strong>{totalPending}</strong><span>{totalPending === 1 ? 'pendiente por revisar' : 'pendientes por revisar'}</span></div>
-      <div className="admin-notification-maintenance"><button type="button" disabled={participation.isOpen || Boolean(participation.error) || Boolean(workingKey)} onClick={() => void reconcileAvailability()}>Reconstruir cupos de pendientes</button><small>{participation.isOpen ? 'Cierra primero la participación para evitar envíos durante la conciliación.' : 'Sólo actualiza conteos; no modifica recuerdos.'}</small></div>
+      <details className={`admin-notification-maintenance${participation.isOpen ? ' is-locked' : ''}`}>
+        <summary>Revisar espacios disponibles</summary>
+        <div><p>Úsalo solamente si el número de lugares disponibles parece incorrecto. Recalcula los espacios reservados por solicitudes pendientes; no elimina ni modifica recuerdos.</p><button type="button" disabled={participation.isOpen || Boolean(participation.error) || Boolean(workingKey)} onClick={() => void reconcileAvailability()}>Actualizar conteo</button><small>{participation.isOpen ? 'Para habilitar esta acción, pausa temporalmente las aportaciones desde la pantalla principal.' : 'Las aportaciones están pausadas. Puedes actualizar el conteo con seguridad.'}</small></div>
+      </details>
       {(message || stickerLibrary.error) && <p className="admin-notification-message" role="alert">{message || stickerLibrary.error}</p>}
       <div className="admin-notification-list">
         {stickerLibrary.pending.map((sticker) => {
