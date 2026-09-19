@@ -71,8 +71,12 @@
 .memory-page-picker--wizard > div { grid-template-columns: minmax(0,1fr); align-items: stretch; }
 .memory-page-picker--wizard button,.memory-page-picker--wizard .memory-page-open { width: 100% !important; min-width: 0; min-height: 54px; padding: 10px 14px !important; font-size: .68rem !important; }
 .memory-page-picker--wizard.is-full { border-color: rgba(244,24,55,.72); box-shadow: inset 0 0 24px rgba(244,24,55,.08); }
-.memory-photo-input { min-height: 150px; display: grid !important; place-items: center; align-content: center; gap: 10px !important; padding: 22px; color: #f5dc50; border: 1px dashed rgba(245,220,80,.62); background: rgba(0,0,0,.48); cursor: pointer; text-align: center; }
-.memory-photo-input input { max-width: 100%; color: rgba(255,255,255,.72) !important; border: 0 !important; background: transparent !important; }
+.memory-photo-input { position:relative; min-height:150px; display:grid !important; place-items:center; align-content:center; gap:10px !important; overflow:hidden; padding:22px; color:#f5dc50; border:1px dashed rgba(245,220,80,.62); background:rgba(0,0,0,.48); cursor:pointer; text-align:center; }
+.memory-photo-input.has-preview { min-height:280px; padding:10px; grid-template-rows:minmax(0,1fr) auto auto; align-content:stretch; }
+.memory-photo-preview { width:100%; min-height:210px; display:grid; place-items:center; overflow:hidden; border:1px solid rgba(255,255,255,.14); background:#050505; }
+.memory-photo-preview img { display:block; width:100%; height:100%; max-height:min(44svh,480px); object-fit:contain; }
+.memory-photo-action { padding:8px 12px; color:#f5dc50; border:1px solid rgba(245,220,80,.48); background:rgba(8,8,8,.82); font:700 .64rem 'DM Mono',monospace; letter-spacing:.05em; text-transform:uppercase; }
+.memory-photo-input input { position:absolute; width:1px; height:1px; overflow:hidden; opacity:0; pointer-events:none; }
 .memory-photo-input small { color: rgba(255,255,255,.68); }
 .memory-visibility-picker { display: grid; gap: 10px; margin: 0; padding: 16px; border: 1px solid rgba(245,220,80,.42); background: rgba(0,0,0,.42); }
 .memory-visibility-picker legend { padding: 0 8px; color: #f5dc50; font: 700 .68rem 'DM Mono',monospace; letter-spacing: .1em; text-transform: uppercase; }
