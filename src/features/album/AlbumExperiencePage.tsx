@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { ExperienceWord } from '../../components/BrattypolitanWordmark'
 import { useGoogleSession } from '../access/useGoogleSession'
@@ -11,6 +11,7 @@ import { useAlbum } from './hooks/useAlbum'
 import { useElementReactions } from '../reactions/hooks/useElementReactions'
 import { AlbumElementPreview } from './components/AlbumElementPreview'
 import { contributionRepository } from '../contributions/repositories'
+import { useImmersiveAlbumColor } from './hooks/useImmersiveAlbumColor'
 
 type Selection = { pageId: string; elementId: string }
 type Gesture = { pageId: string; elementId: string; mode: 'move' | 'resize' | 'resize-x' | 'resize-y' | 'rotate'; startX: number; startY: number; width: number; height: number; layout: ElementLayout; latest: ElementLayout; node: HTMLElement }
@@ -18,6 +19,7 @@ type Gesture = { pageId: string; elementId: string; mode: 'move' | 'resize' | 'r
 export function AlbumExperiencePage() {
   const [viewMode, setViewMode] = useState<ReaderViewMode>(() => localStorage.getItem('brattypolitan.album-view') === 'SINGLE' ? 'SINGLE' : 'BOOK')
   const [paperTheme, setPaperTheme] = useState<ReaderPaperTheme>(() => localStorage.getItem('brattypolitan.album-paper-theme') === 'BLACK' ? 'BLACK' : 'CREAM')
+  const [immersive, setImmersive] = useState(() => localStorage.getItem('brattypolitan.album-immersive') === 'true')
   const album = useAlbum(false, viewMode === 'BOOK')
   const albumDocument = album.album
   const goToAlbum = album.goTo
@@ -35,6 +37,7 @@ export function AlbumExperiencePage() {
   const [direction, setDirection] = useState<'next' | 'previous'>('next')
   const [bookmarkPage, setBookmarkPage] = useState(() => Number(localStorage.getItem('brattypolitan.album-bookmark-page')) || 1)
   const gesture = useRef<Gesture | null>(null)
+  const readerRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     const target = Number(new URLSearchParams(window.location.search).get('page'))
@@ -42,6 +45,7 @@ export function AlbumExperiencePage() {
   }, [albumDocument, goToAlbum])
   useEffect(() => { localStorage.setItem('brattypolitan.album-view', viewMode) }, [viewMode])
   useEffect(() => { localStorage.setItem('brattypolitan.album-paper-theme', paperTheme) }, [paperTheme])
+  useEffect(() => { localStorage.setItem('brattypolitan.album-immersive', String(immersive)) }, [immersive])
   useEffect(() => {
     const timer = window.setTimeout(() => setInteractionHint(false), 4_600)
     return () => window.clearTimeout(timer)
@@ -106,6 +110,9 @@ export function AlbumExperiencePage() {
   const setBookmark = (page: number) => { setBookmarkPage(page); localStorage.setItem('brattypolitan.album-bookmark-page', String(page)) }
   const leftPage = album.pageNumber === 1 ? null : album.album?.pages[album.pageNumber - 1] ?? null
   const rightPage = album.pageNumber === 1 ? album.album?.pages[0] ?? null : album.album?.pages[album.pageNumber] ?? null
+  const ambientSceneKey = `${album.bookState}:${viewMode}:${paperTheme}:${leftPage?.id ?? ''}:${leftPage?.updatedAt ?? ''}:${rightPage?.id ?? ''}:${rightPage?.updatedAt ?? ''}:${album.currentPage?.id ?? ''}:${album.currentPage?.updatedAt ?? ''}`
+  const ambientColor = useImmersiveAlbumColor({ enabled: immersive, state: album.bookState, sceneKey: ambientSceneKey, readerRef })
+  const ambientStyle = { '--album-ambient-r': ambientColor[0], '--album-ambient-g': ambientColor[1], '--album-ambient-b': ambientColor[2] } as CSSProperties
   const patchSelectedLayout = (patch: Partial<ElementLayout>) => {
     if (!selected) return
     album.updateElementOnPage(selected.page.id, selected.element.id, { layout: clampLayout({ ...selected.element.layout, ...patch }) }, viewerId, session.isAdmin)
@@ -127,11 +134,12 @@ export function AlbumExperiencePage() {
     setSelection({ pageId, elementId: element.id })
   }
 
-  return <main className="album-experience">
-    <header className="album-header"><Link to="/">BRATTYPOLITAN <ExperienceWord /></Link><p>LIBRETA DIGITAL · VOLUMEN 01</p></header>
-    <section className={`album-reader${editingElement ? ' is-editing' : ''}`}>
+  return <main className={`album-experience${immersive ? ' is-immersive' : ''}`} style={ambientStyle}>
+    <span className="album-ambient-light" aria-hidden="true" />
+    <header className="album-header"><Link to="/">BRATTYPOLITAN <ExperienceWord /></Link><div className="album-header-reader-title"><button type="button" className="album-immersive-toggle" aria-label={`${immersive ? 'Desactivar' : 'Activar'} iluminación inmersiva`} aria-pressed={immersive} title={`${immersive ? 'Desactivar' : 'Activar'} iluminación inmersiva`} onClick={() => setImmersive((current) => !current)}><span aria-hidden="true"><i /></span></button><p>LIBRETA DIGITAL · VOLUMEN 01</p></div></header>
+    <section ref={readerRef} className={`album-reader${editingElement ? ' is-editing' : ''}`}>
       {interactionHint && <p className="album-interaction-hint" role="status">Pulsa una aportación para ver más información.</p>}
-      <Scrapbook state={album.bookState} page={album.currentPage} leftPage={leftPage} rightPage={rightPage} bookmarkPage={bookmarkPage} viewerId={viewerId} selectedId={selection?.elementId} editable={editingElement} canEditAll={session.isAdmin} revealAll={canInspectAll} canInspectAll={canInspectAll} reactionsByElement={elementReactions.reactions} navigationLocked={editingElement} viewMode={viewMode} paperTheme={paperTheme} onBookmark={() => goTo(bookmarkPage)} direction={direction} onPrevious={previous} onNext={next} onSelect={(pageId, elementId) => { if (selection?.elementId !== elementId) setEditingElement(false); setPreviewOpen(false); setSelection({ pageId, elementId }) }} onLike={session.user ? (_pageId, element) => void elementReactions.toggle(element.id, session.user!.uid, session.user!.displayName?.trim() || 'Anónimo') : undefined} onElementPointerDown={beginGesture} />
+      <div className={`album-stage is-${album.bookState.toLowerCase().replace('_', '-')}`}><button type="button" className="album-edge-navigation is-previous" onClick={previous} disabled={editingElement || album.bookState === 'CLOSED'} aria-label="Retroceder"><span aria-hidden="true">←</span><b>Retroceder</b></button><Scrapbook state={album.bookState} page={album.currentPage} leftPage={leftPage} rightPage={rightPage} bookmarkPage={bookmarkPage} viewerId={viewerId} selectedId={selection?.elementId} editable={editingElement} canEditAll={session.isAdmin} revealAll={canInspectAll} canInspectAll={canInspectAll} reactionsByElement={elementReactions.reactions} navigationLocked={editingElement} viewMode={viewMode} paperTheme={paperTheme} onBookmark={() => goTo(bookmarkPage)} direction={direction} onPrevious={previous} onNext={next} onSelect={(pageId, elementId) => { if (selection?.elementId !== elementId) setEditingElement(false); setPreviewOpen(false); setSelection({ pageId, elementId }) }} onLike={session.user ? (_pageId, element) => void elementReactions.toggle(element.id, session.user!.uid, session.user!.displayName?.trim() || 'Anónimo') : undefined} onElementPointerDown={beginGesture} /><button type="button" className="album-edge-navigation is-next" onClick={next} disabled={editingElement} aria-label="Avanzar"><b>Avanzar</b><span aria-hidden="true">→</span></button></div>
       {selected && <aside className="album-owner-tools album-contribution-details" aria-label="Datos de la aportación">
         <div className="album-contribution-information"><b>{selectedOwned ? 'Tu publicación' : 'Aportación'} · cara {selected.page.pageNumber}</b><small>{editingElement ? 'Edición activa: la página está bloqueada y sólo se moverá este elemento.' : 'Información de esta aportación.'}</small><dl><div><dt>Usuario</dt><dd>{selected.element.author.displayName?.trim() || 'Anónimo'}</dd></div><div className="is-wide"><dt>Les gusta</dt><dd>{selectedReactions.length ? selectedReactions.map((reaction) => reaction.displayName).join(', ') : 'Aún no hay reacciones'}</dd></div>{selectedWrittenContent && <div className="is-wide"><dt>Contenido completo</dt><dd>{selectedWrittenContent}</dd></div>}</dl></div>
         <button type="button" className="album-contribution-preview" onClick={() => setPreviewOpen(true)} aria-label="Ampliar aportación en pantalla completa"><AlbumElementPreview element={selected.element} /><span>Ver en pantalla completa</span></button>
@@ -153,7 +161,7 @@ export function AlbumExperiencePage() {
         {!editingElement && <button type="button" onClick={() => setSelection(null)}>Cerrar</button>}
         </div>
       </aside>}
-      <AlbumControls state={album.bookState} pageNumber={album.pageNumber} pageCount={album.album?.pageCount ?? 100} bookmarkPage={bookmarkPage} onBookmarkPage={setBookmark} presenting={album.isPresenting} paused={album.isPaused} locked={editingElement} viewMode={viewMode} paperTheme={paperTheme} onViewMode={(mode) => { setSelection(null); setViewMode(mode) }} onPaperTheme={setPaperTheme} onPrevious={previous} onNext={next} onIndex={() => setIndexOpen(true)} onPresent={album.startPresentation} onPause={album.pausePresentation} onResume={album.resumePresentation} />
+      <AlbumControls state={album.bookState} pageNumber={album.pageNumber} pageCount={album.album?.pageCount ?? 100} bookmarkPage={bookmarkPage} onBookmarkPage={setBookmark} presenting={album.isPresenting} paused={album.isPaused} locked={editingElement} viewMode={viewMode} paperTheme={paperTheme} onViewMode={(mode) => { setSelection(null); setViewMode(mode) }} onPaperTheme={setPaperTheme} onIndex={() => setIndexOpen(true)} onPresent={album.startPresentation} onPause={album.pausePresentation} onResume={album.resumePresentation} />
       {album.syncError && <p className="album-sync-error">{album.syncError}</p>}
       {elementReactions.error && <p className="album-sync-error">{elementReactions.error}</p>}
     </section>
