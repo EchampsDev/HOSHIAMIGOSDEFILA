@@ -574,3 +574,63 @@ span.cover-page-edge { position: absolute !important; z-index: 0 !important; top
 @media (prefers-reduced-motion:reduce) {
   .album-interaction-hint { animation:none; }
 }
+
+/* Ajuste de centrado en escritorio e índice integrado al ambiente. */
+.album-stage {
+  box-sizing: border-box;
+  max-width: 100%;
+  margin-inline: auto;
+  justify-self: center;
+}
+.album-stage > .scrapbook-cover,
+.album-stage > .scrapbook-spread,
+.album-stage > .scrapbook-single {
+  margin-inline: auto;
+  justify-self: center;
+}
+.album-index-backdrop {
+  background: rgba(3, 3, 5, .24);
+  -webkit-backdrop-filter: blur(14px) saturate(1.25);
+  backdrop-filter: blur(14px) saturate(1.25);
+}
+.album-index {
+  color: #fff8ed;
+  border: 1px solid rgba(255, 255, 255, .24);
+  background: linear-gradient(145deg, rgba(255, 255, 255, .13), rgba(12, 9, 11, .42));
+  -webkit-backdrop-filter: blur(22px) saturate(1.45);
+  backdrop-filter: blur(22px) saturate(1.45);
+  box-shadow: inset 0 1px rgba(255, 255, 255, .14), 0 22px 70px rgba(0, 0, 0, .34);
+}
+.album-experience.is-immersive .album-index {
+  background: linear-gradient(145deg, rgba(255, 255, 255, .14), rgba(var(--album-ambient-r), var(--album-ambient-g), var(--album-ambient-b), .16) 42%, rgba(8, 7, 9, .42));
+  box-shadow: inset 0 1px rgba(255, 255, 255, .16), 0 22px 70px rgba(var(--album-ambient-r), var(--album-ambient-g), var(--album-ambient-b), .18);
+}
+.album-index-help { color: rgba(255, 248, 237, .68); }
+.album-index button {
+  color: inherit;
+  border-color: rgba(255, 255, 255, .3);
+  background: rgba(255, 255, 255, .045);
+}
+.album-index-grid button { color: #fff8ed; }
+.album-index-check { border-color: rgba(255, 255, 255, .46); }
+.album-index-grid button.is-full {
+  color: rgba(255, 248, 237, .42);
+  border-color: rgba(255, 255, 255, .14);
+  background: rgba(12, 11, 13, .22);
+}
+.album-index-grid button.has-owned {
+  border-color: rgba(232, 189, 85, .72);
+  box-shadow: inset 0 0 0 1px rgba(232, 189, 85, .22);
+}
+.album-index-grid button.is-current {
+  color: #fff;
+  border-color: rgba(var(--album-ambient-r), var(--album-ambient-g), var(--album-ambient-b), .9);
+  background: rgba(var(--album-ambient-r), var(--album-ambient-g), var(--album-ambient-b), .72);
+  box-shadow: 0 0 22px rgba(var(--album-ambient-r), var(--album-ambient-g), var(--album-ambient-b), .28);
+}
+@media (min-width: 761px) {
+  .album-reader { width: 100%; }
+  .album-stage { width: min(100%, 1120px); }
+  .album-stage.is-closed,
+  .album-stage.is-back-cover { width: min(100%, 940px); }
+}
