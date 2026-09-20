@@ -31,7 +31,25 @@ export function useStickerLibrary(includePending = false) {
     await refresh()
   }, [refresh])
 
-  return { approved, pending, loading, error, refresh, updateStatus }
+  const updateSticker = useCallback(async (id: string, patch: Partial<Pick<CommunitySticker, 'title' | 'authorName' | 'description' | 'visibility'>>) => {
+    const updated = await stickerRepository.updateSticker(id, patch)
+    await refresh()
+    return updated
+  }, [refresh])
+
+  const deleteSticker = useCallback(async (id: string) => {
+    const sticker = await stickerRepository.getSticker(id)
+    if (!sticker) throw new Error('El sticker ya no existe.')
+    await stickerRepository.deleteSticker(id)
+    const assetRef = sticker.objectKey ?? sticker.localAssetRef
+    if (assetRef) {
+      try { await stickerStorageRepository.deleteStickerAsset(assetRef) }
+      catch { /* El registro ya no es público; la limpieza del archivo puede reintentarse fuera de la UI. */ }
+    }
+    await refresh()
+  }, [refresh])
+
+  return { approved, pending, loading, error, refresh, updateStatus, updateSticker, deleteSticker }
 }
 
 export async function resolveStickerAsset(sticker: CommunitySticker) {

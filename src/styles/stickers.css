@@ -138,3 +138,49 @@
 
 @media (min-width: 1040px) { .community-sticker-library .sticker-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (prefers-reduced-motion: reduce) { .sticker-card, .sticker-card-art img, .sticker-loading i, .sticker-file-drop i { animation: none; transition: none; } }
+
+/* Acciones de Colección: carga, favoritos y edición administrativa. */
+.sticker-card { position: relative; }
+.sticker-favorite {
+  position: absolute;
+  z-index: 4;
+  top: .65rem;
+  right: .65rem;
+  width: 2.3rem;
+  height: 2.3rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: #f3efe9;
+  border: 1px solid rgba(255,255,255,.32);
+  border-radius: 50%;
+  background: rgba(7,7,7,.66);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  font-size: 1rem;
+}
+.sticker-favorite.is-favorite { color: #fff; border-color: #f41837; background: rgba(244,24,55,.86); box-shadow: 0 0 18px rgba(244,24,55,.34); }
+.sticker-library-tools { display: grid; gap: .75rem; margin-bottom: 1rem; }
+.sticker-library-tools > p { margin: 0; color: #aaa5a0; font: .7rem monospace; text-transform: uppercase; }
+.sticker-library-tools > p b { color: #f41837; }
+.sticker-library-tools > .sticker-primary-action { width: fit-content; }
+.sticker-library-tools .sticker-uploader { margin: 0; }
+.sticker-manager-upload { margin-top: 2.2rem; padding: 1rem; border: 1px solid #3d3731; background: rgba(8,8,8,.75); }
+.sticker-manager-upload .sticker-uploader { margin: 0; }
+.sticker-admin-row { align-items: start !important; }
+.sticker-admin-fields { display: grid !important; gap: .65rem !important; }
+.sticker-admin-fields label { display: grid; gap: .35rem; color: #c7b986; font: .68rem monospace; text-transform: uppercase; }
+.sticker-admin-fields input,
+.sticker-admin-fields textarea { width: 100%; min-height: 2.8rem; padding: .65rem; color: #fff; border: 1px solid #514a44; background: #090909; font: inherit; }
+.sticker-admin-fields textarea { min-height: 5.4rem; resize: vertical; text-transform: none; }
+.sticker-admin-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: .5rem; }
+.sticker-admin-actions button { min-height: 2.6rem; padding: .6rem .8rem; color: #eee; border: 1px solid #625a52; background: #111; cursor: pointer; font: .64rem monospace; text-transform: uppercase; }
+.sticker-admin-actions button.is-favorite { color: #fff; border-color: #f41837; background: rgba(244,24,55,.72); }
+.sticker-admin-actions button.is-danger { color: #ff7182; border-color: #7a3540; }
+.sticker-admin-actions button:disabled { opacity: .38; cursor: not-allowed; }
+@media (min-width: 680px) {
+  .sticker-library-tools { grid-template-columns: minmax(0,1fr) minmax(18rem,1fr); align-items: start; }
+  .sticker-admin-row { grid-template-columns: 5rem minmax(15rem,1.25fr) minmax(11rem,.65fr) !important; }
+  .sticker-admin-actions { grid-column: 2 / -1; }
+}

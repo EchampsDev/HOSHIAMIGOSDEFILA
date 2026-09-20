@@ -49,6 +49,12 @@ export class FirestoreStickerRepository implements StickerRepository {
     const visibility = patch.visibility ?? existing.visibility
     const updated = clean({ ...existing, ...patch, publicApproved: status === 'APPROVED' && visibility === 'PUBLIC', updatedAt: new Date().toISOString() })
     await updateDoc(doc(this.database!, 'communityStickers', id), clean({
+      title: updated.title,
+      authorName: updated.authorName,
+      description: updated.description,
+      visibility: updated.visibility,
+      displayWidth: updated.displayWidth,
+      displayHeight: updated.displayHeight,
       status: updated.status,
       publicApproved: updated.publicApproved,
       updatedAt: updated.updatedAt,
@@ -58,6 +64,7 @@ export class FirestoreStickerRepository implements StickerRepository {
 
   async deleteSticker(id: string) {
     this.ensureDatabase()
+    if (demoStickers.some((demo) => demo.id === id)) throw new Error('Este sticker base no se puede eliminar.')
     await deleteDoc(doc(this.database!, 'communityStickers', id))
   }
 
