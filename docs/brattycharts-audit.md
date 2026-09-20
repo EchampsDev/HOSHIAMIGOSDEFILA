@@ -28,3 +28,12 @@ Brattycharts vive bajo `/brattycharts` y no lee ni escribe colecciones de la lib
 - Patrones visuales del `AppChrome`, drawer y tarjetas de noticias.
 - Carrusel y utilidades de fechas como referencia o abstracción compatible.
 - Repositorios como frontera entre UI, Firestore y proveedores de archivos.
+
+## Apariencia del landing (Fases 4–5)
+
+- `brattychartsSettings/landing`: configuración pública de slideshow y video.
+- `brattychartsBackgrounds/{id}`: metadatos públicos de cada fondo; máximo 20 IDs coordinados transaccionalmente desde settings.
+- `brattycharts/backgrounds/*`: imágenes en Firebase Storage, máximo 15 MB y sólo JPG, PNG o WebP.
+- `brattycharts/video/current`: video reemplazable, máximo 100 MB; la duración máxima de cinco minutos se valida antes de subir.
+- La selección de imágenes se conserva cuando el video se activa o desactiva.
+- Si no hay selección o un medio falla, el landing conserva el fallback local de ladrillos en blanco y negro.

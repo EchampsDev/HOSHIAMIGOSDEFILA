@@ -1,7 +1,15 @@
 .brattycharts-page { position: relative; width: min(1180px, calc(100% - 40px)); margin: 0 auto; padding: clamp(140px, 17vh, 210px) 0 80px; }
-.brattycharts-page > :not(.brattycharts-landing-backdrop) { position: relative; z-index: 1; }
-.brattycharts-landing-backdrop { position: fixed; inset: 0; z-index: 0; background-color: #191919; background-image: linear-gradient(90deg, rgba(0, 0, 0, .78), rgba(0, 0, 0, .48) 45%, rgba(0, 0, 0, .7)), url('/images/brattycharts-bricks-bw.png'); background-position: center; background-size: cover; background-repeat: no-repeat; }
-.brattycharts-landing-backdrop::after { position: absolute; inset: 0; background: radial-gradient(circle at 64% 35%, transparent 0 18%, rgba(0, 0, 0, .36) 72%), linear-gradient(180deg, rgba(0, 0, 0, .18), rgba(0, 0, 0, .62)); content: ''; }
+.brattycharts-page > :not(.brattycharts-backdrop) { position: relative; z-index: 1; }
+.brattycharts-backdrop { position: fixed; inset: 0; z-index: 0; overflow: hidden; background: #191919; pointer-events: none; }
+.brattycharts-backdrop__fallback, .brattycharts-backdrop__layer, .brattycharts-backdrop__video, .brattycharts-backdrop__shade { position: absolute; inset: 0; width: 100%; height: 100%; }
+.brattycharts-backdrop__fallback { background: #191919 url('/images/brattycharts-bricks-bw.png') center / cover no-repeat; }
+.brattycharts-backdrop__layer { opacity: 1; animation-timing-function: ease-in-out; animation-fill-mode: both; }
+.brattycharts-backdrop__layer.is-current { animation-name: brattycharts-fade-in; }
+.brattycharts-backdrop__layer.is-previous { animation-name: brattycharts-fade-out; }
+.brattycharts-backdrop__layer > span { position: absolute; inset: 0; background: #000; }
+.brattycharts-backdrop__video { z-index: 2; object-fit: cover; opacity: 0; transition: opacity 700ms ease; }
+.brattycharts-backdrop__video.is-ready { opacity: 1; }
+.brattycharts-backdrop__shade { z-index: 3; background: radial-gradient(circle at 64% 35%, transparent 0 18%, rgba(0, 0, 0, .36) 72%), linear-gradient(90deg, rgba(0, 0, 0, .74), rgba(0, 0, 0, .34) 48%, rgba(0, 0, 0, .64)), linear-gradient(180deg, rgba(0, 0, 0, .14), rgba(0, 0, 0, .58)); }
 .brattycharts-page__header { max-width: 850px; }
 .brattycharts-wordmark { display: block; width: clamp(92px, 11vw, 150px); height: auto; object-fit: contain; }
 .brattycharts-wordmark-link { display: inline-flex; color: inherit; text-decoration: none; }
@@ -23,5 +31,28 @@
 .hero-brattycharts-link:hover .brattycharts-wordmark, .hero-brattycharts-link:focus-visible .brattycharts-wordmark { filter: drop-shadow(0 0 12px rgba(255, 23, 68, .45)); transform: translateY(-2px); }
 .news-brattycharts-heading { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .news-brattycharts-heading .brattycharts-wordmark { width: 92px; }
+.brattycharts-appearance-manager { margin-top: 64px; padding: clamp(20px, 3vw, 36px); border: 1px solid rgba(247, 242, 235, .34); background: rgba(5, 5, 5, .68); backdrop-filter: blur(18px); }
+.brattycharts-appearance-manager > header { display: flex; gap: 20px; align-items: end; justify-content: space-between; }
+.brattycharts-appearance-manager h2 { margin: 4px 0 0; font: 700 clamp(1.8rem, 4vw, 3.5rem)/1 Georgia, serif; }
+.brattycharts-appearance-manager h3 { margin: 0; font-family: Georgia, serif; font-size: 1.5rem; }
+.brattycharts-manager-message { padding: 14px; border-left: 3px solid var(--yellow, #f2d85c); background: rgba(49, 40, 212, .55); }
+.brattycharts-manager-settings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 28px 0; }
+.brattycharts-manager-settings label, .brattycharts-background-fields label { display: grid; gap: 7px; color: rgba(247, 242, 235, .72); font-size: .78rem; }
+.brattycharts-manager-settings input, .brattycharts-background-fields input, .brattycharts-background-fields select { width: 100%; min-height: 42px; padding: 9px; border: 1px solid rgba(247, 242, 235, .32); border-radius: 0; background: rgba(0, 0, 0, .42); color: #fff; }
+.brattycharts-upload { position: relative; display: grid; min-height: 62px; padding: 14px; border: 1px dashed var(--yellow, #f2d85c); place-items: center; color: var(--yellow, #f2d85c); cursor: pointer; }
+.brattycharts-upload input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.brattycharts-upload.is-disabled { opacity: .45; cursor: not-allowed; }
+.brattycharts-background-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.brattycharts-background-list article { overflow: hidden; border: 1px solid rgba(247, 242, 235, .28); background: rgba(0, 0, 0, .44); }
+.brattycharts-background-list article > img { width: 100%; aspect-ratio: 16 / 8; object-fit: cover; }
+.brattycharts-background-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 16px; }
+.brattycharts-background-list footer { display: flex; gap: 14px; padding: 16px; border-top: 1px solid rgba(247, 242, 235, .2); align-items: center; flex-wrap: wrap; }
+.brattycharts-background-list footer button, .brattycharts-video-manager button { margin-left: auto; padding: 9px 13px; border: 1px solid #ff1744; background: transparent; color: #ff7d94; }
+.brattycharts-video-manager { display: flex; gap: 18px; margin-top: 28px; padding-top: 26px; border-top: 1px solid rgba(247, 242, 235, .28); align-items: center; flex-wrap: wrap; }
+.brattycharts-video-manager .brattycharts-upload { min-width: 180px; margin-left: auto; }
 @media (max-width: 760px) { .brattycharts-page { width: min(100% - 32px, 1180px); padding-top: 122px; } .brattycharts-section-grid { grid-template-columns: 1fr; } .brattycharts-section-grid a { min-height: 220px; } }
+@media (max-width: 760px) { .brattycharts-manager-settings, .brattycharts-background-list, .brattycharts-background-fields { grid-template-columns: 1fr; } .brattycharts-video-manager .brattycharts-upload { width: 100%; margin-left: 0; } }
 @media (prefers-reduced-motion: reduce) { .brattycharts-section-grid a { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .brattycharts-backdrop__layer, .brattycharts-backdrop__video { animation: none; transition: none; } }
+@keyframes brattycharts-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes brattycharts-fade-out { from { opacity: 1; } to { opacity: 0; } }

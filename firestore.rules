@@ -436,6 +436,72 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // Apariencia pública aislada de Brattycharts. El listado de IDs forma parte
+    // de la misma transacción y limita el catálogo a veinte fondos.
+    match /brattychartsSettings/{settingsId} {
+      allow get: if settingsId == 'landing';
+      allow list: if false;
+      allow create, update: if settingsId == 'landing'
+        && isAdmin()
+        && request.resource.data.keys().hasAll(['backgroundIds', 'slideshowIntervalMs', 'transitionMs', 'videoEnabled', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['backgroundIds', 'slideshowIntervalMs', 'transitionMs', 'videoEnabled', 'videoUrl', 'videoStoragePath', 'videoOriginalName', 'videoContentType', 'videoDurationSeconds', 'updatedAt'])
+        && request.resource.data.backgroundIds is list
+        && request.resource.data.backgroundIds.size() <= 20
+        && request.resource.data.backgroundIds.toSet().size() == request.resource.data.backgroundIds.size()
+        && request.resource.data.slideshowIntervalMs is int
+        && request.resource.data.slideshowIntervalMs >= 3000
+        && request.resource.data.slideshowIntervalMs <= 30000
+        && request.resource.data.transitionMs is int
+        && request.resource.data.transitionMs >= 200
+        && request.resource.data.transitionMs <= 5000
+        && request.resource.data.videoEnabled is bool
+        && (!request.resource.data.videoEnabled || (
+          request.resource.data.videoUrl is string
+          && request.resource.data.videoUrl.size() <= 1000
+          && request.resource.data.videoStoragePath == 'brattycharts/video/current'
+          && request.resource.data.videoOriginalName is string
+          && request.resource.data.videoOriginalName.size() <= 180
+          && request.resource.data.videoContentType in ['video/mp4', 'video/quicktime', 'video/webm']
+          && request.resource.data.videoDurationSeconds is number
+          && request.resource.data.videoDurationSeconds > 0
+          && request.resource.data.videoDurationSeconds <= 300
+        ))
+        && request.resource.data.updatedAt is string;
+      allow delete: if false;
+    }
+
+    match /brattychartsBackgrounds/{backgroundId} {
+      allow get, list: if true;
+      allow create: if isAdmin()
+        && getAfter(/databases/$(database)/documents/brattychartsSettings/landing).data.backgroundIds.hasAny([backgroundId])
+        && request.resource.data.keys().hasAll(['id', 'name', 'imageUrl', 'storagePath', 'enabled', 'selected', 'order', 'fit', 'position', 'overlayOpacity', 'blurPx', 'createdAt', 'updatedAt'])
+        && request.resource.data.id == backgroundId
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100
+        && request.resource.data.imageUrl is string && request.resource.data.imageUrl.size() <= 1000
+        && request.resource.data.storagePath is string && request.resource.data.storagePath.matches('brattycharts/backgrounds/' + backgroundId + '[.](jpg|png|webp)')
+        && request.resource.data.enabled is bool
+        && request.resource.data.selected is bool
+        && request.resource.data.order is number
+        && request.resource.data.fit in ['cover', 'contain', 'repeat', 'extended']
+        && request.resource.data.position in ['top left', 'top center', 'top right', 'center left', 'center center', 'center right', 'bottom left', 'bottom center', 'bottom right']
+        && request.resource.data.overlayOpacity is number && request.resource.data.overlayOpacity >= 0 && request.resource.data.overlayOpacity <= 0.85
+        && request.resource.data.blurPx is number && request.resource.data.blurPx >= 0 && request.resource.data.blurPx <= 16
+        && request.resource.data.createdAt is string
+        && request.resource.data.updatedAt is string;
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'enabled', 'selected', 'order', 'fit', 'position', 'overlayOpacity', 'blurPx', 'updatedAt'])
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100
+        && request.resource.data.enabled is bool
+        && request.resource.data.selected is bool
+        && request.resource.data.order is number
+        && request.resource.data.fit in ['cover', 'contain', 'repeat', 'extended']
+        && request.resource.data.position in ['top left', 'top center', 'top right', 'center left', 'center center', 'center right', 'bottom left', 'bottom center', 'bottom right']
+        && request.resource.data.overlayOpacity is number && request.resource.data.overlayOpacity >= 0 && request.resource.data.overlayOpacity <= 0.85
+        && request.resource.data.blurPx is number && request.resource.data.blurPx >= 0 && request.resource.data.blurPx <= 16;
+      allow delete: if isAdmin()
+        && !getAfter(/databases/$(database)/documents/brattychartsSettings/landing).data.backgroundIds.hasAny([backgroundId]);
+    }
+
     // Reserved for the future comments feature. Public visitors can only read approved comments.
     match /comments/{commentId} {
       allow get, list: if resource.data.moderationStatus == 'APPROVED';
