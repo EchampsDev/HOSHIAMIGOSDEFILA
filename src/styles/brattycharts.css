@@ -26,9 +26,6 @@
 .brattycharts-section-grid b { margin-top: auto; }
 .brattycharts-placeholder { max-width: 850px; margin-top: 60px; padding: 30px; border: 1px dashed rgba(247, 242, 235, .36); color: rgba(247, 242, 235, .72); }
 .brattycharts-placeholder a { color: var(--yellow, #f2d85c); }
-.hero-brattycharts-link { display: inline-flex; width: fit-content; margin-top: 28px; gap: 14px; align-items: center; color: rgba(247, 242, 235, .62); font-family: var(--font-mono, monospace); font-size: .64rem; letter-spacing: .15em; text-decoration: none; }
-.hero-brattycharts-link .brattycharts-wordmark { width: clamp(88px, 9vw, 126px); transition: transform 180ms ease, filter 180ms ease; }
-.hero-brattycharts-link:hover .brattycharts-wordmark, .hero-brattycharts-link:focus-visible .brattycharts-wordmark { filter: drop-shadow(0 0 12px rgba(255, 23, 68, .45)); transform: translateY(-2px); }
 .news-brattycharts-heading { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .news-brattycharts-heading .brattycharts-wordmark { width: 92px; }
 .brattycharts-appearance-manager { margin-top: 64px; padding: clamp(20px, 3vw, 36px); border: 1px solid rgba(247, 242, 235, .34); background: rgba(5, 5, 5, .68); backdrop-filter: blur(18px); }

@@ -124,7 +124,7 @@
   backdrop-filter: blur(12px);
 }
 
-.site-shell:has(.landing-flow.has-started) .topbar.is-compact .brand { font-size: .69rem; }
+.site-shell:has(.landing-flow.has-started) .topbar.is-compact .brand-pair { font-size: .69rem; }
 
 .site-shell:has(.opening-scene) [data-scroll-reveal] {
   opacity: 0;

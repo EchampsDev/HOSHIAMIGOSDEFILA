@@ -142,6 +142,10 @@ html {
 .experience-hub h1 .brattypolitan-wordmark { width: 7.1em; }
 .brand .brattypolitan-wordmark { width: 7em; }
 .brand .brattypolitan-lockup { gap: .55em; }
+.brand-pair { display: inline-flex; align-items: center; gap: .6rem; min-width: 0; }
+.brand-collaboration-mark { color: rgba(255,255,255,.58); font: 500 .72rem 'DM Mono', monospace; }
+.brand-brattycharts .brattycharts-wordmark { display: block; width: clamp(64px, 5.4vw, 86px); height: auto; transition: filter .18s ease, transform .18s ease; }
+.brand-brattycharts:hover .brattycharts-wordmark, .brand-brattycharts:focus-visible .brattycharts-wordmark { filter: drop-shadow(0 0 8px rgba(255,23,68,.48)); transform: translateY(-1px); }
 
 body {
   margin: 0;
@@ -178,7 +182,7 @@ a:focus-visible,
 .topbar::before { content: ''; position: absolute; z-index: -1; top: calc(-22px - env(safe-area-inset-top)); right: 50%; bottom: 0; width: 100vw; pointer-events: none; background: linear-gradient(to bottom, rgba(0,0,0,.88), rgba(0,0,0,.66) 72%, rgba(0,0,0,.5)); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); transform: translateX(50%); }
 .site-shell > .topbar { position: sticky; z-index: 9; top: 0; }
 .site-shell:has(.landing-flow) > .topbar.is-compact { z-index: 9; padding: 9px 12px; }
-.site-shell:has(.landing-flow) > .topbar.is-compact .brand { font-size: .69rem; }
+.site-shell:has(.landing-flow) > .topbar.is-compact .brand-pair { font-size: .69rem; }
 .topbar-actions { display: flex; align-items: center; justify-content: flex-end; gap: 16px; }.topbar-google { min-height: 32px; padding: 0; color: rgba(255,255,255,.92); border: 0; border-bottom: 1px solid rgba(245,220,80,.75); background: transparent; cursor: pointer; font: .59rem 'DM Mono', monospace; letter-spacing: .06em; text-transform: uppercase; }.topbar-google-short { display: none; }
 .brand, .quiet-link { color: inherit; text-decoration: none; }
 .brand { font-size: .8rem; font-weight: 700; letter-spacing: .15em; }
@@ -417,7 +421,9 @@ footer {
 @media (max-width: 560px) {
   .site-shell { width: 100%; padding-right: max(16px, env(safe-area-inset-right)); padding-left: max(16px, env(safe-area-inset-left)); }
   .site-shell:has(.landing-flow) > .topbar { width: min(calc(100% - 32px), 430px); display: grid; grid-template-columns: 1fr; gap: 10px; padding: 12px 0; }
-  .site-shell:has(.landing-flow) > .topbar .brand { justify-self: center; font-size: .7rem; }
+  .site-shell:has(.landing-flow) > .topbar .brand-pair { justify-self: center; font-size: .7rem; }
+  .brand-pair { max-width: calc(100vw - 32px); gap: .48rem; }
+  .brand-brattycharts .brattycharts-wordmark { width: clamp(58px, 18vw, 76px); }
   .site-shell:has(.landing-flow) > .topbar .topbar-actions { width: 100%; display: flex; justify-content: center; gap: clamp(20px, 8vw, 34px); }
   .site-shell:has(.landing-flow) > .topbar .quiet-link, .site-shell:has(.landing-flow) > .topbar .topbar-google { min-height: 44px; display: grid; place-items: center; padding: 0 6px 2px; border: 0; border-bottom: 1px solid rgba(255,255,255,.5); background: transparent; font-size: clamp(.64rem, 2.8vw, .72rem); }
   .site-shell:has(.landing-flow) > .topbar .topbar-google { border-bottom-color: rgba(245,220,80,.75); }

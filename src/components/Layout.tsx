@@ -71,7 +71,11 @@ export function AppChrome({ children }: PropsWithChildren) {
 
   return <div className="site-shell">
     <header className={`topbar${isCompact ? ' is-compact' : ''}`}>
-      <Link to={isBrattycharts ? '/brattycharts' : '/'} className="brand">{isBrattycharts ? <BrattychartsWordmark /> : <BrattypolitanExperienceLockup />}</Link>
+      <div className="brand-pair" aria-label="Brattypolitan Experience y Brattycharts">
+        <Link to="/" className="brand brand-brattypolitan" aria-label="Ir a Brattypolitan Experience"><BrattypolitanExperienceLockup /></Link>
+        <span className="brand-collaboration-mark" aria-hidden="true">×</span>
+        <Link to="/brattycharts" className="brand brand-brattycharts" aria-label="Ir a Brattycharts"><BrattychartsWordmark /></Link>
+      </div>
       <nav className="topbar-actions" aria-label="Navegación">
         <button type="button" className="quiet-link explore-toggle" onClick={() => setIsExploreOpen(true)} aria-expanded={isExploreOpen} aria-controls="explore-sidebar">Explorar</button>
         {isBrattycharts ? <Link className="quiet-link" to="/brattycharts/notificaciones">Notificaciones</Link> : session.isAdmin && <AdminNotificationCenter />}
