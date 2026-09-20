@@ -11,4 +11,5 @@ import './styles/news.css'
 import './styles/about.css'
 import './styles/bratty-experience.css'
 import './styles/stickers.css'
+import './styles/brattycharts.css'
 createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>)

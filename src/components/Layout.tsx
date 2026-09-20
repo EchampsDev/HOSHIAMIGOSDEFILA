@@ -1,10 +1,12 @@
 import { type PropsWithChildren, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { FourPointMark } from './FourPointMark'
 import { BrattypolitanExperienceLockup } from './BrattypolitanWordmark'
 import { useGoogleSession } from '../features/access/useGoogleSession'
 import { isConstellationContributor } from '../features/access/roles'
 import { AdminNotificationCenter } from '../features/contributions/components/AdminNotificationCenter'
+import { brattychartsExploreAreas } from '../features/brattycharts/navigation'
+import { BrattychartsWordmark } from '../features/brattycharts/components/BrattychartsWordmark'
 
 const publicAreas = [
   { to: '/album', eyebrow: 'LECTURA', title: 'Libreta digital', copy: 'Consulta el archivo colectivo y sus recuerdos.' },
@@ -21,9 +23,12 @@ export function Layout({ children }: PropsWithChildren) {
 }
 
 export function AppChrome({ children }: PropsWithChildren) {
+  const location = useLocation()
   const session = useGoogleSession()
   const [isExploreOpen, setIsExploreOpen] = useState(false)
   const [isCompact, setIsCompact] = useState(false)
+  const isBrattycharts = location.pathname === '/brattycharts' || location.pathname.startsWith('/brattycharts/')
+  const exploreAreas = isBrattycharts ? brattychartsExploreAreas : publicAreas
 
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setIsExploreOpen(false) }
@@ -66,11 +71,11 @@ export function AppChrome({ children }: PropsWithChildren) {
 
   return <div className="site-shell">
     <header className={`topbar${isCompact ? ' is-compact' : ''}`}>
-      <Link to="/" className="brand"><BrattypolitanExperienceLockup /></Link>
+      <Link to={isBrattycharts ? '/brattycharts' : '/'} className="brand">{isBrattycharts ? <BrattychartsWordmark /> : <BrattypolitanExperienceLockup />}</Link>
       <nav className="topbar-actions" aria-label="Navegación">
         <button type="button" className="quiet-link explore-toggle" onClick={() => setIsExploreOpen(true)} aria-expanded={isExploreOpen} aria-controls="explore-sidebar">Explorar</button>
-        {session.isAdmin && <AdminNotificationCenter />}
-        {session.isAdmin && <Link className="quiet-link" to="/admin/experiencias">Herramientas</Link>}
+        {isBrattycharts ? <Link className="quiet-link" to="/brattycharts/notificaciones">Notificaciones</Link> : session.isAdmin && <AdminNotificationCenter />}
+        {session.isAdmin && <Link className="quiet-link" to={isBrattycharts ? '/brattycharts/herramientas' : '/admin/experiencias'}>Herramientas</Link>}
         {!session.isAdmin && isConstellationContributor(session.role) && <Link className="quiet-link" to="/taller-constelacion">Editor</Link>}
         {session.isConfigured && (session.user ? <button type="button" className="topbar-google" onClick={() => void session.signOut()} aria-label={`Cerrar sesión de ${session.user.displayName?.split(' ')[0] ?? 'Google'}`}><span className="topbar-google-full">Salir · {session.user.displayName?.split(' ')[0] ?? 'Google'}</span><span className="topbar-google-short">Salir</span></button> : <button type="button" className="topbar-google" onClick={() => void session.signIn()} aria-label="Accede con tu cuenta de Google"><span className="topbar-google-full">Accede con tu cuenta de Google</span><span className="topbar-google-short">Accede con Google</span></button>)}
       </nav>
@@ -81,12 +86,12 @@ export function AppChrome({ children }: PropsWithChildren) {
       <button type="button" className="explore-drawer-backdrop" tabIndex={isExploreOpen ? 0 : -1} aria-label="Cerrar explorador" onClick={() => setIsExploreOpen(false)} />
       <aside id="explore-sidebar" className="explore-drawer" aria-label="Explorar experiencias públicas" aria-modal="true" role="dialog">
         <header>
-          <div><p><BrattypolitanExperienceLockup /></p><h2>EXPLORAR</h2></div>
+          <div><p>{isBrattycharts ? <BrattychartsWordmark /> : <BrattypolitanExperienceLockup />}</p><h2>EXPLORAR</h2></div>
           <button type="button" onClick={() => setIsExploreOpen(false)} aria-label="Cerrar explorador">×</button>
         </header>
-        <p className="explore-drawer-intro">Un archivo colectivo para recorrer, leer y dejar recuerdos.</p>
-        <p className="explore-drawer-label">EXPERIENCIAS PÚBLICAS</p>
-        <nav>{publicAreas.map((area) => <Link to={area.to} key={area.to} onClick={() => setIsExploreOpen(false)}>
+        <p className="explore-drawer-intro">{isBrattycharts ? 'Actualidad, editoriales y comunidad alrededor de BRATTY.' : 'Un archivo colectivo para recorrer, leer y dejar recuerdos.'}</p>
+        <p className="explore-drawer-label">{isBrattycharts ? 'COLECCIÓN' : 'EXPERIENCIAS PÚBLICAS'}</p>
+        <nav>{exploreAreas.map((area) => <Link to={area.to} key={area.to} onClick={() => setIsExploreOpen(false)}>
           <small>{area.eyebrow}</small><strong>{area.title}</strong><span>{area.copy}</span><b>ENTRAR →</b>
         </Link>)}</nav>
       </aside>
