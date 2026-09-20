@@ -167,7 +167,13 @@ service cloud.firestore {
     // Bandeja privada de aportaciones: el usuario sólo crea su propio envío
     // pendiente; administración es la única autoridad que modera y publica.
     match /contributions/{contributionId} {
-      allow get: if signedIn() && (resource.data.participantId == request.auth.uid || isAdmin());
+      // La transacción idempotente consulta primero su UUID nuevo. Permitimos esa
+      // lectura negativa a cuentas autenticadas, sin exponer aportaciones ajenas.
+      allow get: if signedIn() && (
+        !exists(/databases/$(database)/documents/contributions/$(contributionId))
+        || resource.data.participantId == request.auth.uid
+        || isAdmin()
+      );
       allow list: if isAdmin();
       allow create: if signedIn()
         && request.resource.data.keys().hasAll(['id', 'participantId', 'author', 'type', 'pageNumber', 'visibility', 'status', 'createdAt', 'updatedAt'])

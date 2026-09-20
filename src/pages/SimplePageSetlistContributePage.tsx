@@ -31,6 +31,12 @@ type ContributionType = AlbumElementType | 'SETLIST'
 type TopSelectionType = 'HOSHI' | 'BRATTY'
 type PhotoDraft = { file: File; validation: ValidatedPhotoFile }
 
+const contributionErrorMessage = (error: unknown, fallback: string) => {
+  const code = typeof error === 'object' && error && 'code' in error ? String(error.code) : ''
+  if (code.includes('permission-denied')) return 'Tu sesión no pudo autorizar el envío. Vuelve a acceder con Google e inténtalo de nuevo.'
+  return error instanceof Error ? error.message : fallback
+}
+
 const contributionOptions: { value: ContributionType; icon: string; title: string; copy: string }[] = [
   { value: 'SETLIST', icon: '♫', title: 'Top 3 musical', copy: 'Elige las tres canciones que más te acompañan.' },
   { value: 'PHOTO', icon: '▣', title: 'Una foto', copy: 'Guarda una imagen dentro de la libreta.' },
@@ -331,7 +337,7 @@ export function SimplePageSetlistContributePage() {
       setSelectedSticker(null)
     } catch (error) {
       setSubmitPhase('error')
-      setMessage(error instanceof Error ? error.message : 'No fue posible guardar el recuerdo localmente.')
+      setMessage(contributionErrorMessage(error, 'No fue posible guardar el recuerdo.'))
     } finally { submitLock.current = false }
   }
   const sendTop = async () => {
@@ -349,7 +355,7 @@ export function SimplePageSetlistContributePage() {
       setSelectedIds([])
       setPreview(false)
       setExpanded(false)
-    } catch (error) { setSubmitPhase('error'); setMessage(error instanceof Error ? error.message : 'No fue posible guardar el Top 3 localmente.') }
+    } catch (error) { setSubmitPhase('error'); setMessage(contributionErrorMessage(error, 'No fue posible guardar el Top 3.')) }
     finally { submitLock.current = false }
   }
 
@@ -358,7 +364,7 @@ export function SimplePageSetlistContributePage() {
       <p className="eyebrow">ARCHIVO COLECTIVO · MODERACIÓN ACTIVA</p>
       <h1>Dejar un recuerdo</h1>
       {session.isAdmin && <section className="archive-admin-control"><p>Vista administradora · archivo {isOpen ? 'activo' : 'desactivado'}</p><button type="button" onClick={toggleCollectiveArchive}>{isOpen ? 'Desactivar archivo colectivo' : 'Activar archivo colectivo'}</button></section>}
-      {!isOpen ? <p className="muted">La captura está cerrada por el equipo.</p> : <div className="contribution-form contribution-wizard">
+      {!isOpen ? <p className="muted">La captura está cerrada por el equipo.</p> : session.isLoading ? <p className="muted">Comprobando acceso…</p> : !session.user ? <section className="contribution-access-card"><p className="memory-wizard-kicker">ACCESO NECESARIO</p><h2>Accede antes de dejar tu recuerdo</h2><p>Las cuentas registradas pueden seguir aportando normalmente. Si es tu primera vez, entra con Google para crear tu perfil y proteger tu envío.</p><button type="button" onClick={() => void session.signIn()}>Acceder con Google</button>{session.error && <p role="alert">{session.error}</p>}</section> : <div className="contribution-form contribution-wizard">
         <header className="memory-wizard-progress">
           <span className="memory-wizard-star"><FourPointMark /></span>
           <div><p>PASO {step + 1} DE {WIZARD_TOTAL}</p><span>Tu recuerdo para BRATTY</span></div>

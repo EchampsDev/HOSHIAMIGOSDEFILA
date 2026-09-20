@@ -229,3 +229,7 @@
   .memory-wizard-star .four-point-mark,.memory-wizard-step { animation: none; }
   .memory-wizard-progressbar i,.memory-type-grid button,.memory-wizard-actions button { transition: none; }
 }
+
+.contribution-access-card { display:grid; gap:16px; margin-top:30px; padding:clamp(22px,4vw,36px); border:1px solid rgba(245,220,80,.52); background:rgba(5,5,8,.72); box-shadow:0 24px 70px rgba(0,0,0,.36); backdrop-filter:blur(12px); }
+.contribution-access-card h2,.contribution-access-card p { margin:0; }
+.contribution-access-card button { width:min(100%,360px); min-height:54px; color:#111; border:1px solid #f5dc50; background:#f5dc50; font:700 .72rem 'DM Mono',monospace; letter-spacing:.06em; text-transform:uppercase; }
