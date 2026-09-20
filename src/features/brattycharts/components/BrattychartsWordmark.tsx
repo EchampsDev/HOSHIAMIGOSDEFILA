@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 type BrattychartsWordmarkProps = { linked?: boolean; className?: string }
 
 export function BrattychartsWordmark({ linked = false, className = '' }: BrattychartsWordmarkProps) {
-  const wordmark = <span className={`brattycharts-wordmark ${className}`.trim()} aria-label="Brattycharts">BRATTY<br />CHARTS</span>
+  const wordmark = <img className={`brattycharts-wordmark ${className}`.trim()} src="/images/brattycharts-logo.png" alt="Brattycharts" />
   return linked ? <Link className="brattycharts-wordmark-link" to="/brattycharts">{wordmark}</Link> : wordmark
 }
-

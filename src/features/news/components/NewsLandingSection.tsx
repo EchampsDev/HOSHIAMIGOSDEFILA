@@ -6,6 +6,7 @@ import { NewsCarousel } from './NewsCarousel'
 import { NewsSocialLinks } from './NewsSocialLinks'
 import { formatNewsDate, newsDateValue } from '../domain/newsDate'
 import { useGoogleSession } from '../../access/useGoogleSession'
+import { BrattychartsWordmark } from '../../brattycharts/components/BrattychartsWordmark'
 
 function AdminIcon({ name }: { name: 'edit' | 'hide' | 'delete' }) {
   if (name === 'edit') return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16-.8 4.8L8 20l11-11-4-4L4 16Z"/><path d="m13.8 6.2 4 4"/></svg>
@@ -33,7 +34,7 @@ export function NewsLandingSection() {
     finally { setBusyId(null) }
   }
   return <section className="landing-chapter chapter-news" data-scroll-reveal aria-labelledby="news-section-title">
-    <p className="chapter-label" id="news-section-title">04 — NOVEDADES DE BRATTY!!</p>
+    <div className="chapter-label news-brattycharts-heading" id="news-section-title"><span>04 — NOVEDADES DE BRATTY · BY</span><BrattychartsWordmark linked /></div>
     {adminError && <p className="news-admin-inline-error" role="alert">{adminError}</p>}
     {error ? <p className="news-empty">Próximamente compartiremos nuevas historias y actualizaciones de BRATTY.</p> : items.length ? <><div className="news-feed-heading"><p className="news-published-count" aria-live="polite">{items.length} {items.length === 1 ? 'entrada publicada' : 'entradas publicadas'}</p>{items.length > 1 && <div className="news-feed-controls"><button type="button" aria-label="Noticia anterior" onClick={() => feedRef.current?.scrollBy({ left: -feedRef.current.clientWidth, behavior: 'smooth' })}>←</button><button type="button" aria-label="Noticia siguiente" onClick={() => feedRef.current?.scrollBy({ left: feedRef.current.clientWidth, behavior: 'smooth' })}>→</button></div>}</div><div className="news-feed" ref={feedRef} role="region" aria-label="Noticias publicadas, desliza horizontalmente">{items.map((item) => <article className={`news-card${item.id === newestId ? ' is-new' : ''}`} key={item.id}>
       {item.id === newestId && <span className="news-card-new-badge">NUEVA ✦</span>}

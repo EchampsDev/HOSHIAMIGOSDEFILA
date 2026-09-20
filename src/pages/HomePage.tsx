@@ -12,6 +12,7 @@ import { usePublicAlbumAccess } from '../features/album/hooks/usePublicAlbumAcce
 import { useAlbum } from '../features/album/hooks/useAlbum'
 import { NewsLandingSection } from '../features/news/components/NewsLandingSection'
 import { BrattypolitanExperienceLockup } from '../components/BrattypolitanWordmark'
+import { BrattychartsWordmark } from '../features/brattycharts/components/BrattychartsWordmark'
 
 export function HomePage() {
   const landingRef = useRef<HTMLDivElement>(null)
@@ -46,6 +47,7 @@ export function HomePage() {
         <div className="hero-copy reveal-title" data-scroll-reveal>
           <p className="eyebrow">FAN page dedicada a Bratty y experiencia web</p>
           <h1><BrattypolitanExperienceLockup stacked /></h1>
+          <Link className="hero-brattycharts-link" to="/brattycharts" aria-label="Entrar a Brattycharts"><span>ACTUALIDAD POR</span><BrattychartsWordmark /></Link>
         </div>
         <div className="reveal-constellation" data-scroll-reveal>
           <ConstellationHero />
