@@ -19,6 +19,7 @@ import { photoStorageRepository } from '../features/media/repositories'
 import { contributionRepository } from '../features/contributions/repositories'
 import { availableSlots, recommendedPageNumber } from '../features/contributions/domain/pageAvailability'
 import { usePageAvailability } from '../features/contributions/hooks/usePageAvailability'
+import { usePageLocks } from '../features/contributions/hooks/usePageLocks'
 import { ContributionConfirmation } from '../features/contributions/components/ContributionConfirmation'
 
 const TOP_SIZE = 3
@@ -183,6 +184,7 @@ export function SimplePageSetlistContributePage() {
   const participation = useParticipationAccess()
   const scrapbook = useAlbum()
   const availability = usePageAvailability()
+  const pageLocks = usePageLocks()
   const isOpen = participation.isOpen
 
   useEffect(() => {
@@ -222,9 +224,10 @@ export function SimplePageSetlistContributePage() {
     ? resolveSetlistCoverUrl(lastSelectedTrack.coverUrl) ?? defaultSelectionBackground
     : defaultSelectionBackground
   const selectionPanelStyle = { '--top3-selection-background': `url("${selectionBackground.replace(/["\\]/g, '\\$&')}")` } as CSSProperties
-  const openSpaces = scrapbook.album ? availableSlots(scrapbook.album.pages[page - 1], availability.pending, type as AlbumElementType) : null
+  const pageIsReserved = pageLocks.reservedPages.has(page)
+  const openSpaces = scrapbook.album ? availableSlots(scrapbook.album.pages[page - 1], availability.pending, type as AlbumElementType, pageLocks.reservedPages) : null
   const pageIsFull = openSpaces !== null && openSpaces < 1
-  const recommendedPage = scrapbook.album ? recommendedPageNumber(scrapbook.album.pages, availability.pending, type as AlbumElementType) : null
+  const recommendedPage = scrapbook.album ? recommendedPageNumber(scrapbook.album.pages, availability.pending, type as AlbumElementType, undefined, pageLocks.reservedPages) : null
   useEffect(() => {
     if (!manuallySelectedPage.current && recommendedPage && page !== recommendedPage) setPage(recommendedPage)
   }, [page, recommendedPage])
@@ -315,6 +318,7 @@ export function SimplePageSetlistContributePage() {
   const saveElement = async () => {
     if (submitLock.current || submitPhase === 'sent') return
     if (!session.user) { setMessage('Accede con Google para enviar tu aportación a revisión.'); return }
+    if (pageIsReserved) { setMessage('La cara elegida fue reservada por administración. Selecciona otra para continuar.'); return }
     if (type === 'PHOTO' && !photo) { setMessage('Selecciona una foto de máximo 5 MB.'); return }
     if (type === 'STICKER' && !selectedSticker) { setMessage('Elige un sticker aprobado de la biblioteca.'); return }
     if (type !== 'PHOTO' && type !== 'STICKER' && !content.trim()) { setMessage('Escribe o selecciona el contenido de tu recuerdo.'); return }
@@ -343,6 +347,7 @@ export function SimplePageSetlistContributePage() {
   const sendTop = async () => {
     if (submitLock.current || submitPhase === 'sent') return
     if (!session.user) { setMessage('Accede con Google para enviar tu Top 3 a revisión.'); return }
+    if (pageIsReserved) { setMessage('La cara elegida fue reservada por administración. Selecciona otra para continuar.'); return }
     if (selectedTracks.length !== TOP_SIZE) { setMessage('Selecciona exactamente tres canciones antes de enviar.'); return }
     const identity = author()
     submitLock.current = true
@@ -397,7 +402,7 @@ export function SimplePageSetlistContributePage() {
             <p className="memory-wizard-kicker">BUSCA UN ESPACIO</p>
             <h2 id="memory-step-3">¿En qué cara irá tu recuerdo?</h2>
             <p>{type === 'STICKER' ? 'Cada cara admite hasta diez stickers, contados aparte de los demás recuerdos.' : 'Cada cara admite hasta cuatro recuerdos principales.'} Puedes revisar la hoja antes de continuar.</p>
-            <section className={`memory-page-picker memory-page-picker--wizard${pageIsFull ? ' is-full' : ''}`}><strong>Cara {page}</strong><small>{openSpaces !== null ? pageIsFull ? 'Esta cara ya está llena para este tipo de recuerdo. Elige otra para continuar.' : `${openSpaces} ${type === 'STICKER' ? 'de 10 lugares para stickers' : 'de 4 lugares para recuerdos'} disponibles.` : 'Consultando espacios disponibles…'}</small><div><button type="button" onClick={() => setPageSelectorOpen(true)}>Elegir otra cara</button><button type="button" className="memory-page-open" onClick={() => window.location.assign(`/album?page=${page}`)}>Ver cara</button></div></section>
+            <section className={`memory-page-picker memory-page-picker--wizard${pageIsFull ? ' is-full' : ''}`}><strong>Cara {page}</strong><small>{openSpaces !== null ? pageIsReserved ? 'Esta cara está reservada por administración. Elige otra para continuar.' : pageIsFull ? 'Esta cara ya está llena para este tipo de recuerdo. Elige otra para continuar.' : `${openSpaces} ${type === 'STICKER' ? 'de 10 lugares para stickers' : 'de 4 lugares para recuerdos'} disponibles.` : 'Consultando espacios disponibles…'}</small><div><button type="button" onClick={() => setPageSelectorOpen(true)}>Elegir otra cara</button><button type="button" className="memory-page-open" onClick={() => window.location.assign(`/album?page=${page}`)}>Ver cara</button></div></section>
           </>}
 
           {step === 4 && (submitPhase === 'sent' ? <div className="memory-wizard-sent"><ContributionConfirmation message={message ?? 'Aportación enviada a revisión.'} /><button type="button" onClick={startAnother}>Dejar otro recuerdo</button></div> : <>
@@ -419,7 +424,7 @@ export function SimplePageSetlistContributePage() {
         </footer>
       </div>}
     </section>
-    <PageIndex open={pageSelectorOpen} pages={scrapbook.album?.pages} pageCount={scrapbook.album?.pageCount ?? 100} current={page} ownerId={session.user?.uid ?? getLocalParticipantId()} mode="select" contributionType={type === 'STICKER' ? 'STICKER' : 'MAIN'} pending={availability.pending} title="Elige una cara con espacio" onClose={() => setPageSelectorOpen(false)} onGoTo={(selected) => { manuallySelectedPage.current = true; setPage(selected) }} />
+    <PageIndex open={pageSelectorOpen} pages={scrapbook.album?.pages} pageCount={scrapbook.album?.pageCount ?? 100} current={page} ownerId={session.user?.uid ?? getLocalParticipantId()} mode="select" contributionType={type === 'STICKER' ? 'STICKER' : 'MAIN'} pending={availability.pending} reservedPages={pageLocks.reservedPages} canManageReservations={session.isAdmin} reservationBusy={pageLocks.isSaving} reservationError={pageLocks.error} title="Elige una cara con espacio" onClose={() => setPageSelectorOpen(false)} onSetReserved={(pages, reserved) => pageLocks.setReserved(pages, reserved, session.user?.uid ?? '')} onGoTo={(selected) => { manuallySelectedPage.current = true; setPage(selected) }} />
     {expanded && <section className="setlist-modal" aria-label={selectionTitle}><div className="setlist-modal-panel" style={selectionPanelStyle}>{preview ? <>
       <p className="eyebrow">VISTA PREVIA</p><h2>Tu selección</h2><div className="setlist-preview-card"><header><span>BRATTYPOLITAN <ExperienceWord /></span><strong>{selectionTitle}</strong><small>{displayName || 'PARTICIPANTE ANÓNIMO'} · PÁGINA {page}</small></header><ol>{selectedTracks.map((track, index) => <li key={track.id}><span className="setlist-preview-album-blur" style={track.coverUrl ? { backgroundImage: `url(${resolveSetlistCoverUrl(track.coverUrl)})` } : undefined} aria-hidden="true" />{track.coverUrl ? <img src={resolveSetlistCoverUrl(track.coverUrl)} alt="" /> : <span className="setlist-preview-cover-placeholder">{String(index + 1).padStart(2, '0')}</span>}<b>{track.title}</b></li>)}</ol></div><footer className="setlist-preview-actions"><button type="button" onClick={() => void saveImage()}>Descargar imagen</button><button type="button" onClick={() => void shareImage()}>Compartir imagen</button><button type="button" className="setlist-send" disabled={submissionBusy} onClick={() => void sendTop()}>{submitPhase === 'saving' ? 'Guardando…' : 'Guardar en la libreta'}</button></footer><button type="button" className="setlist-back" onClick={() => setPreview(false)}>← Volver a editar</button>
     </> : <>

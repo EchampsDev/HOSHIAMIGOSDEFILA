@@ -28,7 +28,10 @@ export class FirestoreContributionRepository implements ContributionRepository {
         return existing
       }
       const reservationRef = doc(this.database!, 'pageReservations', String(record.pageNumber))
+      const pageLockRef = doc(this.database!, 'pageLocks', String(record.pageNumber))
       const reservationSnapshot = await transaction.get(reservationRef)
+      const pageLockSnapshot = await transaction.get(pageLockRef)
+      if (pageLockSnapshot.exists() && pageLockSnapshot.data().reserved === true) throw new Error('La cara elegida está reservada por administración. Selecciona otra.')
       const defaultPage = createDefaultAlbum().pages[record.pageNumber - 1]
       if (!defaultPage) throw new Error('La cara elegida no existe.')
       const pageSnapshot = await transaction.get(doc(this.database!, 'pages', defaultPage.id))

@@ -1,15 +1,16 @@
 import { pageCapacity, type AlbumElementType, type ScrapbookPage } from '../../album/domain/types'
 import type { PendingPageCounts } from '../repositories/ContributionRepository'
 
-export function availableSlots(page: ScrapbookPage, pending: PendingPageCounts, type: AlbumElementType) {
+export function availableSlots(page: ScrapbookPage, pending: PendingPageCounts, type: AlbumElementType, reservedPages?: ReadonlySet<number>) {
+  if (reservedPages?.has(page.pageNumber)) return 0
   const capacity = pageCapacity(page)
   const reserved = pending[page.pageNumber] ?? { main: 0, stickers: 0 }
   return Math.max(0, type === 'STICKER' ? capacity.stickersRemaining - reserved.stickers : capacity.remaining - reserved.main)
 }
 
-export function recommendedPageNumber(pages: ScrapbookPage[], pending: PendingPageCounts, type: AlbumElementType, excluding?: number) {
+export function recommendedPageNumber(pages: ScrapbookPage[], pending: PendingPageCounts, type: AlbumElementType, excluding?: number, reservedPages?: ReadonlySet<number>) {
   for (const minimum of [3, 2, 1]) {
-    const match = pages.find((page) => page.pageNumber !== excluding && availableSlots(page, pending, type) >= minimum)
+    const match = pages.find((page) => page.pageNumber !== excluding && availableSlots(page, pending, type, reservedPages) >= minimum)
     if (match) return match.pageNumber
   }
   return null

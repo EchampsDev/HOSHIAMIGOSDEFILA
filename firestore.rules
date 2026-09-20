@@ -41,6 +41,7 @@ service cloud.firestore {
         && request.resource.data.pageNumber >= 1
         && request.resource.data.pageNumber <= 100
         && pageId == string(request.resource.data.pageNumber)
+        && !exists(/databases/$(database)/documents/pageLocks/$(pageId))
         && request.resource.data.pendingMain is int
         && request.resource.data.pendingStickers is int
         && request.resource.data.pendingMain >= 0
@@ -155,6 +156,22 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Reservas manuales de caras. Son públicas para que la recomendación pueda
+    // excluirlas, pero únicamente administración puede crearlas o retirarlas.
+    match /pageLocks/{pageId} {
+      allow get, list: if true;
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasAll(['pageNumber', 'reserved', 'reservedAt', 'reservedBy'])
+        && request.resource.data.keys().hasOnly(['pageNumber', 'reserved', 'reservedAt', 'reservedBy'])
+        && request.resource.data.pageNumber is int
+        && request.resource.data.pageNumber >= 1
+        && request.resource.data.pageNumber <= 100
+        && pageId == string(request.resource.data.pageNumber)
+        && request.resource.data.reserved == true
+        && request.resource.data.reservedAt is string
+        && request.resource.data.reservedBy == request.auth.uid;
+      allow delete: if isAdmin();
+    }
     match /elements/{elementId} {
       allow get, list: if resource.data.moderationStatus == 'APPROVED'
         && resource.data.consent.contentVisibility == 'PUBLIC';
