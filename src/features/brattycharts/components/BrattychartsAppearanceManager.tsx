@@ -1,4 +1,5 @@
 import { useState, type ChangeEvent } from 'react'
+import { useGoogleSession } from '../../access/useGoogleSession'
 import { backgroundFitValues, backgroundPositionValues, type BrattychartsBackground } from '../domain/appearance'
 import { useBrattychartsAppearance } from '../hooks/useBrattychartsAppearance'
 import { brattychartsAppearanceRepository } from '../repositories/BrattychartsAppearanceRepository'
@@ -6,13 +7,18 @@ import { brattychartsAppearanceRepository } from '../repositories/BrattychartsAp
 const fitLabels = { cover: 'Pantalla completa', contain: 'Centrada', repeat: 'Mosaico', extended: 'Extendida' }
 
 export function BrattychartsAppearanceManager() {
+  const session = useGoogleSession()
   const { settings, backgrounds, loading, error } = useBrattychartsAppearance()
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const adminToken = async () => {
+    if (!session.user || !session.isAdmin) throw new Error('Se requiere una sesión administradora para modificar los archivos.')
+    return session.user.getIdToken()
+  }
   const execute = async (action: () => Promise<unknown>, success: string) => { setBusy(true); setMessage(null); try { await action(); setMessage(success) } catch (cause) { setMessage(cause instanceof Error ? cause.message : 'No fue posible completar la acción.') } finally { setBusy(false) } }
   const update = (item: BrattychartsBackground, patch: Parameters<typeof brattychartsAppearanceRepository.updateBackground>[1]) => execute(() => brattychartsAppearanceRepository.updateBackground(item.id, patch), 'Apariencia actualizada.')
-  const uploadBackground = (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void execute(() => brattychartsAppearanceRepository.uploadBackground(file), 'Fondo guardado y seleccionado.') }
-  const uploadVideo = (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void execute(() => brattychartsAppearanceRepository.uploadVideo(file), 'Video guardado y activado.') }
+  const uploadBackground = (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void execute(async () => brattychartsAppearanceRepository.uploadBackground(file, await adminToken()), 'Fondo guardado y seleccionado.') }
+  const uploadVideo = (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void execute(async () => brattychartsAppearanceRepository.uploadVideo(file, await adminToken()), 'Video guardado y activado.') }
 
   if (loading) return <section className="brattycharts-appearance-manager"><p>Cargando apariencia…</p></section>
   return <section className="brattycharts-appearance-manager" aria-labelledby="appearance-title">
@@ -33,9 +39,9 @@ export function BrattychartsAppearanceManager() {
         <label>Oscurecimiento <span>{Math.round(item.overlayOpacity * 100)}%</span><input type="range" min="0" max="0.85" step="0.05" value={item.overlayOpacity} onChange={(event) => void update(item, { overlayOpacity: Number(event.target.value) })} /></label>
         <label>Blur <span>{item.blurPx}px</span><input type="range" min="0" max="16" value={item.blurPx} onChange={(event) => void update(item, { blurPx: Number(event.target.value) })} /></label>
       </div>
-      <footer><label><input type="checkbox" checked={item.enabled} onChange={(event) => void update(item, { enabled: event.target.checked })} /> Activo</label><label><input type="checkbox" checked={item.selected} onChange={(event) => void update(item, { selected: event.target.checked })} /> En slideshow</label><button type="button" disabled={busy} onClick={() => { if (window.confirm(`¿Eliminar ${item.name}?`)) void execute(() => brattychartsAppearanceRepository.deleteBackground(item), 'Fondo eliminado.') }}>Eliminar</button></footer>
+      <footer><label><input type="checkbox" checked={item.enabled} onChange={(event) => void update(item, { enabled: event.target.checked })} /> Activo</label><label><input type="checkbox" checked={item.selected} onChange={(event) => void update(item, { selected: event.target.checked })} /> En slideshow</label><button type="button" disabled={busy} onClick={() => { if (window.confirm(`¿Eliminar ${item.name}?`)) void execute(async () => brattychartsAppearanceRepository.deleteBackground(item, await adminToken()), 'Fondo eliminado.') }}>Eliminar</button></footer>
     </article>)}</div>
-    <section className="brattycharts-video-manager"><div><h3>Video de fondo</h3><p>MP4, MOV o WebM · máximo 100 MB y 5 minutos.</p></div><label className="brattycharts-upload">{settings.videoUrl ? 'Reemplazar video' : 'Subir video'}<input type="file" accept="video/mp4,video/quicktime,video/webm" disabled={busy} onChange={uploadVideo} /></label>{settings.videoUrl && <><label><input type="checkbox" checked={settings.videoEnabled} onChange={(event) => void execute(() => brattychartsAppearanceRepository.setVideoEnabled(event.target.checked), event.target.checked ? 'Video activado.' : 'Video desactivado; vuelve el slideshow.')} /> Video activo</label><span>{settings.videoOriginalName} · {Math.round(settings.videoDurationSeconds || 0)} s</span><button type="button" disabled={busy} onClick={() => { if (window.confirm('¿Eliminar el video de fondo?')) void execute(() => brattychartsAppearanceRepository.deleteVideo(), 'Video eliminado; vuelve el slideshow.') }}>Eliminar video</button></>}
+    <section className="brattycharts-video-manager"><div><h3>Video de fondo</h3><p>MP4, MOV o WebM · máximo 100 MB y 5 minutos.</p></div><label className="brattycharts-upload">{settings.videoUrl ? 'Reemplazar video' : 'Subir video'}<input type="file" accept="video/mp4,video/quicktime,video/webm" disabled={busy} onChange={uploadVideo} /></label>{settings.videoUrl && <><label><input type="checkbox" checked={settings.videoEnabled} onChange={(event) => void execute(() => brattychartsAppearanceRepository.setVideoEnabled(event.target.checked), event.target.checked ? 'Video activado.' : 'Video desactivado; vuelve el slideshow.')} /> Video activo</label><span>{settings.videoOriginalName} · {Math.round(settings.videoDurationSeconds || 0)} s</span><button type="button" disabled={busy} onClick={() => { if (window.confirm('¿Eliminar el video de fondo?')) void execute(async () => brattychartsAppearanceRepository.deleteVideo(await adminToken()), 'Video eliminado; vuelve el slideshow.') }}>Eliminar video</button></>}
     </section>
   </section>
 }

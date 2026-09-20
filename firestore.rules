@@ -458,7 +458,7 @@ service cloud.firestore {
         && (!request.resource.data.videoEnabled || (
           request.resource.data.videoUrl is string
           && request.resource.data.videoUrl.size() <= 1000
-          && request.resource.data.videoStoragePath == 'brattycharts/video/current'
+          && request.resource.data.videoStoragePath == 'video/current'
           && request.resource.data.videoOriginalName is string
           && request.resource.data.videoOriginalName.size() <= 180
           && request.resource.data.videoContentType in ['video/mp4', 'video/quicktime', 'video/webm']
@@ -478,7 +478,7 @@ service cloud.firestore {
         && request.resource.data.id == backgroundId
         && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100
         && request.resource.data.imageUrl is string && request.resource.data.imageUrl.size() <= 1000
-        && request.resource.data.storagePath is string && request.resource.data.storagePath.matches('brattycharts/backgrounds/' + backgroundId + '[.](jpg|png|webp)')
+        && request.resource.data.storagePath is string && request.resource.data.storagePath.matches('backgrounds/' + backgroundId + '[.](jpg|png|webp)')
         && request.resource.data.enabled is bool
         && request.resource.data.selected is bool
         && request.resource.data.order is number
