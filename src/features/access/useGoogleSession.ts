@@ -4,6 +4,10 @@ import { doc, getDoc, onSnapshot, runTransaction, serverTimestamp, setDoc } from
 import { firebaseAuth, firestore, googleProvider, isFirebaseConfigured } from '../../infrastructure/firebase/client'
 import { isAdministrator, type UserRole } from './roles'
 
+export type RegistrationSource = 'GENERAL' | 'BRATTY_INVITATION'
+const REGISTRATION_SOURCE_KEY = 'brattypolitan.registration-source'
+const registrationSource = (): RegistrationSource => sessionStorage.getItem(REGISTRATION_SOURCE_KEY) === 'BRATTY_INVITATION' ? 'BRATTY_INVITATION' : 'GENERAL'
+
 export function useGoogleSession() {
   const [user, setUser] = useState<User | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
@@ -19,20 +23,24 @@ export function useGoogleSession() {
       stopRoleUpdates = undefined
       setUser(currentUser); setIsAdmin(false); setRole(null); setError(null)
       if (!currentUser || !firestore) { setIsLoading(false); return }
+      const database = firestore
       setIsLoading(true)
       try {
-        const adminReference = doc(firestore, 'admins', currentUser.uid)
-        const roleReference = doc(firestore, 'userRoles', currentUser.uid)
+        const adminReference = doc(database, 'admins', currentUser.uid)
+        const roleReference = doc(database, 'userRoles', currentUser.uid)
         const identity = { displayName: currentUser.displayName ?? 'Participante', email: currentUser.email ?? '', lastSignInAt: serverTimestamp() }
+        const source = registrationSource()
+        sessionStorage.removeItem(REGISTRATION_SOURCE_KEY)
         const [admin, initialRole] = await Promise.all([
           getDoc(adminReference),
-          runTransaction(firestore, async (transaction) => {
+          runTransaction(database, async (transaction) => {
             const profile = await transaction.get(roleReference)
             if (profile.exists()) {
               transaction.update(roleReference, identity)
               return (profile.data().role as UserRole | undefined) ?? 'USER'
             }
             transaction.set(roleReference, { ...identity, role: 'USER', createdAt: serverTimestamp() })
+            transaction.set(doc(database, 'registrationNotifications', currentUser.uid), { uid: currentUser.uid, displayName: currentUser.displayName ?? 'Participante', email: currentUser.email ?? '', source, createdAt: new Date().toISOString(), read: false })
             return 'USER' as UserRole
           }),
         ])
@@ -47,7 +55,7 @@ export function useGoogleSession() {
         }, () => setError('Tu sesión está activa, pero no fue posible actualizar tus permisos en este momento.'))
         // El registro propio de la experiencia contiene sólo el nombre visible y marcas de sesión.
         try {
-          await setDoc(doc(firestore, 'participantSessions', currentUser.uid), { displayName: currentUser.displayName ?? 'Participante', lastSignInAt: serverTimestamp() }, { merge: true })
+          await setDoc(doc(database, 'participantSessions', currentUser.uid), { displayName: currentUser.displayName ?? 'Participante', lastSignInAt: serverTimestamp() }, { merge: true })
         } catch {
           // Este registro es auxiliar y nunca debe invalidar una sesión autenticada.
         }
@@ -64,7 +72,8 @@ export function useGoogleSession() {
     return () => { stopRoleUpdates?.(); stopAuthUpdates() }
   }, [])
 
-  const signIn = async () => {
+  const signIn = async (source: RegistrationSource = 'GENERAL') => {
+    sessionStorage.setItem(REGISTRATION_SOURCE_KEY, source)
     if (!firebaseAuth) { setError('El acceso con Google aún no está configurado en este entorno.'); return }
     try { setError(null); await signInWithPopup(firebaseAuth, googleProvider) }
     catch { setError('No fue posible iniciar sesión con Google.') }

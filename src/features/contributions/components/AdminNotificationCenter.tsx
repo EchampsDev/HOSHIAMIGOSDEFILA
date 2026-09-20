@@ -11,6 +11,8 @@ import type { CommunitySticker } from '../../stickers/domain/types'
 import { useStickerLibrary } from '../../stickers/hooks/useStickerLibrary'
 import type { ContributionRecord } from '../domain/types'
 import { contributionRepository } from '../repositories'
+import { ModerationHistory, RegistrationFeed } from './AdminActivityFeed'
+import { recordModerationEvent, useAdminActivity } from './useAdminActivity'
 
 const labels: Record<ContributionRecord['type'], string> = { PHOTO: 'Foto', POST_IT: 'Post-it', HANDWRITTEN_NOTE: 'Nota', DRAWING: 'Dibujo', STICKER: 'Sticker', TEXT: 'Texto', SETLIST: 'Top 3 musical', PLACEHOLDER: 'Elemento', OTHER: 'Aportación' }
 const contributionKey = (id: string) => `contribution:${id}`
@@ -44,11 +46,21 @@ export function AdminNotificationCenter() {
   const [workingKey, setWorkingKey] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [moveTargets, setMoveTargets] = useState<Record<string, number>>({})
+  const [activeTab, setActiveTab] = useState<'contributions' | 'notifications'>('contributions')
+  const [historyMode, setHistoryMode] = useState(false)
+  const activity = useAdminActivity(session.isAdmin)
   const totalPending = items.length + stickerLibrary.pending.length
+  const combinedBadge = totalPending + activity.unreadCount
   const pendingForReview = pendingCountsFromItems(items)
   const suggestPage = (item: ContributionRecord) => {
     const pages = album.album?.pages ?? []
     return recommendedPageNumber(pages, pendingForReview, item.type, item.pageNumber) ?? item.pageNumber
+  }
+
+  const rememberModeration = (input: { targetId: string; targetKind: 'CONTRIBUTION' | 'STICKER'; contributionType: string; action: 'APPROVED' | 'REJECTED' | 'DELETED'; authorName: string; pageNumber?: number }) => {
+    if (!session.user) return
+    void recordModerationEvent({ ...input, moderatorUid: session.user.uid, moderatorName: session.user.displayName ?? 'Administrador', moderatorEmail: session.user.email ?? '' })
+      .catch(() => setMessage('La moderación se completó, pero no fue posible añadirla al historial.'))
   }
 
   useEffect(() => contributionRepository.subscribePending(setItems, () => setMessage('No fue posible consultar las aportaciones pendientes.')), [])
@@ -66,6 +78,7 @@ export function AdminNotificationCenter() {
     try {
       if (decision === 'approve') await contributionRepository.approve(item.id, session.user.uid)
       else await contributionRepository.reject(item.id, session.user.uid)
+      rememberModeration({ targetId: item.id, targetKind: 'CONTRIBUTION', contributionType: labels[item.type], action: decision === 'approve' ? 'APPROVED' : 'REJECTED', authorName: item.author.displayName ?? 'Participante anónimo', pageNumber: item.pageNumber })
       setReviewingKey(null)
     } catch (error) { setMessage(error instanceof Error ? error.message : 'No fue posible completar la moderación.') }
     finally { setWorkingKey(null) }
@@ -76,6 +89,7 @@ export function AdminNotificationCenter() {
     setWorkingKey(key); setMessage(null)
     try {
       await stickerLibrary.updateStatus(sticker.id, decision === 'approve' ? 'APPROVED' : 'REJECTED')
+      rememberModeration({ targetId: sticker.id, targetKind: 'STICKER', contributionType: 'Sticker', action: decision === 'approve' ? 'APPROVED' : 'REJECTED', authorName: sticker.authorName || 'Autor anónimo' })
       setReviewingKey(null)
     } catch (error) { setMessage(error instanceof Error ? error.message : 'No fue posible moderar el sticker.') }
     finally { setWorkingKey(null) }
@@ -92,7 +106,7 @@ export function AdminNotificationCenter() {
   const deleteContribution = async (item: ContributionRecord) => {
     if (!session.isAdmin || !session.user || workingKey || !window.confirm('¿Eliminar esta aportación pendiente? Quedará en la papelera administrativa.')) return
     setWorkingKey(contributionKey(item.id)); setMessage(null)
-    try { await contributionRepository.deletePending(item.id, session.user.uid); setReviewingKey(null) }
+    try { await contributionRepository.deletePending(item.id, session.user.uid); rememberModeration({ targetId: item.id, targetKind: 'CONTRIBUTION', contributionType: labels[item.type], action: 'DELETED', authorName: item.author.displayName ?? 'Participante anónimo', pageNumber: item.pageNumber }); setReviewingKey(null) }
     catch (error) { setMessage(error instanceof Error ? error.message : 'No fue posible eliminar la aportación.') }
     finally { setWorkingKey(null) }
   }
@@ -107,7 +121,13 @@ export function AdminNotificationCenter() {
   const panel = <div className={`admin-notification-layer${open ? ' is-open' : ''}`} aria-hidden={!open}>
     <button type="button" className="admin-notification-backdrop" tabIndex={open ? 0 : -1} aria-label="Cerrar centro de notificaciones" onClick={() => setOpen(false)} />
     <aside id="admin-notification-center" className="admin-notification-panel" role="dialog" aria-modal="true" aria-label="Solicitudes pendientes">
-      <header><div><p>MODERACIÓN · ENTRADA</p><h2>Aportaciones</h2></div><button type="button" onClick={() => setOpen(false)} aria-label="Cerrar">×</button></header>
+      <header><div><p>MODERACIÓN · ENTRADA</p><h2>{activeTab === 'contributions' ? 'Aportaciones' : 'Notificaciones'}</h2></div><button type="button" onClick={() => setOpen(false)} aria-label="Cerrar">×</button></header>
+      <nav className="admin-notification-tabs" aria-label="Secciones del centro de administración">
+        <button type="button" className={activeTab === 'contributions' ? 'is-active' : ''} onClick={() => { setActiveTab('contributions'); setHistoryMode(false) }}>Aportaciones <b>{totalPending}</b></button>
+        <button type="button" className={activeTab === 'notifications' ? 'is-active' : ''} onClick={() => { setActiveTab('notifications'); setHistoryMode(false) }}>Notificaciones <b>{activity.unreadCount}</b></button>
+        <button type="button" className={historyMode ? 'admin-history-toggle is-active' : 'admin-history-toggle'} onClick={() => setHistoryMode((current) => !current)} aria-label={historyMode ? 'Volver a pendientes' : 'Ver historial reciente'} title={historyMode ? 'Volver' : 'Últimos 20'}>◷</button>
+      </nav>
+      {activeTab === 'contributions' ? historyMode ? <ModerationHistory items={activity.moderations} /> : <>
       <div className="admin-notification-summary"><strong>{totalPending}</strong><span>{totalPending === 1 ? 'pendiente por revisar' : 'pendientes por revisar'}</span></div>
       <details className={`admin-notification-maintenance${participation.isOpen ? ' is-locked' : ''}`}>
         <summary>Revisar espacios disponibles</summary>
@@ -139,12 +159,14 @@ export function AdminNotificationCenter() {
         })}
         {!totalPending && <p className="admin-notification-empty">Todo está al día.<br /><span>No hay aportaciones ni stickers pendientes.</span></p>}
       </div>
+      </> : <RegistrationFeed items={activity.notifications} history={historyMode} onRead={(item) => void activity.markRead(item, session.user?.uid ?? '')} />}
+      {activity.error && activeTab === 'notifications' && <p className="admin-notification-message" role="alert">{activity.error}</p>}
     </aside>
   </div>
 
   return <>
-    <button type="button" className="admin-notification-trigger" aria-label={`${totalPending} solicitudes pendientes`} aria-expanded={open} aria-controls="admin-notification-center" onClick={() => setOpen(true)}>
-      <span aria-hidden="true">✦</span><span className="admin-notification-label">Aportaciones</span>{totalPending > 0 && <b>{totalPending > 99 ? '99+' : totalPending}</b>}
+    <button type="button" className="admin-notification-trigger" aria-label={`${totalPending} aportaciones pendientes y ${activity.unreadCount} notificaciones nuevas`} aria-expanded={open} aria-controls="admin-notification-center" onClick={() => setOpen(true)}>
+      <span aria-hidden="true">✦</span><span className="admin-notification-label">Aportaciones</span>{combinedBadge > 0 && <b>{combinedBadge > 99 ? '99+' : combinedBadge}</b>}
     </button>
     {createPortal(panel, document.body)}
   </>

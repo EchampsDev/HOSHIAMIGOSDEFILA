@@ -300,6 +300,58 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Avisos privados de primer registro. El UID como identificador vuelve la
+    // creación idempotente: una cuenta sólo puede generar un aviso inicial.
+    match /registrationNotifications/{notificationId} {
+      allow get, list: if isAdmin();
+      allow create: if signedIn()
+        && notificationId == request.auth.uid
+        && request.resource.data.keys().hasAll(['uid', 'displayName', 'email', 'source', 'createdAt', 'read'])
+        && request.resource.data.keys().hasOnly(['uid', 'displayName', 'email', 'source', 'createdAt', 'read'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() <= 100
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 160
+        && request.resource.data.source in ['GENERAL', 'BRATTY_INVITATION']
+        && request.resource.data.createdAt is string
+        && request.resource.data.read == false;
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt', 'readBy'])
+        && request.resource.data.read == true
+        && request.resource.data.readAt is string
+        && request.resource.data.readBy == request.auth.uid;
+      allow delete: if false;
+    }
+
+    // Bitácora privada e inmutable de las últimas moderaciones consultadas por
+    // el panel. Sólo administración puede crear o leer eventos.
+    match /moderationEvents/{eventId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasAll(['id', 'targetId', 'targetKind', 'contributionType', 'action', 'authorName', 'moderatorUid', 'moderatorName', 'moderatorEmail', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['id', 'targetId', 'targetKind', 'contributionType', 'action', 'authorName', 'pageNumber', 'moderatorUid', 'moderatorName', 'moderatorEmail', 'createdAt'])
+        && request.resource.data.id == eventId
+        && request.resource.data.targetId is string
+        && request.resource.data.targetId.size() <= 160
+        && request.resource.data.targetKind in ['CONTRIBUTION', 'STICKER']
+        && request.resource.data.contributionType is string
+        && request.resource.data.contributionType.size() <= 60
+        && request.resource.data.action in ['APPROVED', 'REJECTED', 'DELETED']
+        && request.resource.data.authorName is string
+        && request.resource.data.authorName.size() <= 100
+        && (!('pageNumber' in request.resource.data)
+          || (request.resource.data.pageNumber is int
+            && request.resource.data.pageNumber >= 1
+            && request.resource.data.pageNumber <= 100))
+        && request.resource.data.moderatorUid == request.auth.uid
+        && request.resource.data.moderatorName is string
+        && request.resource.data.moderatorName.size() <= 100
+        && request.resource.data.moderatorEmail is string
+        && request.resource.data.moderatorEmail.size() <= 160
+        && request.resource.data.createdAt is string;
+      allow update, delete: if false;
+    }
     // Las reacciones se almacenan por usuario para impedir votos anónimos o duplicados.
     match /elementReactions/{reactionId} {
       allow get, list: if true;
