@@ -123,8 +123,8 @@ export function AdminNotificationCenter() {
     <aside id="admin-notification-center" className="admin-notification-panel" role="dialog" aria-modal="true" aria-label="Solicitudes pendientes">
       <header><div><p>MODERACIÓN · ENTRADA</p><h2>{activeTab === 'contributions' ? 'Aportaciones' : 'Notificaciones'}</h2></div><button type="button" onClick={() => setOpen(false)} aria-label="Cerrar">×</button></header>
       <nav className="admin-notification-tabs" aria-label="Secciones del centro de administración">
-        <button type="button" className={activeTab === 'contributions' ? 'is-active' : ''} onClick={() => { setActiveTab('contributions'); setHistoryMode(false) }}>Aportaciones <b>{totalPending}</b></button>
-        <button type="button" className={activeTab === 'notifications' ? 'is-active' : ''} onClick={() => { setActiveTab('notifications'); setHistoryMode(false) }}>Notificaciones <b>{activity.unreadCount}</b></button>
+        <button type="button" className={activeTab === 'contributions' ? 'is-active' : ''} onClick={() => { setActiveTab('contributions'); setHistoryMode(false) }}>Aportaciones {totalPending > 0 && <b>{totalPending}</b>}</button>
+        <button type="button" className={activeTab === 'notifications' ? 'is-active' : ''} onClick={() => { setActiveTab('notifications'); setHistoryMode(false) }}>Notificaciones {activity.unreadCount > 0 && <b>{activity.unreadCount}</b>}</button>
         <button type="button" className={historyMode ? 'admin-history-toggle is-active' : 'admin-history-toggle'} onClick={() => setHistoryMode((current) => !current)} aria-label={historyMode ? 'Volver a pendientes' : 'Ver historial reciente'} title={historyMode ? 'Volver' : 'Últimos 20'}>◷</button>
       </nav>
       {activeTab === 'contributions' ? historyMode ? <ModerationHistory items={activity.moderations} /> : <>
