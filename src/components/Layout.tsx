@@ -72,7 +72,7 @@ export function AppChrome({ children }: PropsWithChildren) {
   return <div className="site-shell">
     <header className={`topbar${isCompact ? ' is-compact' : ''}`}>
       <div className="brand-pair" aria-label="Brattypolitan Experience y Brattycharts">
-        <Link to="/" className="brand brand-brattypolitan" aria-label="Ir a Brattypolitan Experience"><BrattypolitanExperienceLockup /></Link>
+        <Link to="/" className="brand brand-brattypolitan" aria-label="Ir a Brattypolitan Experience"><BrattypolitanExperienceLockup stacked /></Link>
         <span className="brand-collaboration-mark" aria-hidden="true">×</span>
         <Link to="/brattycharts" className="brand brand-brattycharts" aria-label="Ir a Brattycharts"><BrattychartsWordmark /></Link>
       </div>

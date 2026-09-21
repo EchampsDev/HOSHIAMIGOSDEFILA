@@ -141,8 +141,11 @@ html {
 .hero h1 .brattypolitan-wordmark,
 .experience-hub h1 .brattypolitan-wordmark { width: 7.1em; }
 .brand .brattypolitan-wordmark { width: 7em; }
-.brand .brattypolitan-lockup { gap: .55em; }
-.brand-pair { display: inline-flex; align-items: center; gap: .6rem; min-width: 0; }
+.brand .brattypolitan-lockup { gap: .05em; }
+.brand-brattypolitan { display: inline-grid; place-items: center; }
+.brand-brattypolitan .brattypolitan-lockup { text-align: center; }
+.brand-brattypolitan .brattypolitan-lockup__experience { font-size: 1.08em; }
+.brand-pair { display: inline-flex; align-items: center; justify-content: center; gap: .6rem; min-width: 0; }
 .brand-collaboration-mark { color: rgba(255,255,255,.58); font: 500 .72rem 'DM Mono', monospace; }
 .brand-brattycharts .brattycharts-wordmark { display: block; width: clamp(64px, 5.4vw, 86px); height: auto; transition: filter .18s ease, transform .18s ease; }
 .brand-brattycharts:hover .brattycharts-wordmark, .brand-brattycharts:focus-visible .brattycharts-wordmark { filter: drop-shadow(0 0 8px rgba(255,23,68,.48)); transform: translateY(-1px); }
