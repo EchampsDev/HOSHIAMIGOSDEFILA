@@ -72,7 +72,6 @@ export const brattychartsAppearanceRepository = {
     if (!firestore || !isBrattychartsMediaConfigured) throw new Error('El almacenamiento de Brattycharts no está configurado.')
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > MAX_BACKGROUND_BYTES) throw new Error('Usa JPG, PNG o WebP de máximo 15 MB.')
     const id = crypto.randomUUID()
-    const extension = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg'
     const upload = await brattychartsMediaRequest('/v1/backgrounds', token, { method: 'POST', headers: { 'Content-Type': file.type, 'X-Background-Id': id }, body: file })
     const stored = await upload.json() as { objectKey: string; readUrl: string }
     const now = new Date().toISOString()
