@@ -1,4 +1,5 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { BrattypolitanExperienceLockup } from '../../components/BrattypolitanWordmark'
 import { FourPointMark } from '../../components/FourPointMark'
 import { useGoogleSession } from '../access/useGoogleSession'
@@ -27,7 +28,7 @@ export function BrattyInvitationPage() {
     if (!file || !session.user || !authorized) return
     setBusy(true); setProgress(0); setStatus(null)
     try {
-      const uploaded = await brattyVideoRepository.upload(file, setProgress)
+      const uploaded = await brattyVideoRepository.upload(file, await session.user.getIdToken(), setProgress)
       await experience.saveSubmission({ ...uploaded, authorName: session.user.displayName ?? 'Bratty', message: message.trim(), originalName: file.name, contentType: file.type, uploadedAt: new Date().toISOString() })
       setStatus('Tu video quedó guardado. El equipo podrá revisarlo y decidir cuándo mostrar la sorpresa a los fans.')
       setFile(null)
@@ -39,8 +40,11 @@ export function BrattyInvitationPage() {
   if (!experience.settings.invitationActive) return <><StarfieldBackground /><main className="bratty-invitation bratty-invitation--paused"><section><FourPointMark /><p className="eyebrow">UN MENSAJE PARA BRATTY</p><h1>Esto se está consolidando.</h1><p>Los fans te tenemos una pequeña sorpresa. Vuelve aquí el <strong>25 de septiembre</strong>.</p></section></main></>
 
   return <><StarfieldBackground /><main className="bratty-invitation">
-    <header><BrattypolitanExperienceLockup /><span>ACCESO ESPECIAL · BRATTY</span></header>
-    <section className="bratty-invitation-intro"><FourPointMark /><p className="eyebrow">HOLA, BRATTY</p><h1>Esta libreta también quiere guardar tu voz.</h1><p>Durante la fila, tus fans construirán una libreta física y digital con mensajes, dibujos y recuerdos para ti. Queremos invitarte a participar dejando un video con lo que tú quieras decir, compartir o aportar.</p><p>Cuando el equipo active la sorpresa, este mensaje será lo primero que verán antes de abrir la libreta.</p></section>
+    <header><BrattypolitanExperienceLockup stacked /><span>ACCESO ESPECIAL · BRATTY</span></header>
+    <section className="bratty-invitation-intro">
+      <div className="bratty-invitation-copy"><FourPointMark /><p className="eyebrow">HOLA, BRATTY</p><h1>Esta libreta también quiere guardar tu voz.</h1><p>Durante la fila, tus fans construirán una libreta física y digital con mensajes, dibujos y recuerdos para ti. Queremos invitarte a participar dejando un video con lo que tú quieras decir, compartir o aportar.</p><p>Cuando el equipo active la sorpresa, este mensaje será lo primero que verán antes de abrir la libreta.</p></div>
+      <Link className="bratty-album-spotlight" to="/album" aria-label="Abrir la libreta digital"><span className="bratty-album-spotlight__mark"><FourPointMark /></span><span><small>EL ARCHIVO HECHO POR TUS FANS</small><strong>ABRIR LA LIBRETA DIGITAL</strong><em>Explora mensajes, dibujos y recuerdos creados para ti.</em></span><b aria-hidden="true">↗</b></Link>
+    </section>
     {!session.user ? <section className="bratty-access-card"><span>01</span><h2>Confirma tu acceso</h2><p>Este espacio está reservado. Accede con la cuenta que el equipo haya marcado como usuario especial.</p><button type="button" onClick={() => void session.signIn('BRATTY_INVITATION')}>Acceder con Google</button>{session.error && <p role="alert">{session.error}</p>}</section>
       : !authorized ? <section className="bratty-access-card"><span>ACCESO PENDIENTE</span><h2>Tu cuenta ya está registrada.</h2><p>Pide al equipo que la marque como “Usuario especial” desde el panel administrativo y vuelve a entrar.</p><button type="button" onClick={() => void session.signOut()}>Usar otra cuenta</button></section>
         : <section className="bratty-upload-card"><header><div><span>02</span><h2>Deja tu sorpresa</h2></div><small>{session.user.displayName ?? session.user.email}</small></header>
